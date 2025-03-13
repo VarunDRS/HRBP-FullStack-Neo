@@ -1,0 +1,338 @@
+Index: slack-hrbp/src/main/java/com/cars24/slack_hrbp/data/repository/AttendanceRepository.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.cars24.slack_hrbp.data.repository;\r\n\r\nimport com.cars24.slack_hrbp.data.entity.Attendance;\r\nimport com.cars24.slack_hrbp.data.entity.AttendanceEntity;\r\nimport org.springframework.data.mongodb.repository.MongoRepository;\r\nimport org.springframework.stereotype.Repository;\r\n\r\nimport java.util.List;\r\n\r\n@Repository\r\npublic interface AttendanceRepository extends MongoRepository<Attendance, String> {\r\n    List<Attendance> findByDateStartingWith(String monthYear); // Fetch records for a specific month and year\r\n\r\n    List<AttendanceEntity> findAllByUserid(String userid);\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/slack-hrbp/src/main/java/com/cars24/slack_hrbp/data/repository/AttendanceRepository.java b/slack-hrbp/src/main/java/com/cars24/slack_hrbp/data/repository/AttendanceRepository.java
+--- a/slack-hrbp/src/main/java/com/cars24/slack_hrbp/data/repository/AttendanceRepository.java	(revision 5ebb9b65b8055db8e22fcc915419a672d4cd2de5)
++++ b/slack-hrbp/src/main/java/com/cars24/slack_hrbp/data/repository/AttendanceRepository.java	(date 1740715895568)
+@@ -1,6 +1,5 @@
+ package com.cars24.slack_hrbp.data.repository;
+ 
+-import com.cars24.slack_hrbp.data.entity.Attendance;
+ import com.cars24.slack_hrbp.data.entity.AttendanceEntity;
+ import org.springframework.data.mongodb.repository.MongoRepository;
+ import org.springframework.stereotype.Repository;
+@@ -8,8 +7,8 @@
+ import java.util.List;
+ 
+ @Repository
+-public interface AttendanceRepository extends MongoRepository<Attendance, String> {
+-    List<Attendance> findByDateStartingWith(String monthYear); // Fetch records for a specific month and year
+-
+-    List<AttendanceEntity> findAllByUserid(String userid);
++public interface AttendanceRepository extends MongoRepository<AttendanceEntity, String> {
++    List<AttendanceEntity> findByDateStartingWith(String monthYear);
++    List<AttendanceEntity> findByUseridAndDateStartingWith(String userid, String month);
++    List<AttendanceEntity> findByUserid(String userid);
+ }
+\ No newline at end of file
+Index: slack-hrbp/src/main/java/com/cars24/slack_hrbp/service/impl/AttendanceServiceImpl.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.cars24.slack_hrbp.service.impl;\r\n\r\nimport com.cars24.slack_hrbp.data.entity.Attendance;\r\nimport com.cars24.slack_hrbp.data.repository.AttendanceRepository;\r\nimport org.apache.poi.ss.usermodel.*;\r\nimport org.apache.poi.xssf.usermodel.XSSFWorkbook;\r\nimport org.springframework.beans.factory.annotation.Autowired;\r\nimport org.springframework.stereotype.Service;\r\n\r\nimport java.io.FileOutputStream;\r\nimport java.io.IOException;\r\nimport java.text.ParseException;\r\nimport java.text.SimpleDateFormat;\r\nimport java.util.*;\r\n\r\n@Service\r\npublic class AttendanceServiceImpl {\r\n\r\n    @Autowired\r\n    private AttendanceRepository attendanceRepository;\r\n\r\n    public Map<String, Map<String, String>> generateAttendanceReport(String monthYear) throws IOException, ParseException {\r\n        // Fetch data for the given month and year\r\n        List<Attendance> attendanceList = attendanceRepository.findByDateStartingWith(monthYear);\r\n\r\n        // Create a map to store user-wise attendance data\r\n        Map<String, Map<String, String>> userAttendanceMap = new HashMap<>();\r\n\r\n        // Parse the date and populate the map\r\n        SimpleDateFormat dateFormat = new SimpleDateFormat(\"yyyy-MM-dd\");\r\n        SimpleDateFormat displayFormat = new SimpleDateFormat(\"MMM-dd\");\r\n\r\n        for (Attendance attendance : attendanceList) {\r\n            String username = attendance.getUsername();\r\n            String date = attendance.getDate();\r\n            String requestType = getRequestTypeCode(attendance.getType());\r\n\r\n            Date parsedDate = dateFormat.parse(date);\r\n            String formattedDate = displayFormat.format(parsedDate);\r\n\r\n            userAttendanceMap.computeIfAbsent(username, k -> new HashMap<>()).put(formattedDate, requestType);\r\n        }\r\n\r\n        // Generate Excel file\r\n        generateExcel(userAttendanceMap, monthYear);\r\n\r\n        // Return the processed data\r\n        return userAttendanceMap;\r\n    }\r\n\r\n    private String getRequestTypeCode(String requestType) {\r\n        switch (requestType) {\r\n            case \"Planned Leave\":\r\n                return \"P\";\r\n            case \"Unplanned Leave\":\r\n                return \"U\";\r\n            case \"Planned Leave (Second Half)\":\r\n                return \"P*\";\r\n            case \"Sick Leave\":\r\n                return \"S\";\r\n            case \"Work From Home\":\r\n                return \"W\";\r\n            case \"Travelling to HQ\":\r\n                return \"T\";\r\n            case \"Holiday\":\r\n                return \"H\";\r\n            case \"Elections\":\r\n                return \"E\";\r\n            case \"Joined\":\r\n                return \"J\";\r\n            case \"Planned Leave (First Half)\":\r\n                return \"P**\";\r\n            default:\r\n                return \"\";\r\n        }\r\n    }\r\n\r\n    private void generateExcel(Map<String, Map<String, String>> userAttendanceMap, String monthYear) throws IOException {\r\n        Workbook workbook = new XSSFWorkbook();\r\n        Sheet sheet = workbook.createSheet(\"Attendance Report\");\r\n\r\n        // Create header row\r\n        Row headerRow = sheet.createRow(0);\r\n        headerRow.createCell(0).setCellValue(\"User Name\");\r\n\r\n        // Get all unique dates\r\n        Set<String> allDates = new TreeSet<>();\r\n        for (Map<String, String> dateMap : userAttendanceMap.values()) {\r\n            allDates.addAll(dateMap.keySet());\r\n        }\r\n\r\n        // Add dates to the header row\r\n        int colNum = 1;\r\n        for (String date : allDates) {\r\n            headerRow.createCell(colNum++).setCellValue(date);\r\n        }\r\n\r\n        // Populate user data\r\n        int rowNum = 1;\r\n        for (Map.Entry<String, Map<String, String>> entry : userAttendanceMap.entrySet()) {\r\n            Row row = sheet.createRow(rowNum++);\r\n            row.createCell(0).setCellValue(entry.getKey());\r\n\r\n            colNum = 1;\r\n            for (String date : allDates) {\r\n                String requestType = entry.getValue().getOrDefault(date, \"\");\r\n                row.createCell(colNum++).setCellValue(requestType);\r\n            }\r\n        }\r\n\r\n        // Write the output to a file\r\n        try (FileOutputStream fileOut = new FileOutputStream(\"Attendance_Report_\" + monthYear + \".xlsx\")) {\r\n            workbook.write(fileOut);\r\n        }\r\n\r\n        workbook.close();\r\n    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/slack-hrbp/src/main/java/com/cars24/slack_hrbp/service/impl/AttendanceServiceImpl.java b/slack-hrbp/src/main/java/com/cars24/slack_hrbp/service/impl/AttendanceServiceImpl.java
+--- a/slack-hrbp/src/main/java/com/cars24/slack_hrbp/service/impl/AttendanceServiceImpl.java	(revision 5ebb9b65b8055db8e22fcc915419a672d4cd2de5)
++++ b/slack-hrbp/src/main/java/com/cars24/slack_hrbp/service/impl/AttendanceServiceImpl.java	(date 1740716267878)
+@@ -1,6 +1,6 @@
+ package com.cars24.slack_hrbp.service.impl;
+ 
+-import com.cars24.slack_hrbp.data.entity.Attendance;
++import com.cars24.slack_hrbp.data.entity.AttendanceEntity;
+ import com.cars24.slack_hrbp.data.repository.AttendanceRepository;
+ import org.apache.poi.ss.usermodel.*;
+ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+@@ -21,7 +21,7 @@
+ 
+     public Map<String, Map<String, String>> generateAttendanceReport(String monthYear) throws IOException, ParseException {
+         // Fetch data for the given month and year
+-        List<Attendance> attendanceList = attendanceRepository.findByDateStartingWith(monthYear);
++        List<AttendanceEntity> attendanceList = attendanceRepository.findByDateStartingWith(monthYear);
+ 
+         // Create a map to store user-wise attendance data
+         Map<String, Map<String, String>> userAttendanceMap = new HashMap<>();
+@@ -30,7 +30,8 @@
+         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+         SimpleDateFormat displayFormat = new SimpleDateFormat("MMM-dd");
+ 
+-        for (Attendance attendance : attendanceList) {
++        for (AttendanceEntity attendance : attendanceList) {
++
+             String username = attendance.getUsername();
+             String date = attendance.getDate();
+             String requestType = getRequestTypeCode(attendance.getType());
+@@ -39,6 +40,7 @@
+             String formattedDate = displayFormat.format(parsedDate);
+ 
+             userAttendanceMap.computeIfAbsent(username, k -> new HashMap<>()).put(formattedDate, requestType);
++
+         }
+ 
+         // Generate Excel file
+Index: slack-hrbp/src/main/java/com/cars24/slack_hrbp/controller/UsernameController.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.cars24.slack_hrbp.controller;\r\n\r\nimport com.cars24.slack_hrbp.data.entity.AttendanceEntity;\r\nimport com.cars24.slack_hrbp.data.repository.UsernameRepository;\r\nimport com.cars24.slack_hrbp.service.impl.UsernameServiceImpl;\r\nimport lombok.RequiredArgsConstructor;\r\nimport org.springframework.beans.BeanUtils;\r\nimport org.springframework.http.ResponseEntity;\r\nimport org.springframework.security.access.prepost.PreAuthorize;\r\nimport org.springframework.stereotype.Service;\r\nimport org.springframework.web.bind.annotation.*;\r\n\r\nimport java.util.List;\r\nimport java.util.Map;\r\n\r\n@RestController\r\n@RequiredArgsConstructor\r\n\r\n@RequestMapping(\"/hr\")\r\n\r\npublic class UsernameController {\r\n\r\n    private final UsernameServiceImpl usernameService;\r\n\r\n\r\n    @PreAuthorize(\"hasRole('HR')\")\r\n    @GetMapping(\"/{userId}\")\r\n\r\n    public Map<String, Map<String, String>> getUserDetails(@PathVariable String userId){\r\n\r\n\r\n\r\n        Map<String, Map<String, String>> resp=usernameService.getCustomerDetails(userId);\r\n\r\n        return resp;\r\n\r\n    }\r\n\r\n\r\n\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/slack-hrbp/src/main/java/com/cars24/slack_hrbp/controller/UsernameController.java b/slack-hrbp/src/main/java/com/cars24/slack_hrbp/controller/UsernameController.java
+--- a/slack-hrbp/src/main/java/com/cars24/slack_hrbp/controller/UsernameController.java	(revision 5ebb9b65b8055db8e22fcc915419a672d4cd2de5)
++++ b/slack-hrbp/src/main/java/com/cars24/slack_hrbp/controller/UsernameController.java	(date 1740716267868)
+@@ -28,10 +28,7 @@
+ 
+     public Map<String, Map<String, String>> getUserDetails(@PathVariable String userId){
+ 
+-
+-
+         Map<String, Map<String, String>> resp=usernameService.getCustomerDetails(userId);
+-
+         return resp;
+ 
+     }
+Index: slack-hrbp/src/main/java/com/cars24/slack_hrbp/data/entity/Attendance.java
+===================================================================
+diff --git a/slack-hrbp/src/main/java/com/cars24/slack_hrbp/data/entity/Attendance.java b/slack-hrbp/src/main/java/com/cars24/slack_hrbp/data/entity/Attendance.java
+deleted file mode 100644
+--- a/slack-hrbp/src/main/java/com/cars24/slack_hrbp/data/entity/Attendance.java	(revision 5ebb9b65b8055db8e22fcc915419a672d4cd2de5)
++++ /dev/null	(revision 5ebb9b65b8055db8e22fcc915419a672d4cd2de5)
+@@ -1,20 +0,0 @@
+-package com.cars24.slack_hrbp.data.entity;
+-
+-import lombok.Data;
+-import org.springframework.data.annotation.Id;
+-import org.springframework.data.mongodb.core.mapping.Document;
+-
+-@Data
+-
+-@Document(collection = "Attendance")
+-public class Attendance {
+-
+-    @Id
+-    private String id;
+-    private String userid;
+-    private String username;
+-    private String date;
+-    private String type;
+-    private String reason;
+-
+-}
+\ No newline at end of file
+Index: slack-hrbp/src/main/java/com/cars24/slack_hrbp/service/GraphServices.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/slack-hrbp/src/main/java/com/cars24/slack_hrbp/service/GraphServices.java b/slack-hrbp/src/main/java/com/cars24/slack_hrbp/service/GraphServices.java
+new file mode 100644
+--- /dev/null	(date 1740715822610)
++++ b/slack-hrbp/src/main/java/com/cars24/slack_hrbp/service/GraphServices.java	(date 1740715822610)
+@@ -0,0 +1,9 @@
++package com.cars24.slack_hrbp.service;
++
++import com.cars24.slack_hrbp.data.response.GraphResponse;
++import org.springframework.http.ResponseEntity;
++import org.springframework.web.bind.annotation.RequestParam;
++
++public interface GraphServices {
++    public GraphResponse getGraph(@RequestParam String userid , String month);
++}
+Index: slack-hrbp/src/main/java/com/cars24/slack_hrbp/service/impl/GraphServicesImpl.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/slack-hrbp/src/main/java/com/cars24/slack_hrbp/service/impl/GraphServicesImpl.java b/slack-hrbp/src/main/java/com/cars24/slack_hrbp/service/impl/GraphServicesImpl.java
+new file mode 100644
+--- /dev/null	(date 1740715822615)
++++ b/slack-hrbp/src/main/java/com/cars24/slack_hrbp/service/impl/GraphServicesImpl.java	(date 1740715822615)
+@@ -0,0 +1,35 @@
++package com.cars24.slack_hrbp.service.impl;
++
++import com.cars24.slack_hrbp.data.dao.impl.GraphDaoImpl;
++import com.cars24.slack_hrbp.data.repository.AttendanceRepository;
++import com.cars24.slack_hrbp.data.repository.EmployeeRepository;
++import com.cars24.slack_hrbp.data.response.GraphResponse;
++import com.cars24.slack_hrbp.excpetion.UserServiceException;
++import com.cars24.slack_hrbp.service.GraphServices;
++import lombok.RequiredArgsConstructor;
++import org.springframework.http.ResponseEntity;
++import org.springframework.stereotype.Service;
++import org.springframework.web.bind.annotation.RequestParam;
++
++@Service
++@RequiredArgsConstructor
++
++public class GraphServicesImpl implements GraphServices {
++    private final AttendanceRepository attendanceRepository;
++    private final EmployeeRepository employeeRepository;
++
++    private final GraphDaoImpl graphDao;
++
++    public GraphResponse getGraph(@RequestParam String userid , String month){
++//        boolean flag = employeeRepository.existsByUserId(userid);
++//
++//        if(flag){
++            return graphDao.getGraph(userid,month);
++//        }
++//
++//        else{
++//            return null;
++//        }
++
++    }
++}
+Index: slack-hrbp/src/main/java/com/cars24/slack_hrbp/data/response/GraphResponse.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/slack-hrbp/src/main/java/com/cars24/slack_hrbp/data/response/GraphResponse.java b/slack-hrbp/src/main/java/com/cars24/slack_hrbp/data/response/GraphResponse.java
+new file mode 100644
+--- /dev/null	(date 1740715822595)
++++ b/slack-hrbp/src/main/java/com/cars24/slack_hrbp/data/response/GraphResponse.java	(date 1740715822595)
+@@ -0,0 +1,11 @@
++package com.cars24.slack_hrbp.data.response;
++
++import lombok.Data;
++
++import java.util.ArrayList;
++import java.util.Map;
++
++@Data
++public class GraphResponse {
++    private Map<String, Integer> typeCounts;
++}
+Index: slack-hrbp/src/main/java/com/cars24/slack_hrbp/data/dao/GraphDao.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/slack-hrbp/src/main/java/com/cars24/slack_hrbp/data/dao/GraphDao.java b/slack-hrbp/src/main/java/com/cars24/slack_hrbp/data/dao/GraphDao.java
+new file mode 100644
+--- /dev/null	(date 1740715822603)
++++ b/slack-hrbp/src/main/java/com/cars24/slack_hrbp/data/dao/GraphDao.java	(date 1740715822603)
+@@ -0,0 +1,9 @@
++package com.cars24.slack_hrbp.data.dao;
++
++import com.cars24.slack_hrbp.data.response.GraphResponse;
++import org.springframework.http.ResponseEntity;
++import org.springframework.web.bind.annotation.RequestParam;
++
++public interface GraphDao {
++    public GraphResponse getGraph(@RequestParam String userid , String month);
++}
+Index: slack-hrbp/src/main/java/com/cars24/slack_hrbp/controller/GraphsController.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/slack-hrbp/src/main/java/com/cars24/slack_hrbp/controller/GraphsController.java b/slack-hrbp/src/main/java/com/cars24/slack_hrbp/controller/GraphsController.java
+new file mode 100644
+--- /dev/null	(date 1740715822581)
++++ b/slack-hrbp/src/main/java/com/cars24/slack_hrbp/controller/GraphsController.java	(date 1740715822581)
+@@ -0,0 +1,29 @@
++package com.cars24.slack_hrbp.controller;
++
++
++import com.cars24.slack_hrbp.data.response.GraphResponse;
++import com.cars24.slack_hrbp.service.impl.GraphServicesImpl;
++import lombok.RequiredArgsConstructor;
++import lombok.extern.slf4j.Slf4j;
++import org.springframework.http.ResponseEntity;
++import org.springframework.security.access.prepost.PreAuthorize;
++import org.springframework.web.bind.annotation.GetMapping;
++import org.springframework.web.bind.annotation.RequestMapping;
++import org.springframework.web.bind.annotation.RequestParam;
++import org.springframework.web.bind.annotation.RestController;
++
++@RestController
++@RequestMapping("/graph")
++@RequiredArgsConstructor
++@Slf4j
++public class GraphsController {
++
++    private final GraphServicesImpl graphsServices;
++
++    @PreAuthorize("asRole('HR')")
++    @GetMapping()
++    public ResponseEntity<GraphResponse> getGraph(@RequestParam String userid , String month){
++        GraphResponse resp = graphsServices.getGraph(userid,month);
++        return ResponseEntity.ok().body(resp);
++    }
++}
+Index: slack-hrbp/src/main/java/com/cars24/slack_hrbp/data/dao/impl/GraphDaoImpl.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/slack-hrbp/src/main/java/com/cars24/slack_hrbp/data/dao/impl/GraphDaoImpl.java b/slack-hrbp/src/main/java/com/cars24/slack_hrbp/data/dao/impl/GraphDaoImpl.java
+new file mode 100644
+--- /dev/null	(date 1740715822587)
++++ b/slack-hrbp/src/main/java/com/cars24/slack_hrbp/data/dao/impl/GraphDaoImpl.java	(date 1740715822587)
+@@ -0,0 +1,42 @@
++package com.cars24.slack_hrbp.data.dao.impl;
++
++import com.cars24.slack_hrbp.data.entity.AttendanceEntity;
++import com.cars24.slack_hrbp.data.repository.AttendanceRepository;
++import com.cars24.slack_hrbp.data.response.GraphResponse;
++import lombok.RequiredArgsConstructor;
++import lombok.extern.slf4j.Slf4j;
++import org.springframework.http.ResponseEntity;
++import org.springframework.stereotype.Service;
++import org.springframework.web.bind.annotation.RequestParam;
++
++import java.util.HashMap;
++import java.util.List;
++
++@Service
++@RequiredArgsConstructor
++@Slf4j
++
++public class GraphDaoImpl {
++
++    private final AttendanceRepository attendanceRepository;
++    public GraphResponse getGraph(@RequestParam String userid , String month){
++
++        List<AttendanceEntity> bis = attendanceRepository.findByUserid(userid);
++        log.info("{}", bis);
++
++        List<AttendanceEntity> lis = attendanceRepository.findByUseridAndDateStartingWith(userid,month);
++        HashMap<String,Integer> typecount = new HashMap<>();
++
++         for(AttendanceEntity ent : lis){
++             log.info("{}" , ent.getType());
++             typecount.put(ent.getType(), typecount.getOrDefault(ent.getType() , 0) + 1);
++         }
++
++         log.info("Type Count Map: {}", typecount);
++
++         GraphResponse graphResponse = new GraphResponse();
++         graphResponse.setTypeCounts(typecount);
++
++         return graphResponse;
++    }
++}
+Index: .idea/compiler.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"CompilerConfiguration\">\r\n    <annotationProcessing>\r\n      <profile name=\"Maven default annotation processors profile\" enabled=\"true\">\r\n        <sourceOutputDir name=\"target/generated-sources/annotations\" />\r\n        <sourceTestOutputDir name=\"target/generated-test-sources/test-annotations\" />\r\n        <outputRelativeToContentRoot value=\"true\" />\r\n      </profile>\r\n      <profile name=\"Annotation profile for mobile-app-ws\" enabled=\"true\">\r\n        <sourceOutputDir name=\"target/generated-sources/annotations\" />\r\n        <sourceTestOutputDir name=\"target/generated-test-sources/test-annotations\" />\r\n        <outputRelativeToContentRoot value=\"true\" />\r\n        <processorPath useClasspath=\"false\">\r\n          <entry name=\"$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar\" />\r\n        </processorPath>\r\n        <module name=\"slack-hrbp\" />\r\n      </profile>\r\n    </annotationProcessing>\r\n  </component>\r\n  <component name=\"JavacSettings\">\r\n    <option name=\"ADDITIONAL_OPTIONS_OVERRIDE\">\r\n      <module name=\"slack-hrbp\" options=\"-parameters\" />\r\n    </option>\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/compiler.xml b/.idea/compiler.xml
+--- a/.idea/compiler.xml	(revision 5ebb9b65b8055db8e22fcc915419a672d4cd2de5)
++++ b/.idea/compiler.xml	(date 1740715822624)
+@@ -2,6 +2,7 @@
+ <project version="4">
+   <component name="CompilerConfiguration">
+     <annotationProcessing>
++      <profile default="true" name="Default" enabled="true" />
+       <profile name="Maven default annotation processors profile" enabled="true">
+         <sourceOutputDir name="target/generated-sources/annotations" />
+         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />

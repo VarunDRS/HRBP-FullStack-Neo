@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.cars24.slack_hrbp.controllers.HrControllerTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.756 s -- in com.cars24.slack_hrbp.controllers.HrControllerTest
