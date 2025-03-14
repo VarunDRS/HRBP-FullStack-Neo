@@ -77,9 +77,23 @@ public interface EmployeeRepository extends Neo4jRepository<EmployeeEntity, Stri
     @Query("MATCH (e:Employee)-[:REPORTED_BY]->(m:Employee {userId: $managerId}) RETURN COUNT(e) > 0")
     boolean existsByManagerId(@Param("managerId") String managerId);
 
-    @Query("MATCH (e:Employee)-[:REPORTED_BY]->(m:Employee {userId: $managerId}) RETURN COUNT(e)")
+    @Query("MATCH (:Employee {userId: $managerId})<-[:REPORTED_BY*]-(e:Employee) RETURN COUNT(e)")
     long countByManagerId(@Param("managerId") String managerId);
+
+    @Query("MATCH (:Employee {userId: $managerId})<-[:REPORTED_BY*]-(e:Employee) " +
+            "WHERE TOLOWER(e.username) STARTS WITH TOLOWER($searchtag) " +
+            "   OR TOLOWER(e.username) CONTAINS TOLOWER($searchtag) " +
+            "RETURN COUNT(e)")
+    long countByManagerIdAndSearchtag(@Param("managerId") String managerId,
+                                      @Param("searchtag") String searchtag);
 
     @Query("MATCH (e:Employee) RETURN COUNT(e)")
     long count();
+
+    @Query("MATCH (e:Employee) " +
+            "WHERE $searchtag <> '' AND (TOLOWER(e.username) STARTS WITH TOLOWER($searchtag) " +
+            "   OR TOLOWER(e.username) CONTAINS TOLOWER($searchtag)) " +
+            "RETURN COUNT(e)")
+    long countBySearchtag(@Param("searchtag") String searchtag);
+
 }

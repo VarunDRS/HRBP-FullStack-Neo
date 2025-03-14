@@ -63,15 +63,29 @@ public class HrDaoImpl implements HrDao {
 
 
     @Override
-    public Page<List<String>> getAllUsers(String userId, int page, int limit) {
-        String query = "MATCH (:Employee {userId: $userId})<-[:REPORTED_BY*]-(e:Employee) " +
-                "RETURN e.userId, e.email, e.username SKIP $skip LIMIT $limit";
+    public Page<List<String>> getAllUsers(String userId, int page, int limit, String searchtag) {
+        String query;
 
-        List<List<String>> results = neo4jClient.query(query)
-                .bind(userId).to("userId")
+        if (searchtag == null || searchtag.trim().isEmpty()) {
+            // Fetch all employees without filtering
+            query = "MATCH (e:Employee) RETURN e.userId, e.email, e.username SKIP $skip LIMIT $limit";
+        } else {
+            // Fetch employees matching search criteria
+            query = "MATCH (e:Employee) " +
+                    "WHERE TOLOWER(e.username) STARTS WITH TOLOWER($searchtag) " +
+                    "   OR TOLOWER(e.username) CONTAINS TOLOWER($searchtag) " +
+                    "RETURN e.userId, e.email, e.username SKIP $skip LIMIT $limit";
+        }
+
+        var queryBuilder = neo4jClient.query(query)
                 .bind(page * limit).to("skip")
-                .bind(limit).to("limit")
-                .fetch().all()
+                .bind(limit).to("limit");
+
+        if (searchtag != null && !searchtag.trim().isEmpty()) {
+            queryBuilder = queryBuilder.bind(searchtag).to("searchtag");
+        }
+
+        List<List<String>> results = queryBuilder.fetch().all()
                 .stream()
                 .map(record -> List.of(
                         record.get("e.userId").toString(),
@@ -93,7 +107,12 @@ public class HrDaoImpl implements HrDao {
 //    }
 
     @Override
-    public long getTotalEmployeesCount(){
-       return employeeRepository.count();
+    public long getTotalEmployeesCount(String searchtag){
+        if(searchtag==null || searchtag.trim().isEmpty()){
+            return employeeRepository.count();
+        }
+        else{
+            return employeeRepository.countBySearchtag(searchtag);
+        }
     }
 }

@@ -58,48 +58,39 @@ const ManagerDashboard = () => {
     fetchData();
   }, []);
 
+  
   useEffect(() => {
-    const fetchTotalPages = async () => {
-      try {
+      const fetchData = async () => {
+        const token = localStorage.getItem("Authorization");
+        const decodedToken = jwtDecode(token);
+        const userId = decodedToken.userId;  
+        const role = decodedToken.roles?.[0];
+    
+        await fetchTeamMembers(userId, token, role); // Ensure it's awaited
+      };
+    
+      fetchData();
+  }, [currentPage, pageSize]);
+
+  useEffect(() => {
+      const delayDebounceFn = setTimeout(() => {
         const token = localStorage.getItem("Authorization");
         const decodedToken = jwtDecode(token);
         const userId = decodedToken.userId;
-        
-        const response = await axios.get(
-          `http://localhost:8080/manager/displayUsers/count/${userId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-            params: { limit: pageSize },
-          }
-        );
-
-        if (response.data) {
-          setTotalPages(response.data.totalPages);
-        }
-      } catch (error) {
-        console.error("Error fetching total pages:", error);
-      }
-    };
-
-    fetchTotalPages(); // Call when component loads or dependencies change
-  }, [pageSize]);
-  
-  useEffect(() => {
-    const token = localStorage.getItem("Authorization");
-    const decodedToken = jwtDecode(token);
-    const userId = decodedToken.userId;
+        const role = decodedToken.roles?.[0];
     
-    fetchTeamMembers(userId, token);
-  }, [currentPage, pageSize]);
+        fetchTeamMembers(userId, token, role, searchQuery.trim() || "%20");
+      }, 1000);
+    
+      return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
 
-  
-
-  const fetchTeamMembers = async (userId, token) => {
+  const fetchTeamMembers = async (userId, token , role, search = "%20") => {
     setLoading(true);
     try {
       // Use the paginated endpoint that matches your backend
       const response = await axios.get(
-        `http://localhost:8080/manager/displayUsers/${userId}`,
+        `http://localhost:8080/manager/displayUsers/${userId}/${search.trim() || "%20"}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           params: {
@@ -108,8 +99,7 @@ const ManagerDashboard = () => {
           }
         }
       );
-      
-      console.log(response);
+    
 
       if (response.data) {
         const formattedEmployees = response.data.map((employee) => ({
@@ -129,6 +119,41 @@ const ManagerDashboard = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const fetchTotalPages = async () => {
+      try {
+        const token = localStorage.getItem("Authorization");
+        const decodedToken = jwtDecode(token);
+        const userId = decodedToken.userId;
+        
+        const response = await axios.get(
+          `http://localhost:8080/manager/displayUsers/count/${userId}/${searchQuery.trim() || "%20"}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { 
+              limit: pageSize
+            },
+          }
+        );
+
+        console.log("Total Pages:", response.data);
+  
+        if (response.data) {
+          setTotalPages(response.data.totalPages);
+        }
+      } catch (error) {
+        console.error("Error fetching total pages:", error);
+      }
+    };
+  
+    const delayDebounceFn = setTimeout(() => {
+      fetchTotalPages(); // Fetch total pages when searchQuery changes
+    }, 1000);
+  
+    return () => clearTimeout(delayDebounceFn);
+  }, [pageSize, searchQuery]); // Dependency on pageSize and searchQuery
+  
 
   const getFilteredLeaveRequests = () => {
     // If leaveRequests is an object with employee names as keys
@@ -185,13 +210,6 @@ const ManagerDashboard = () => {
     setCurrentPage(1); // Reset to first page when changing page size
   };
 
-  // Local filtering for search will need to be implemented differently
-  // since we're using server-side pagination
-  const handleSearch = () => {
-    // Reset to first page when searching
-    setCurrentPage(1);
-    // The actual search will be handled in the next data fetch
-  };
 
   return (
     <div className="min-h-screen w-full flex justify-center bg-blue-100 fixed inset-0 text-white">
@@ -210,7 +228,6 @@ const ManagerDashboard = () => {
           setEmployeeFilter={setEmployeeFilter}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
-          onSearch={handleSearch}
           placeholderText="Search by name, position or project..."
         />
 

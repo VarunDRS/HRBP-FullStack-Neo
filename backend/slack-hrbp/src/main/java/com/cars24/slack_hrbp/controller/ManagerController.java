@@ -59,24 +59,25 @@ public class ManagerController {
         return resp;
     }
 
-    @PreAuthorize("hasRole('MANAGER')")
-    @GetMapping("/getAllEmployees/{userId}")
-    public Page<List<String>> getAllEmployeesUnderManager(@PathVariable String userId){
-        Page<List<String>> lis = listAllEmployeesUnderManager.getAllEmployeesUnderManager(userId,  0, 0);
-        return lis;
-    }
+//    @PreAuthorize("hasRole('MANAGER')")
+//    @GetMapping("/getAllEmployees/{userId}")
+//    public Page<List<String>> getAllEmployeesUnderManager(@PathVariable String userId){
+//        Page<List<String>> lis = listAllEmployeesUnderManager.getAllEmployeesUnderManager(userId,  0, 0);
+//        return lis;
+//    }
 
     @PreAuthorize("hasRole('MANAGER')")
-    @GetMapping("/displayUsers/{userId}")
+    @GetMapping("/displayUsers/{userId}/{searchtag}")
     public ResponseEntity<List<GetUserResponse>> getAllUsers(
             @PathVariable String userId,
+            @PathVariable String searchtag,
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "limit", defaultValue = "2") int limit) {
 
         // Convert page number to zero-based index
         if (page > 0) page -= 1;
 
-        Page<List<String>> users = hrService.getAllUsers(userId, page, limit);
+        Page<List<String>> users = listAllEmployeesUnderManager.getAllEmployeesUnderManager(userId, page, limit, searchtag);
         List<GetUserResponse> responses = new ArrayList<>();
 
         // Iterate over users.getContent()
@@ -96,11 +97,11 @@ public class ManagerController {
 
 
     @PreAuthorize("hasRole('MANAGER')")
-    @GetMapping("/displayUsers/count/{userId}")
+    @GetMapping("/displayUsers/count/{userId}/{searchtag}")
     public ResponseEntity<Map<String, Object>> getTotalUserCount(@PathVariable String userId,
+                                                                 @PathVariable String searchtag,
                                                                  @RequestParam(value = "limit", defaultValue = "2") int limit) {
-
-        long totalEmployees = listAllEmployeesUnderManagerDao.getTotalEmployeesCount(userId);
+        long totalEmployees = listAllEmployeesUnderManagerDao.getTotalEmployeesCount(userId,searchtag);
 
         // Calculate total pages
         int totalPages = (int) Math.ceil((double) totalEmployees / limit);

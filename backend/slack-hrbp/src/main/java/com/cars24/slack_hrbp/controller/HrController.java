@@ -174,16 +174,17 @@ public class HrController {
     }
 
     @PreAuthorize("hasRole('HR')")
-    @GetMapping("/displayUsers/{userId}")
+    @GetMapping("/displayUsers/{userId}/{searchtag}")
     public ResponseEntity<List<GetUserResponse>> getAllUsers(
             @PathVariable String userId,
+            @PathVariable String searchtag,
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "limit", defaultValue = "2") int limit) {
 
         // Convert page number to zero-based index
         if (page > 0) page -= 1;
 
-        Page<List<String>> users = hrService.getAllUsers(userId, page, limit);
+        Page<List<String>> users = hrService.getAllUsers(userId, page, limit, searchtag);
         List<GetUserResponse> responses = new ArrayList<>();
 
         // Iterate over users.getContent()
@@ -201,11 +202,12 @@ public class HrController {
     }
 
     @PreAuthorize("hasRole('HR')")
-    @GetMapping("/displayUsers/count/{userId}")
+    @GetMapping("/displayUsers/count/{userId}/{searchtag}")
     public ResponseEntity<Map<String, Object>> getTotalUserCount(@PathVariable String userId,
+                                                                 @PathVariable String searchtag,
                                                                  @RequestParam(value = "limit", defaultValue = "2") int limit) {
 
-        long totalEmployees = hrService.getTotalEmployeesCount();
+        long totalEmployees = hrService.getTotalEmployeesCount(searchtag);
 
         // Calculate total pages
         int totalPages = (int) Math.ceil((double) totalEmployees / limit);

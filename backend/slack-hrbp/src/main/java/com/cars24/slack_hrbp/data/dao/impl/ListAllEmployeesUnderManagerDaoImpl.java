@@ -9,6 +9,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.data.neo4j.core.Neo4jClient;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,26 +22,49 @@ import java.util.stream.Collectors;
 public class ListAllEmployeesUnderManagerDaoImpl{
 
     private final EmployeeRepository employeeRepository;
+    private final Neo4jClient neo4jClient;
 
-    public Page<List<String>> getAllEmployeesUnderManager(String userId, int page, int limit) {
-        Pageable pageable = PageRequest.of(page, limit);
+    public Page<List<String>> getAllEmployeesUnderManager(String userId, int page, int limit, String searchtag) {
+        String query;
 
-        Page<EmployeeEntity> employeePage = employeeRepository.findByManagerId(userId, pageable);
+        if (searchtag == null || searchtag.trim().isEmpty()) {
+            query = "MATCH (:Employee {userId: $userId})<-[:REPORTED_BY*]-(e:Employee) " +
+                    "RETURN e.userId, e.email, e.username SKIP $skip LIMIT $limit";
+        } else {
+            query = "MATCH (:Employee {userId: $userId})<-[:REPORTED_BY*]-(e:Employee) " +
+                    "WHERE TOLOWER(e.username) STARTS WITH TOLOWER($searchtag) " +
+                    "   OR TOLOWER(e.username) CONTAINS TOLOWER($searchtag) " +
+                    "RETURN e.userId, e.email, e.username SKIP $skip LIMIT $limit";
+        }
 
-        List<List<String>> employeeIds = employeePage.getContent().stream().map(bt -> {
-            List<String> inside = new ArrayList<>();
-            inside.add(bt.getUserId());
-            inside.add(bt.getEmail());
-            inside.add(bt.getUsername());
-            return inside;
-        }).collect(Collectors.toList());
+        var queryBuilder = neo4jClient.query(query)
+                .bind(userId).to("userId")
+                .bind(page * limit).to("skip")
+                .bind(limit).to("limit");
 
-        return new PageImpl<>(employeeIds, pageable, employeePage.getTotalElements());
+        if (searchtag != null && !searchtag.trim().isEmpty()) {
+            queryBuilder = queryBuilder.bind(searchtag).to("searchtag");
+        }
+
+        List<List<String>> results = queryBuilder.fetch().all()
+                .stream()
+                .map(record -> List.of(
+                        record.get("e.userId").toString(),
+                        record.get("e.email").toString(),
+                        record.get("e.username").toString()))
+                .toList();
+
+        return new PageImpl<>(results, PageRequest.of(page, limit), results.size());
     }
 
-    public long getTotalEmployeesCount(String userId) {
-        return employeeRepository.countByManagerId(userId);
+    public long getTotalEmployeesCount(String userId,String searchtag) {
+        if(searchtag==null || searchtag.trim().isEmpty()) {
+            return employeeRepository.countByManagerId(userId);
+        }
+        else{
+            return employeeRepository.countByManagerIdAndSearchtag(userId, searchtag);
+        }
+        // return employeeRepository.countByManagerId(userId);
     }
-
 
 }
