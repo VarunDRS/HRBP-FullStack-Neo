@@ -14,11 +14,11 @@ public interface HrService {
 
     String updateUser(EmployeeUpdateRequest employeeUpdateRequest);
 
-    Page<List<String>> getAllUsers(String userId, int page, int limit);
+    Page<List<String>> getAllUsers(String userId, int page, int limit,String searchtag);
 
 //    EmployeeEntity getUser(String userid);
 
-    public long getTotalEmployeesCount();
+    public long getTotalEmployeesCount(String searchtag);
 
 //    List<UserDto> paginatedUsers(int page, int limit);
 }

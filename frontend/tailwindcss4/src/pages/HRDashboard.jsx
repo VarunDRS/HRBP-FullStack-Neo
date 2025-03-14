@@ -80,18 +80,30 @@ const HRDashboard = () => {
     fetchData();
   }, [currentPage, pageSize]); // Dependencies include `currentPage`
   
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      const token = localStorage.getItem("Authorization");
+      const decodedToken = jwtDecode(token);
+      const userId = decodedToken.userId;
+      const role = decodedToken.roles?.[0];
+  
+      fetchTeamMembers(userId, token, role, searchQuery.trim() || "%20");
+    }, 1000);
+  
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
 
-  const fetchTeamMembers = async (userId, token, role) => {
+  const fetchTeamMembers = async (userId, token, role, search = "%20") => {
     setLoading(true);
     try {
       const response = await axios.get(
-        `http://localhost:8080/hr/displayUsers/${userId}`,
-        { 
+        `http://localhost:8080/hr/displayUsers/${userId}/${search.trim() || "%20"}`,
+        {
           headers: { Authorization: `Bearer ${token}` },
           params: {
-            page: currentPage,  // Ensure the correct page is requested
-            limit: pageSize
-          }
+            page: currentPage,
+            limit: pageSize,
+          },
         }
       );
   
@@ -101,10 +113,10 @@ const HRDashboard = () => {
           email: employee.email,
           name: employee.username,
           position: employee.position || "Employee",
-          department: employee.department || "General"
+          department: employee.department || "General",
         }));
   
-        setTeamMembers(formattedEmployees); 
+        setTeamMembers(formattedEmployees);
       }
     } catch (error) {
       console.error("Error fetching team members:", error);
@@ -121,12 +133,16 @@ const HRDashboard = () => {
         const userId = decodedToken.userId;
         
         const response = await axios.get(
-          `http://localhost:8080/hr/displayUsers/count/${userId}`,
+          `http://localhost:8080/hr/displayUsers/count/${userId}/${searchQuery.trim() || "%20"}`,
           {
             headers: { Authorization: `Bearer ${token}` },
-            params: { limit: pageSize },
+            params: { 
+              limit: pageSize
+            },
           }
         );
+
+        console.log("Total Pages:", response.data);
   
         if (response.data) {
           setTotalPages(response.data.totalPages);
@@ -136,8 +152,12 @@ const HRDashboard = () => {
       }
     };
   
-    fetchTotalPages();
-  }, [pageSize, currentPage]); 
+    const delayDebounceFn = setTimeout(() => {
+      fetchTotalPages(); // Fetch total pages when searchQuery changes
+    }, 1000);
+  
+    return () => clearTimeout(delayDebounceFn);
+  }, [pageSize, searchQuery]); 
   
   
 

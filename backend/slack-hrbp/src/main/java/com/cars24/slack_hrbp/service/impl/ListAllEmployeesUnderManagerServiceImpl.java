@@ -15,8 +15,8 @@ public class ListAllEmployeesUnderManagerServiceImpl{
 
     private final ListAllEmployeesUnderManagerDaoImpl listAllEmployeesUnderManagerDao;
 
-    public Page<List<String>> getAllEmployeesUnderManager(String userId, int page, int limit) {
-        return listAllEmployeesUnderManagerDao.getAllEmployeesUnderManager(userId, page, limit);
+    public Page<List<String>> getAllEmployeesUnderManager(String userId, int page, int limit,String searchtag) {
+        return listAllEmployeesUnderManagerDao.getAllEmployeesUnderManager(userId, page, limit,searchtag);
     }
 
 

@@ -108,13 +108,13 @@ public class HrServiceImpl implements HrService {
 //    }
 
     @Override
-    public Page<List<String>> getAllUsers(String userId, int page, int limit) {
-        return hrDao.getAllUsers(userId,page,limit);
+    public Page<List<String>> getAllUsers(String userId, int page, int limit, String searchtag) {
+        return hrDao.getAllUsers(userId,page,limit,searchtag);
     }
 
     @Override
-    public long getTotalEmployeesCount(){
-        return hrDao.getTotalEmployeesCount();
+    public long getTotalEmployeesCount(String searchtag){
+        return hrDao.getTotalEmployeesCount(searchtag);
     }
 
 }
