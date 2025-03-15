@@ -11,7 +11,7 @@ import LeaveRequestsPanel from "../components/LeaveRequestsPanel";
 import EmployeeInfoPanel from "../components/EmployeeInfoPanel";
 
 const ManagerDashboard = () => {
-  const [managerName, setManagerName] = useState("Alex Johnson");
+  const [managerName, setManagerName] = useState("");
   const [teamMembers, setTeamMembers] = useState([]);
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [monthFilter, setMonthFilter] = useState("");

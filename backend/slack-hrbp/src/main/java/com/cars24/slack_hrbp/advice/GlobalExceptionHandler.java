@@ -21,7 +21,7 @@ public class GlobalExceptionHandler {
     // Handle validation exceptions (for @Valid annotations in controllers)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse> handleValidationExceptions(MethodArgumentNotValidException exception) {
-        log.info("[handleValidationExceptions]");
+        log.info("[handleUserDoesntExistException] Caught Exception: {}", exception.getMessage(), exception);
 
         // Create an error map to capture validation errors
         Map<String, String> errorMap = new HashMap<>();
@@ -31,7 +31,7 @@ public class GlobalExceptionHandler {
 
         // Create a response for validation errors
         ApiResponse apiResponse = new ApiResponse();
-        apiResponse.setStatuscode(HttpStatus.BAD_REQUEST.value());
+        apiResponse.setStatuscode(400);
         apiResponse.setSuccess(false);
         apiResponse.setMessage("Validation failed");
         apiResponse.setService("AppValidation " + HttpStatus.BAD_REQUEST.value());
@@ -46,7 +46,7 @@ public class GlobalExceptionHandler {
         log.info("[handleUserServiceExceptions]");
 
         ApiResponse apiResponse = new ApiResponse();
-        apiResponse.setStatuscode(HttpStatus.BAD_REQUEST.value());
+        apiResponse.setStatuscode(400);
         apiResponse.setSuccess(false);
         apiResponse.setMessage(exception.getMessage());
         apiResponse.setService("AppUsr " + HttpStatus.BAD_REQUEST.value());
@@ -60,7 +60,7 @@ public class GlobalExceptionHandler {
         log.info("[handleUserDoesntExistException]");
 
         ApiResponse apiResponse = new ApiResponse();
-        apiResponse.setStatuscode(HttpStatus.BAD_REQUEST.value());
+        apiResponse.setStatuscode(400);
         apiResponse.setSuccess(false);
         apiResponse.setMessage(exception.getMessage());
         apiResponse.setService("HR Update Service " + HttpStatus.BAD_REQUEST.value());

@@ -69,6 +69,8 @@ public class HrDaoImpl implements HrDao {
         if (searchtag == null || searchtag.trim().isEmpty()) {
             // Fetch all employees without filtering
             query = "MATCH (e:Employee) RETURN e.userId, e.email, e.username SKIP $skip LIMIT $limit";
+//            query = "MATCH (:Employee {userId: $userId})<-[:REPORTED_BY*]-(e:Employee) " +
+//                    "RETURN e.userId, e.email, e.username SKIP $skip LIMIT $limit";
         } else {
             // Fetch employees matching search criteria
             query = "MATCH (e:Employee) " +
@@ -95,16 +97,6 @@ public class HrDaoImpl implements HrDao {
 
         return new PageImpl<>(results, PageRequest.of(page, limit), results.size());
     }
-
-
-
-//    @Override
-//    public Optional<EmployeeEntity> getUser(String userid) {
-//
-//        Optional<EmployeeEntity> employeeEntity=employeeRepository.findByUserId(userid);
-//
-//        return employeeEntity;
-//    }
 
     @Override
     public long getTotalEmployeesCount(String searchtag){

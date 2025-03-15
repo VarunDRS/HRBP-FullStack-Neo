@@ -1,6 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { motion } from "framer-motion";
+import * as THREE from "three";
 import { 
   User, 
   Mail, 
@@ -36,6 +38,267 @@ const CreateUserPage = () => {
   const [emailError, setEmailError] = useState('');
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const canvasRef = useRef(null);
+
+  // Set up Three.js space scene with car and rocket - copied from login page
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000
+    );
+    camera.position.z = 5;
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas: canvasRef.current,
+      alpha: true,
+      antialias: true
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    // Create stars background
+    const starGeometry = new THREE.BufferGeometry();
+const starCount = 1500;
+const starPositions = new Float32Array(starCount * 3);
+
+for (let i = 0; i < starCount * 3; i += 3) {
+  starPositions[i] = (Math.random() - 0.5) * 100;
+  starPositions[i + 1] = (Math.random() - 0.5) * 100;F
+  starPositions[i + 2] = (Math.random() - 0.5) * 100;
+}
+
+starGeometry.setAttribute(
+  'position',
+  new THREE.BufferAttribute(starPositions, 3)
+);
+
+const starMaterial = new THREE.PointsMaterial({
+  color: 0xffffff,
+  size: 0.3,  // Increased size for better visibility
+  transparent: true,
+  opacity: 0.8,  // Increased opacity
+  sizeAttenuation: true  // Make stars smaller when farther away
+});
+
+const stars = new THREE.Points(starGeometry, starMaterial);
+scene.add(stars);
+
+    // Add ambient light
+    const ambientLight = new THREE.AmbientLight(0x404040);
+    scene.add(ambientLight);
+
+    // Add directional light
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(5, 5, 5);
+    scene.add(directionalLight);
+
+    // Create a simple car model
+    const createCar = () => {
+      const car = new THREE.Group();
+      
+      // Car body
+      const bodyGeometry = new THREE.BoxGeometry(1, 0.4, 2);
+      const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0x3498db });
+      const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+      body.position.y = 0.2;
+      car.add(body);
+      
+      // Car top
+      const topGeometry = new THREE.BoxGeometry(0.8, 0.3, 1);
+      const topMaterial = new THREE.MeshPhongMaterial({ color: 0x2980b9 });
+      const top = new THREE.Mesh(topGeometry, topMaterial);
+      top.position.y = 0.55;
+      top.position.z = -0.2;
+      car.add(top);
+      
+      // Car wheels
+      const wheelGeometry = new THREE.CylinderGeometry(0.2, 0.2, 0.1, 16);
+      const wheelMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 });
+      
+      const wheelPositions = [
+        { x: -0.5, y: 0, z: 0.7 },
+        { x: 0.5, y: 0, z: 0.7 },
+        { x: -0.5, y: 0, z: -0.7 },
+        { x: 0.5, y: 0, z: -0.7 }
+      ];
+      
+      wheelPositions.forEach(position => {
+        const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+        wheel.position.set(position.x, position.y, position.z);
+        wheel.rotation.x = Math.PI / 2;
+        car.add(wheel);
+      });
+      
+      // Windows (transparent)
+      const windowMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0x84d2f6, 
+        transparent: true,
+        opacity: 0.7
+      });
+      
+      // Windshield
+      const windshieldGeometry = new THREE.PlaneGeometry(0.7, 0.3);
+      const windshield = new THREE.Mesh(windshieldGeometry, windowMaterial);
+      windshield.position.set(0, 0.55, 0.3);
+      windshield.rotation.x = Math.PI / 2 - 0.5;
+      car.add(windshield);
+      
+      // Headlights
+      const headlightGeometry = new THREE.CircleGeometry(0.1, 16);
+      const headlightMaterial = new THREE.MeshPhongMaterial({ color: 0xffff00, emissive: 0xffff00 });
+      
+      const leftHeadlight = new THREE.Mesh(headlightGeometry, headlightMaterial);
+      leftHeadlight.position.set(-0.3, 0.2, 1);
+      car.add(leftHeadlight);
+      
+      const rightHeadlight = new THREE.Mesh(headlightGeometry, headlightMaterial);
+      rightHeadlight.position.set(0.3, 0.2, 1);
+      car.add(rightHeadlight);
+      
+      // Scale and position the car
+      car.scale.set(0.3, 0.3, 0.3);
+      car.position.set(-5 + Math.random() * 3, Math.random() * 3 - 1.5, -5);
+      car.rotation.y = Math.PI / 2;
+      
+      return car;
+    };
+    
+    // Create a simple rocket model
+    const createRocket = () => {
+      const rocket = new THREE.Group();
+      
+      // Rocket body
+      const bodyGeometry = new THREE.CylinderGeometry(0.2, 0.2, 1.5, 16);
+      const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0xe74c3c });
+      const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+      rocket.add(body);
+      
+      // Rocket nose cone
+      const noseGeometry = new THREE.ConeGeometry(0.2, 0.5, 16);
+      const noseMaterial = new THREE.MeshPhongMaterial({ color: 0xc0392b });
+      const nose = new THREE.Mesh(noseGeometry, noseMaterial);
+      nose.position.y = 1;
+      rocket.add(nose);
+      
+      // Rocket fins
+      const finGeometry = new THREE.BoxGeometry(0.1, 0.5, 0.3);
+      const finMaterial = new THREE.MeshPhongMaterial({ color: 0xc0392b });
+      
+      const finPositions = [
+        { x: 0, y: -0.5, z: 0.3, ry: 0 },
+        { x: 0.3, y: -0.5, z: 0, ry: Math.PI / 2 },
+        { x: 0, y: -0.5, z: -0.3, ry: Math.PI },
+        { x: -0.3, y: -0.5, z: 0, ry: -Math.PI / 2 }
+      ];
+      
+      finPositions.forEach(position => {
+        const fin = new THREE.Mesh(finGeometry, finMaterial);
+        fin.position.set(position.x, position.y, position.z);
+        fin.rotation.y = position.ry;
+        rocket.add(fin);
+      });
+      
+      // Rocket windows (portholes)
+      const windowGeometry = new THREE.CircleGeometry(0.05, 16);
+      const windowMaterial = new THREE.MeshPhongMaterial({ color: 0xecf0f1 });
+      
+      const window1 = new THREE.Mesh(windowGeometry, windowMaterial);
+      window1.position.set(0, 0.3, 0.21);
+      window1.rotation.y = Math.PI;
+      rocket.add(window1);
+      
+      const window2 = new THREE.Mesh(windowGeometry, windowMaterial);
+      window2.position.set(0, 0, 0.21);
+      window2.rotation.y = Math.PI;
+      rocket.add(window2);
+      
+      const window3 = new THREE.Mesh(windowGeometry, windowMaterial);
+      window3.position.set(0, -0.3, 0.21);
+      window3.rotation.y = Math.PI;
+      rocket.add(window3);
+      
+      // Rocket exhaust fire
+      const exhaustGeometry = new THREE.ConeGeometry(0.2, 0.7, 16);
+      const exhaustMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0xf39c12, 
+        emissive: 0xf39c12,
+        transparent: true,
+        opacity: 0.8
+      });
+      const exhaust = new THREE.Mesh(exhaustGeometry, exhaustMaterial);
+      exhaust.position.y = -1.15;
+      exhaust.rotation.x = Math.PI;
+      rocket.add(exhaust);
+      
+      // Scale and position the rocket
+      rocket.scale.set(0.3, 0.3, 0.3);
+      rocket.position.set(5 + Math.random() * 3, Math.random() * 3 - 1.5, -5);
+      rocket.rotation.z = -Math.PI / 15;
+      
+      return rocket;
+    };
+    
+    const car = createCar();
+    const rocket = createRocket();
+    
+    scene.add(car);
+    scene.add(rocket);
+    
+    // Animation variables
+    const clock = new THREE.Clock();
+    
+    const animate = () => {
+      const elapsedTime = clock.getElapsedTime();
+      
+      // Rotate stars slowly
+      stars.rotation.y = elapsedTime * 0.05;
+      stars.rotation.x = elapsedTime * 0.025;
+      
+      // Animate car movement
+      car.position.x += 0.02;
+      if (car.position.x > 8) {
+        car.position.x = -8;
+        car.position.y = Math.random() * 3 - 1.5;
+      }
+      
+      // Add slight floating motion to car
+      car.position.y += Math.sin(elapsedTime * 2) * 0.003;
+      
+      // Animate rocket movement
+      rocket.position.x -= 0.03;
+      if (rocket.position.x < -8) {
+        rocket.position.x = 8;
+        rocket.position.y = Math.random() * 3 - 1.5;
+      }
+      
+      // Add slight floating motion to rocket
+      rocket.position.y += Math.sin(elapsedTime * 3) * 0.005;
+      
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    const handleResize = () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      renderer.dispose();
+      scene.clear();
+    };
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value, type, selectedOptions } = e.target;
@@ -97,283 +360,326 @@ const CreateUserPage = () => {
       navigate('/hr');
 
     } catch (error) {
-
+      console.log("Error response:", error.response);
+    
       if (error.response && error.response.data) {
         const { statuscode, message, data } = error.response.data;
-
-        if (statuscode === 400 && data) {
-          let errorMessages = Object.values(data).join('\n');
-          toast.error(`${errorMessages}`);
+    
+        if (statuscode === 400) {
+          toast.error(message);  // Show correct error message
         } else {
-          toast.error(`${message}`);
+          toast.error("Unexpected error occurred: " + message);
         }
+      } else if (error.message) {
+        toast.error("Error: " + error.message);
       } else {
-        toast.error('An unexpected error occurred. Please try again.');
+        toast.error("An unexpected error occurred. Please try again.");
       }
-    }
+    }    
   };
 
   const renderPasswordStrengthBar = () => {
-    const colors = ['bg-red-500', 'bg-yellow-500', 'bg-green-500', 'bg-green-700', 'bg-green-900'];
+    const colors = ['bg-red-500', 'bg-yellow-500', 'bg-green-500', 'bg-green-600', 'bg-green-700'];
+    const width = (passwordStrength / 5) * 100;
+    
     return (
-      <div className="flex space-x-1 mt-1">
-        {[0, 1, 2, 3, 4].map((index) => (
+      <div className="mt-2">
+        <div className="flex justify-between mb-1 text-xs">
+          <span>Password Strength</span>
+          <span>{['Weak', 'Fair', 'Good', 'Strong', 'Excellent'][passwordStrength - 1] || 'None'}</span>
+        </div>
+        <div className="w-full h-2 bg-gray-200 rounded-full">
           <div 
-            key={index} 
-            className={`h-1 flex-1 rounded-full ${
-              index < passwordStrength ? colors[index] : 'bg-gray-300'
-            }`}
-          />
-        ))}
+            className={`h-full rounded-full ${colors[passwordStrength - 1] || ''}`}
+            style={{ width: `${width}%` }}
+          ></div>
+        </div>
       </div>
     );
   };
 
-  const steps = [
-    {
-      title: 'Basic Information',
-      fields: ['userId', 'username', 'email']
-    },
-    {
-      title: 'Security',
-      fields: ['password', 'confirmPassword']
-    },
-    {
-      title: 'Role & Management',
-      fields: ['roles', 'managerName', 'managerId']
-    }
-  ];
-
-  const isStepValid = (step) => {
-    return steps[step].fields.every(field => 
-      formData[field] && (field !== 'password' || passwordStrength > 4)
+  const renderPasswordValidation = () => {
+    return (
+      <div className="mt-3 text-sm">
+        <div className="flex items-center mb-1">
+          {passwordValidations.length ? <Check size={16} className="text-green-500 mr-2" /> : <X size={16} className="text-red-500 mr-2" />}
+          <span>At least 8 characters</span>
+        </div>
+        <div className="flex items-center mb-1">
+          {passwordValidations.uppercase ? <Check size={16} className="text-green-500 mr-2" /> : <X size={16} className="text-red-500 mr-2" />}
+          <span>At least one uppercase letter</span>
+        </div>
+        <div className="flex items-center mb-1">
+          {passwordValidations.lowercase ? <Check size={16} className="text-green-500 mr-2" /> : <X size={16} className="text-red-500 mr-2" />}
+          <span>At least one lowercase letter</span>
+        </div>
+        <div className="flex items-center mb-1">
+          {passwordValidations.number ? <Check size={16} className="text-green-500 mr-2" /> : <X size={16} className="text-red-500 mr-2" />}
+          <span>At least one number</span>
+        </div>
+        <div className="flex items-center mb-1">
+          {passwordValidations.specialChar ? <Check size={16} className="text-green-500 mr-2" /> : <X size={16} className="text-red-500 mr-2" />}
+          <span>At least one special character</span>
+        </div>
+      </div>
     );
   };
 
   const nextStep = () => {
-    if (isStepValid(activeStep)) {
-      setActiveStep(Math.min(activeStep + 1, steps.length - 1));
-    } else {
-      alert('Please fill all required fields correctly');
-    }
+    setActiveStep(activeStep + 1);
   };
 
   const prevStep = () => {
-    setActiveStep(Math.max(activeStep - 1, 0));
+    setActiveStep(activeStep - 1);
+  };
+
+  const renderStepContent = () => {
+    switch (activeStep) {
+      case 0:
+        return (
+          <div className="space-y-4">
+            <div className="mb-4">
+              <label htmlFor="userId" className="block text-sm font-medium text-gray-700 mb-1">
+                User ID
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-3 text-gray-400">
+                  <User size={18} />
+                </span>
+                <input
+                  type="text"
+                  id="userId"
+                  name="userId"
+                  value={formData.userId}
+                  onChange={handleInputChange}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter user ID"
+                  required
+                />
+              </div>
+            </div>
+            <div className="mb-4">
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                Username
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-3 text-gray-400">
+                  <User size={18} />
+                </span>
+                <input
+                  type="text"
+                  id="username"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter username"
+                  required
+                />
+              </div>
+            </div>
+            <div className="mb-4">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-3 text-gray-400">
+                  <Mail size={18} />
+                </span>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className={`w-full pl-10 pr-3 py-2 border ${emailError ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  placeholder="Enter email address"
+                  required
+                />
+              </div>
+              {emailError && <p className="text-red-500 text-xs mt-1">{emailError}</p>}
+            </div>
+          </div>
+        );
+      case 1:
+        return (
+          <div className="space-y-4">
+            <div className="mb-4">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-3 text-gray-400">
+                  <Lock size={18} />
+                </span>
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter password"
+                  required
+                />
+              </div>
+              {renderPasswordStrengthBar()}
+              {renderPasswordValidation()}
+            </div>
+            <div className="mb-4">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-3 text-gray-400">
+                  <Lock size={18} />
+                </span>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  className={`w-full pl-10 pr-3 py-2 border ${
+                    formData.confirmPassword && formData.password !== formData.confirmPassword
+                      ? 'border-red-500'
+                      : 'border-gray-300'
+                  } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  placeholder="Confirm password"
+                  required
+                />
+              </div>
+              {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                <p className="text-red-500 text-xs mt-1">Passwords do not match</p>
+              )}
+            </div>
+          </div>
+        );
+      case 2:
+        return (
+          <div className="space-y-4">
+            <div className="mb-4">
+              <label htmlFor="roles" className="block text-sm font-medium text-gray-700 mb-1">
+                Roles
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-3 text-gray-400">
+                  <Shield size={18} />
+                </span>
+                <select
+                  id="roles"
+                  name="roles"
+                  multiple
+                  value={formData.roles}
+                  onChange={handleInputChange}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="USER">Employee</option>
+                  <option value="MANAGER">Manager</option>
+                  <option value="HR">HR</option>
+                </select>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Hold Ctrl (or Cmd) to select multiple roles</p>
+            </div>
+            <div className="mb-4">
+              <label htmlFor="managerId" className="block text-sm font-medium text-gray-700 mb-1">
+                Manager ID
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-3 text-gray-400">
+                  <User size={18} />
+                </span>
+                <input
+                  type="text"
+                  id="managerId"
+                  name="managerId"
+                  value={formData.managerId}
+                  onChange={handleInputChange}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter manager ID"
+                />
+              </div>
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
-    <div className="min-h-screen w-full flex justify-center bg-gradient-to-br from-blue-100 to-indigo-200 fixed inset-0">
-      <div className="relative z-10 flex flex-col justify-center items-center w-full max-w-2xl p-8">
-        <div className="bg-white/20 backdrop-blur-2xl rounded-2xl shadow-2xl w-full p-10 border border-white/30">
-          {/* Stepper */}
-          <div className="flex justify-between mb-8">
-            {steps.map((step, index) => (
-              <div 
-                key={index} 
-                className={`flex-1 text-center py-2 mx-2 rounded-full transition-all duration-300 ${
-                  activeStep === index 
-                    ? 'bg-blue-600 text-white' 
-                    : activeStep > index 
-                      ? 'bg-green-500 text-white' 
-                      : 'bg-gray-200 text-gray-500'
-                }`}
-              >
-                {step.title}
-              </div>
-            ))}
+    <div className="min-h-screen flex flex-col relative overflow-hidden">
+      <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full -z-10" />
+      
+      <div className="flex-grow flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white bg-opacity-90 p-8 rounded-lg shadow-xl w-full max-w-lg"
+        >
+          <div className="mb-6 text-center">
+            <h1 className="text-2xl font-bold text-gray-800 flex items-center justify-center">
+              <UserPlus className="mr-2" /> Create New User
+            </h1>
+            <p className="text-gray-600 mt-2">
+              Enter user details to create a new account
+            </p>
           </div>
 
-          {/* Form Content */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {activeStep === 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="flex items-center text-sm font-medium text-blue-900 mb-2">
-                    <User className="mr-2 text-blue-600" size={18} />
-                    User ID
-                  </label>
-                  <input
-                    type="text"
-                    name="userId"
-                    value={formData.userId}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-3 bg-white/50 border border-blue-300 rounded-xl text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="flex items-center text-sm font-medium text-blue-900 mb-2">
-                    <UserPlus className="mr-2 text-blue-600" size={18} />
-                    Username
-                  </label>
-                  <input
-                    type="text"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-3 bg-white/50 border border-blue-300 rounded-xl text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="flex items-center text-sm font-medium text-blue-900 mb-2">
-                    <Mail className="mr-2 text-blue-600" size={18} />
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-3 bg-white/50 border border-blue-300 rounded-xl text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-            )}
-
-            {activeStep === 1 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="flex items-center text-sm font-medium text-blue-900 mb-2">
-                    <Lock className="mr-2 text-blue-600" size={18} />
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-3 bg-white/50 border border-blue-300 rounded-xl text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  {renderPasswordStrengthBar()}
-                  <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                    <span className={`flex items-center ${passwordValidations.length ? 'text-green-600' : 'text-gray-400'}`}>
-                      {passwordValidations.length ? <Check size={12} className="mr-1" /> : <X size={12} className="mr-1" />}
-                      8+ Characters
-                    </span>
-                    <span className={`flex items-center ${passwordValidations.uppercase ? 'text-green-600' : 'text-gray-400'}`}>
-                      {passwordValidations.uppercase ? <Check size={12} className="mr-1" /> : <X size={12} className="mr-1" />}
-                      Uppercase Letter
-                    </span>
-                    <span className={`flex items-center ${passwordValidations.lowercase ? 'text-green-600' : 'text-gray-400'}`}>
-                      {passwordValidations.lowercase ? <Check size={12} className="mr-1" /> : <X size={12} className="mr-1" />}
-                      Lowercase Letter
-                    </span>
-                    <span className={`flex items-center ${passwordValidations.number ? 'text-green-600' : 'text-gray-400'}`}>
-                      {passwordValidations.number ? <Check size={12} className="mr-1" /> : <X size={12} className="mr-1" />}
-                      Number
-                    </span>
-                    <span className={`flex items-center ${passwordValidations.specialChar ? 'text-green-600' : 'text-gray-400'}`}>
-                      {passwordValidations.specialChar ? <Check size={12} className="mr-1" /> : <X size={12} className="mr-1" />}
-                      Special Character
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <label className="flex items-center text-sm font-medium text-blue-900 mb-2">
-                    <Lock className="mr-2 text-blue-600" size={18} />
-                    Confirm Password
-                  </label>
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-3 bg-white/50 border border-blue-300 rounded-xl text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-            )}
-
-            {activeStep === 2 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="flex items-center text-sm font-medium text-blue-900 mb-2">
-                    <Shield className="mr-2 text-blue-600" size={18} />
-                    Role
-                  </label>
-                  <select
-                    name="roles"
-                    value={formData.roles}
-                    onChange={handleInputChange}
-                    required
-                    multiple
-                    className="w-full px-4 py-3 bg-white/50 border border-blue-300 rounded-xl text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          <form onSubmit={handleSubmit}>
+            <div className="flex justify-between mb-6">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="flex items-center">
+                  <div
+                    className={`rounded-full h-8 w-8 flex items-center justify-center border-2 ${
+                      activeStep >= index ? 'bg-blue-500 border-blue-500 text-white' : 'border-gray-300 text-gray-500'
+                    }`}
                   >
-                    <option value="HR">HR</option>
-                    <option value="MANAGER">Manager</option>
-                    <option value="EMPLOYEE">Employee</option>
-                  </select>
+                    {index + 1}
+                  </div>
+                  {index < 2 && (
+                    <div 
+                      className={`h-1 w-10 ${activeStep > index ? 'bg-blue-500' : 'bg-gray-300'}`}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
 
-                </div>
-                <div>
-                  <label className="flex items-center text-sm font-medium text-blue-900 mb-2">
-                    <UserPlus className="mr-2 text-blue-600" size={18} />
-                    Manager Name
-                  </label>
-                  <input
-                    type="text"
-                    name="managerName"
-                    value={formData.managerName}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-white/50 border border-blue-300 rounded-xl text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="flex items-center text-sm font-medium text-blue-900 mb-2">
-                    <UserPlus className="mr-2 text-blue-600" size={18} />
-                    Manager ID
-                  </label>
-                  <input
-                    type="text"
-                    name="managerId"
-                    value={formData.managerId}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-white/50 border border-blue-300 rounded-xl text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-            )}
+            {renderStepContent()}
 
-            {/* Navigation Buttons */}
-            <div className="flex justify-between mt-8">
+            <div className="flex justify-between mt-6">
               {activeStep > 0 && (
                 <button
                   type="button"
                   onClick={prevStep}
-                  className="flex items-center bg-gray-200 text-gray-800 px-6 py-3 rounded-xl hover:bg-gray-300 transition-colors"
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition duration-200"
                 >
-                  Previous
+                  Back
                 </button>
               )}
               
-              {activeStep < steps.length - 1 && (
+              {activeStep < 2 ? (
                 <button
                   type="button"
                   onClick={nextStep}
-                  className="ml-auto flex items-center bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors"
+                  className="ml-auto px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-200 flex items-center"
                 >
-                  Next
-                  <ChevronRight className="ml-2" size={18} />
+                  Next <ChevronRight size={16} className="ml-1" />
                 </button>
-              )}
-              
-              {activeStep === steps.length - 1 && (
+              ) : (
                 <button
                   type="submit"
-                  className="ml-auto flex items-center bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition-colors"
+                  className="ml-auto px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-200 flex items-center"
                 >
-                  Create User
-                  <UserPlus className="ml-2" size={18} />
+                  Create User <Check size={16} className="ml-1" />
                 </button>
               )}
             </div>
           </form>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
