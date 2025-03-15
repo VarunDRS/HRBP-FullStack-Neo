@@ -49,7 +49,7 @@ public class HrServiceImpl implements HrService {
                 manager = managerOpt.get();
                 managerName = manager.getUsername();
             } else {
-                throw new RuntimeException("Manager not found");
+                throw new UserServiceException("Manager not found");
             }
         }
 

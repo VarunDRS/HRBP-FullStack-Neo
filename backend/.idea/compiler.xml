@@ -16,11 +16,13 @@
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar" />
         </processorPath>
         <module name="slack-hrbp" />
+        <module name="mobile-app-ws" />
       </profile>
     </annotationProcessing>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="mobile-app-ws" options="-parameters" />
       <module name="slack-hrbp" options="-parameters" />
     </option>
   </component>
