@@ -37,7 +37,7 @@ const EmployeeInfoPanel = ({
         </h2>
         <button 
           onClick={showMonthCalender}
-          className="px-4 py-1 text-sm text-white bg-green-600 rounded-md hover:bg-green-700 transition">
+          className="px-4 py-1 text-sm text-white bg-purple-400 rounded-md hover:bg-pink-700 transition">
           View Month
         </button>
       </div>
@@ -79,7 +79,7 @@ const EmployeeInfoPanel = ({
 
       {/* Pagination Controls */}
       <div className="flex items-center justify-between mt-4 text-gray-700">
-        <div className="flex items-center">
+        {/* <div className="flex items-center">
           <label htmlFor="pageSize" className="mr-2 text-sm">Show:</label>
           <select 
             id="pageSize" 
@@ -92,9 +92,9 @@ const EmployeeInfoPanel = ({
             <option value="6">6</option>
             <option value="8">8</option>
           </select>
-        </div>
+        </div> */}
         
-        <div className="flex items-center">
+        {/* <div className="flex items-center">
           <span className="text-sm mr-4">
             Page {currentPage} of {totalPages || 1}
           </span>
@@ -114,7 +114,7 @@ const EmployeeInfoPanel = ({
               <ChevronRight size={20} />
             </button>
           </div>
-        </div>
+        </div> */}
       </div>
     </>
   );
