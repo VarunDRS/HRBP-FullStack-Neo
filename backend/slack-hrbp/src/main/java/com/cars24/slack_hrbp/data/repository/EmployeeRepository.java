@@ -96,4 +96,9 @@ public interface EmployeeRepository extends Neo4jRepository<EmployeeEntity, Stri
             "RETURN COUNT(e)")
     long countBySearchtag(@Param("searchtag") String searchtag);
 
+    @Query(value = "MATCH (e:Employee)-[:REPORTED_BY]->(m:Employee {userId: $managerId}) RETURN e",
+            countQuery = "MATCH (e:Employee)-[:REPORTED_BY]->(m:Employee {userId: $managerId}) RETURN COUNT(e)")
+    List<EmployeeEntity> findByManagerId(@Param("managerId") String managerId);
+
+
 }

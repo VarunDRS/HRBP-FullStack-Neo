@@ -31,17 +31,17 @@ public class ManagerController {
     private final ListAllEmployeesUnderManagerDaoImpl listAllEmployeesUnderManagerDao;
     private final HrServiceImpl hrService;
 
-    @PreAuthorize("hasrole('MANAGER')")
-    @GetMapping("bymonth")
-    public ResponseEntity<Map<String, Map<String, String>>> getByMonth(@RequestParam String monthYear) {
-        try {
-            Map<String, Map<String, String>> reportData = monthBasedService.generateAttendanceReport(monthYear);
-            return ResponseEntity.ok().body(reportData);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Error generating report: " + e.getMessage());
-        }
-    }
+//    @PreAuthorize("hasrole('MANAGER')")
+//    @GetMapping("bymonth")
+//    public ResponseEntity<Map<String, Map<String, String>>> getByMonth(@RequestParam String monthYear) {
+//        try {
+//            Map<String, Map<String, String>> reportData = monthBasedService.generateAttendanceReport(monthYear);
+//            return ResponseEntity.ok().body(reportData);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            throw new RuntimeException("Error generating report: " + e.getMessage());
+//        }
+//    }
 
     @PreAuthorize("hasRole('MANAGER')")
     @GetMapping("/{userid}/{month}")
@@ -112,6 +112,54 @@ public class ManagerController {
         response.put("totalPages", totalPages);
 
         return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasRole('MANAGER')")
+    @GetMapping("/bymonth")
+    public ResponseEntity<Map<String, Object>> getByMonthandManagerid2(
+            @RequestParam String monthYear,@RequestParam String userId,
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "limit", defaultValue = "5") int limit) {
+
+        // Convert to zero-based index for pagination
+        if (page > 0) page -= 1;
+
+        try {
+            // Fetch all data first
+            Map<String, Map<String, String>> allReportData = monthBasedService.generateAttendanceReport2(monthYear,userId,page,limit);
+            System.out.println("In Manager controller from Service Layer : "+ allReportData);
+            // Convert to a list for pagination
+            List<Map.Entry<String, Map<String, String>>> allUsersList = new ArrayList<>(allReportData.entrySet());
+
+            // Paginate based on employees, not individual records
+            int totalRecords = allUsersList.size();
+            int startIndex = page * limit;
+            int endIndex = Math.min(startIndex + limit, totalRecords);
+
+            // Extract paginated data
+            Map<String, Map<String, String>> paginatedReportData = new LinkedHashMap<>();
+            for (int i = startIndex; i < endIndex; i++) {
+                Map.Entry<String, Map<String, String>> entry = allUsersList.get(i);
+                paginatedReportData.put(entry.getKey(), entry.getValue());
+            }
+
+            // Calculate total pages based on employees
+            int totalPages = (int) Math.ceil((double) totalRecords / limit);
+
+            // Prepare response
+            Map<String, Object> response = new HashMap<>();
+            response.put("reportData", paginatedReportData);
+            response.put("totalPages", totalPages);
+            response.put("currentPage", page + 1);
+            response.put("pageSize", limit);
+            response.put("totalRecords", totalRecords);
+            System.out.println("The Response in controller is : "+response);
+
+            return ResponseEntity.ok().body(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error generating report: " + e.getMessage());
+        }
     }
 
 
