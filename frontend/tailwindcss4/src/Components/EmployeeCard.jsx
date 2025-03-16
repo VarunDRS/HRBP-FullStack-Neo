@@ -23,7 +23,7 @@ const EmployeeCard = ({ employee }) => {
   return (
     <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
       <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white">
+        <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-white">
           <span className="text-lg font-bold">
             {employee.name
               .split(" ")
@@ -41,14 +41,14 @@ const EmployeeCard = ({ employee }) => {
       <div className="mt-3 flex space-x-2">
         <button
           onClick={viewCalender}
-          className="px-3 py-1 text-xs bg-blue-500 hover:bg-blue-700 rounded text-white"
+          className="px-3 py-1 text-xs bg-blue-400 hover:bg-blue-700 rounded text-white"
         >
           View Calendar
         </button>
         {role !== "ROLE_MANAGER" && (
           <button
             onClick={handleUpdateClick}
-            className="px-3 py-1 text-xs bg-purple-500 hover:bg-purple-700 rounded text-white"
+            className="px-3 py-1 text-xs bg-green-400 hover:bg-green-700 rounded text-white"
           >
             Update Details
           </button>

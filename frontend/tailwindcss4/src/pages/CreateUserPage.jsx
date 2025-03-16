@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { motion } from "framer-motion";
 import * as THREE from "three";
+
 import { 
   User, 
   Mail, 
@@ -68,7 +69,7 @@ const starPositions = new Float32Array(starCount * 3);
 
 for (let i = 0; i < starCount * 3; i += 3) {
   starPositions[i] = (Math.random() - 0.5) * 100;
-  starPositions[i + 1] = (Math.random() - 0.5) * 100;F
+  starPositions[i + 1] = (Math.random() - 0.5) * 100;
   starPositions[i + 2] = (Math.random() - 0.5) * 100;
 }
 
