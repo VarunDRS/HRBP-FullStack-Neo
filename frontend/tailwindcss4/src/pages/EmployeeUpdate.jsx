@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import axios from "axios";
 
 const EmployeeDetails = () => {
   const { id } = useParams();
@@ -8,10 +9,10 @@ const EmployeeDetails = () => {
   const [employee, setEmployee] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const token = localStorage.getItem("Authorization");
 
+  // Fetch employee details on component mount
   useEffect(() => {
     if (!id) {
       setError("Employee ID is missing.");
@@ -49,53 +50,103 @@ const EmployeeDetails = () => {
       });
   }, [id, token]);
 
+  // Handle input changes
   const handleChange = (e) => {
     setEmployee({ ...employee, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = () => {
+  // Handle manager update
+  const handleManagerUpdate = async () => {
+    try {
+      // Log the userId and newManagerId for debugging
+      console.log("Updating manager for userId:", id);
+      console.log("New manager ID:", employee.managerId);
+
+      if (!id || !employee.managerId) {
+        throw new Error("User ID or Manager ID is missing.");
+      }
+
+      const response = await axios.put(
+        `http://localhost:8080/hr/updateManager/${id}/${employee.managerId}`,
+        null, // No request body needed
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      toast.success("Manager updated successfully!");
+    } catch (error) {
+      console.error("Error updating manager:", error);
+      toast.error("Failed to update manager");
+    }
+  };
+
+  // Handle role update
+  const handleRoleUpdate = async () => {
+    try {
+      // Ensure the role is selected
+      if (!employee.role || employee.role.trim() === "") {
+        throw new Error("Role is required.");
+      }
+
+      // Prepare the request body
+      const requestBody = {
+        userId: id, // Use userId from useParams
+        roles: [employee.role], // Wrap the role in an array
+      };
+
+      // Log the request body for debugging
+      console.log("Updating roles with request body:", requestBody);
+
+      // Make the PUT request
+      const response = await axios.put(
+        "http://localhost:8080/hr/updaterole",
+        requestBody,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Log the response for debugging
+      console.log("Role update response:", response.data);
+
+      toast.success("Role updated successfully!");
+    } catch (error) {
+      console.error("Error updating roles:", error);
+      toast.error("Failed to update roles");
+    }
+  };
+
+  // Handle form submission
+  const handleSubmit = async () => {
     setIsSubmitting(true);
     setError(null);
-  
-    fetch(`http://localhost:8080/hr/update`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(employee),
-    })
-      .then(async (response) => {
-        const contentType = response.headers.get("content-type");
-        if (!response.ok) {
-          let errorMessage = "Failed to update employee details.";
-          
-          if (contentType && contentType.includes("application/json")) {
-            const errorData = await response.json();
-            errorMessage = errorData.message || errorMessage;
-          } else {
-            errorMessage = await response.text();
-          }
-  
-          throw new Error(errorMessage);
-        }
-  
-        return contentType && contentType.includes("application/json") ? response.json() : response.text();
-      })
-      .then(() => {
-        toast.success("Employee details updated successfully!");
-        navigate("/hr");
-      })
-      .catch((error) => {
-        console.error("Error updating employee details:", error);
-        toast.error(error.message); 
-      })
-      .finally(() => {
-        setIsSubmitting(false);
-      });
-  };
-  
 
+    try {
+      // Update Manager if a new manager ID is provided
+      if (employee.managerId && employee.managerId.trim() !== "") {
+        await handleManagerUpdate();
+      }
+
+      // Update Role if a new role is selected
+      if (employee.role && employee.role.trim() !== "") {
+        await handleRoleUpdate();
+      }
+
+      // Navigate back to HR dashboard if at least one update is successful
+      navigate("/hr");
+    } catch (error) {
+      console.error("Error updating employee details:", error);
+      toast.error("Failed to update employee details");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Loading state
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
@@ -107,6 +158,7 @@ const EmployeeDetails = () => {
     );
   }
 
+  // Error state
   if (error && !employee) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
@@ -136,7 +188,7 @@ const EmployeeDetails = () => {
             Edit Employee Details
           </h2>
         </div>
-        
+
         <div className="p-6">
           <div className="grid gap-6">
             <div>
@@ -144,7 +196,7 @@ const EmployeeDetails = () => {
               <input
                 type="text"
                 name="userId"
-                value={employee.userId}
+                value={id}
                 className="w-full p-2 border border-gray-300 rounded-md bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 readOnly
               />
@@ -170,35 +222,13 @@ const EmployeeDetails = () => {
                 onChange={handleChange}
                 className="w-full p-2 border border-gray-300 rounded-md text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
+                <option value="">Select a role</option>
                 <option value="ROLE_HR">ROLE_HR</option>
                 <option value="ROLE_MANAGER">ROLE_MANAGER</option>
                 <option value="ROLE_EMPLOYEE">ROLE_EMPLOYEE</option>
               </select>
             </div>
-
           </div>
-
-          {successMessage && (
-            <div className="mt-6 p-3 bg-green-50 border border-green-200 rounded-md">
-              <p className="text-green-600 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                {successMessage}
-              </p>
-            </div>
-          )}
-
-          {error && employee && (
-            <div className="mt-6 p-3 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-red-600 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                {error}
-              </p>
-            </div>
-          )}
 
           <div className="mt-6 flex items-center justify-end space-x-3">
             <button
