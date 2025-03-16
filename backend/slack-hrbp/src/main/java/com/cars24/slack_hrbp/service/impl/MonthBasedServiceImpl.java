@@ -1,5 +1,6 @@
 package com.cars24.slack_hrbp.service.impl;
 
+import com.cars24.slack_hrbp.data.dao.impl.MonthBasedDaoImpl;
 import com.cars24.slack_hrbp.data.entity.AttendanceEntity;
 import com.cars24.slack_hrbp.data.repository.AttendanceRepository;
 import org.apache.poi.ss.usermodel.*;
@@ -12,12 +13,14 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class MonthBasedServiceImpl {
 
     @Autowired
     private AttendanceRepository attendanceRepository;
+    private MonthBasedDaoImpl monthBasedDao;
 
     public Map<String, Map<String, String>> generateAttendanceReport(String monthYear) throws IOException, ParseException {
         // Fetch data for the given month and year
@@ -56,11 +59,15 @@ public class MonthBasedServiceImpl {
                 return "P";
             case "Unplanned Leave":
                 return "U";
+            case "UnPlanned Leave":
+                return "U";
             case "Planned Leave (Second Half)":
                 return "P*";
             case "Sick Leave":
                 return "S";
             case "Work From Home":
+                return "W";
+            case "WFH":
                 return "W";
             case "Travelling to HQ":
                 return "T";
@@ -116,5 +123,41 @@ public class MonthBasedServiceImpl {
         }
 
         workbook.close();
+    }
+
+    public Map<String, Map<String, String>> generateAttendanceReport2(String monthYear, String managerId, int page, int limit) throws IOException, ParseException {
+        // Fetch all attendance data for the month
+        List<AttendanceEntity> attendanceList = attendanceRepository.findByDateStartingWith(monthYear);
+        System.out.println("In Service layer from Repository : " + attendanceList);
+
+        // Fetch employees under the manager
+        List<String> employeeIds = monthBasedDao.getAllEmployeesUnderManager(managerId);
+        System.out.println("In Service Layer from Dao : " + employeeIds);
+
+        // Optimize lookup by using a HashSet
+        Set<String> employeeIdSet = new HashSet<>(employeeIds);
+
+        // Filter attendance records
+        List<AttendanceEntity> filteredAttendance = attendanceList.stream()
+                .filter(attendance -> employeeIdSet.contains(attendance.getUserid()))
+                .collect(Collectors.toList());
+
+        // Prepare the user-wise attendance map
+        Map<String, Map<String, String>> userAttendanceMap = new HashMap<>();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        SimpleDateFormat displayFormat = new SimpleDateFormat("MMM-dd");
+
+        for (AttendanceEntity attendance : filteredAttendance) {
+            String username = attendance.getUsername();
+            String formattedDate = displayFormat.format(dateFormat.parse(attendance.getDate()));
+            String leaveType = attendance.getType(); //
+
+            // Ensure user entry exists and store leave type
+            userAttendanceMap.computeIfAbsent(username, k -> new HashMap<>()).put(formattedDate, leaveType);
+        }
+
+        // Log and return the final map
+        System.out.println("Service layer returning Data : " + userAttendanceMap);
+        return userAttendanceMap;
     }
 }
