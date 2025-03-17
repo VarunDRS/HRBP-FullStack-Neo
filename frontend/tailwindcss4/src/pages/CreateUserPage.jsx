@@ -80,7 +80,7 @@ starGeometry.setAttribute(
 
 const starMaterial = new THREE.PointsMaterial({
   color: 0xffffff,
-  size: 0.3,  // Increased size for better visibility
+  size: 0.1,  // Increased size for better visibility
   transparent: true,
   opacity: 0.8,  // Increased opacity
   sizeAttenuation: true  // Make stars smaller when farther away
@@ -256,28 +256,24 @@ scene.add(stars);
     const animate = () => {
       const elapsedTime = clock.getElapsedTime();
       
-      // Rotate stars slowly
+      // Star rotation
       stars.rotation.y = elapsedTime * 0.05;
       stars.rotation.x = elapsedTime * 0.025;
       
-      // Animate car movement
+      // Car movement
       car.position.x += 0.02;
       if (car.position.x > 8) {
         car.position.x = -8;
         car.position.y = Math.random() * 3 - 1.5;
       }
-      
-      // Add slight floating motion to car
       car.position.y += Math.sin(elapsedTime * 2) * 0.003;
       
-      // Animate rocket movement
+      // Rocket movement
       rocket.position.x -= 0.03;
       if (rocket.position.x < -8) {
         rocket.position.x = 8;
         rocket.position.y = Math.random() * 3 - 1.5;
       }
-      
-      // Add slight floating motion to rocket
       rocket.position.y += Math.sin(elapsedTime * 3) * 0.005;
       
       renderer.render(scene, camera);
@@ -453,7 +449,7 @@ scene.add(stars);
                   name="userId"
                   value={formData.userId}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full text-white pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter user ID"
                   required
                 />
@@ -473,7 +469,7 @@ scene.add(stars);
                   name="username"
                   value={formData.username}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full text-white pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter username"
                   required
                 />
@@ -493,7 +489,7 @@ scene.add(stars);
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className={`w-full pl-10 pr-3 py-2 border ${emailError ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  className={`w-full text-white pl-10 pr-3 py-2 border ${emailError ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   placeholder="Enter email address"
                   required
                 />
@@ -519,7 +515,7 @@ scene.add(stars);
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full text-white pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter password"
                   required
                 />
@@ -528,7 +524,7 @@ scene.add(stars);
               {renderPasswordValidation()}
             </div>
             <div className="mb-4">
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-1">
                 Confirm Password
               </label>
               <div className="relative">
@@ -541,7 +537,7 @@ scene.add(stars);
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
-                  className={`w-full pl-10 pr-3 py-2 border ${
+                  className={`w-full text-white pl-10 pr-3 py-2 border ${
                     formData.confirmPassword && formData.password !== formData.confirmPassword
                       ? 'border-red-500'
                       : 'border-gray-300'
@@ -560,7 +556,7 @@ scene.add(stars);
         return (
           <div className="space-y-4">
             <div className="mb-4">
-              <label htmlFor="roles" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="roles" className="block text-sm font-medium text-gray-300 mb-1">
                 Roles
               </label>
               <div className="relative">
@@ -573,7 +569,7 @@ scene.add(stars);
                   multiple
                   value={formData.roles}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full text-white pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   <option value="USER">Employee</option>
@@ -584,7 +580,7 @@ scene.add(stars);
               <p className="text-xs text-gray-500 mt-1">Hold Ctrl (or Cmd) to select multiple roles</p>
             </div>
             <div className="mb-4">
-              <label htmlFor="managerId" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="managerId" className="block text-sm font-medium text-gray-300 mb-1">
                 Manager ID
               </label>
               <div className="relative">
@@ -597,7 +593,7 @@ scene.add(stars);
                   name="managerId"
                   value={formData.managerId}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full text-white pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter manager ID"
                 />
               </div>
@@ -610,21 +606,21 @@ scene.add(stars);
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden">
-      <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full -z-10" />
+    <div className="relative min-h-screen w-full bg-gray-900 flex flex-col justify-center items-center overflow-hidden">
+      <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full z-0" />
       
       <div className="flex-grow flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="bg-white bg-opacity-90 p-8 rounded-lg shadow-xl w-full max-w-lg"
-        >
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-gray-800 bg-opacity-80 backdrop-blur-sm rounded-lg shadow-xl p-8 w-full max-w-lg"
+          >
           <div className="mb-6 text-center">
-            <h1 className="text-2xl font-bold text-gray-800 flex items-center justify-center">
+            <h1 className="text-2xl font-bold text-white flex items-center justify-center">
               <UserPlus className="mr-2" /> Create New User
             </h1>
-            <p className="text-gray-600 mt-2">
+            <p className="text-gray-300 mt-2">
               Enter user details to create a new account
             </p>
           </div>
@@ -635,14 +631,14 @@ scene.add(stars);
                 <div key={index} className="flex items-center">
                   <div
                     className={`rounded-full h-8 w-8 flex items-center justify-center border-2 ${
-                      activeStep >= index ? 'bg-blue-500 border-blue-500 text-white' : 'border-gray-300 text-gray-500'
+                      activeStep >= index ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-600 text-gray-400'
                     }`}
                   >
                     {index + 1}
                   </div>
                   {index < 2 && (
                     <div 
-                      className={`h-1 w-10 ${activeStep > index ? 'bg-blue-500' : 'bg-gray-300'}`}
+                      className={`h-1 w-10 ${activeStep > index ? 'bg-blue-600' : 'bg-gray-600'}`}
                     />
                   )}
                 </div>
@@ -654,26 +650,26 @@ scene.add(stars);
             <div className="flex justify-between mt-6">
               {activeStep > 0 && (
                 <button
-                  type="button"
-                  onClick={prevStep}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition duration-200"
-                >
-                  Back
-                </button>
+                type="button"
+                onClick={prevStep}
+                className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition flex items-center"
+              >
+                Back
+              </button>
               )}
               
               {activeStep < 2 ? (
                 <button
-                  type="button"
-                  onClick={nextStep}
-                  className="ml-auto px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-200 flex items-center"
-                >
-                  Next <ChevronRight size={16} className="ml-1" />
-                </button>
+                type="button"
+                onClick={nextStep}
+                className="ml-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center"
+              >
+                Next <ChevronRight size={16} className="ml-1" />
+              </button>
               ) : (
                 <button
                   type="submit"
-                  className="ml-auto px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-200 flex items-center"
+                  className="ml-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center"
                 >
                   Create User <Check size={16} className="ml-1" />
                 </button>
