@@ -57,13 +57,18 @@ public class HrController {
         return ResponseEntity.ok("Creation was successful");
     }
 
+
     @PreAuthorize("hasRole('HR')")
     @PutMapping("/updateManager/{userId}/{newManagerId}")
     public ResponseEntity<String> updateManager(
             @PathVariable("userId") String userId,
             @PathVariable("newManagerId") String newManagerId) {
-        hrService.updateManager(userId, newManagerId);
-        return ResponseEntity.ok("Manager updated successfully");
+        try {
+            hrService.updateManager(userId, newManagerId);
+            return ResponseEntity.ok("Manager updated successfully");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
 

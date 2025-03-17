@@ -56,7 +56,6 @@ public class ManagerController {
 //        }
 //    }
 
-    //varun
     @PreAuthorize("hasRole('MANAGER')")
     @GetMapping("/bymonthreport")
     public ResponseEntity<byte[]> getByMonthandManagerid(
