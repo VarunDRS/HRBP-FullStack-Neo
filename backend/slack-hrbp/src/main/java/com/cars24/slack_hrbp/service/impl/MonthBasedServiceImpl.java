@@ -6,6 +6,7 @@ import com.cars24.slack_hrbp.data.repository.AttendanceRepository;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.io.FileOutputStream;
@@ -20,38 +21,40 @@ public class MonthBasedServiceImpl {
 
     @Autowired
     private AttendanceRepository attendanceRepository;
+
+    @Autowired
     private MonthBasedDaoImpl monthBasedDao;
 
-    public Map<String, Map<String, String>> generateAttendanceReport(String monthYear) throws IOException, ParseException {
-        // Fetch data for the given month and year
-        List<AttendanceEntity> attendanceList = attendanceRepository.findByDateStartingWith(monthYear);
-
-        // Create a map to store user-wise attendance data
-        Map<String, Map<String, String>> userAttendanceMap = new HashMap<>();
-
-        // Parse the date and populate the map
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        SimpleDateFormat displayFormat = new SimpleDateFormat("MMM-dd");
-
-        for (AttendanceEntity attendance : attendanceList) {
-
-            String username = attendance.getUsername();
-            String date = attendance.getDate();
-            String requestType = getRequestTypeCode(attendance.getType());
-
-            Date parsedDate = dateFormat.parse(date);
-            String formattedDate = displayFormat.format(parsedDate);
-
-            userAttendanceMap.computeIfAbsent(username, k -> new HashMap<>()).put(formattedDate, requestType);
-
-        }
-
-        // Generate Excel file
-        generateExcel(userAttendanceMap, monthYear);
-
-        // Return the processed data
-        return userAttendanceMap;
-    }
+//    public Map<String, Map<String, String>> generateAttendanceReport(String monthYear) throws IOException, ParseException {
+//        // Fetch data for the given month and year
+//        List<AttendanceEntity> attendanceList = attendanceRepository.findByDateStartingWith(monthYear);
+//
+//        // Create a map to store user-wise attendance data
+//        Map<String, Map<String, String>> userAttendanceMap = new HashMap<>();
+//
+//        // Parse the date and populate the map
+//        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+//        SimpleDateFormat displayFormat = new SimpleDateFormat("MMM-dd");
+//
+//        for (AttendanceEntity attendance : attendanceList) {
+//
+//            String username = attendance.getUsername();
+//            String date = attendance.getDate();
+//            String requestType = getRequestTypeCode(attendance.getType());
+//
+//            Date parsedDate = dateFormat.parse(date);
+//            String formattedDate = displayFormat.format(parsedDate);
+//
+//            userAttendanceMap.computeIfAbsent(username, k -> new HashMap<>()).put(formattedDate, requestType);
+//
+//        }
+//
+//        // Generate Excel file
+//        generateExcel(userAttendanceMap, monthYear);
+//
+//        // Return the processed data
+//        return userAttendanceMap;
+//    }
 
     private String getRequestTypeCode(String requestType) {
         switch (requestType) {
@@ -125,39 +128,80 @@ public class MonthBasedServiceImpl {
         workbook.close();
     }
 
-    public Map<String, Map<String, String>> generateAttendanceReport2(String monthYear, String managerId, int page, int limit) throws IOException, ParseException {
-        // Fetch all attendance data for the month
-        List<AttendanceEntity> attendanceList = attendanceRepository.findByDateStartingWith(monthYear);
-        System.out.println("In Service layer from Repository : " + attendanceList);
+//    public Map<String, Map<String, String>> generateAttendanceReport2(String monthYear, String managerId, int page, int limit) throws IOException, ParseException {
+//        // Fetch all attendance data for the month
+//        List<AttendanceEntity> attendanceList = attendanceRepository.findByDateStartingWith(monthYear);
+//        System.out.println("In Service layer from Repository : " + attendanceList);
+//
+//        // Fetch employees under the manager
+//        List<String> employeeIds = monthBasedDao.getAllEmployeesUnderManager(managerId);
+//        System.out.println("In Service Layer from Dao : " + employeeIds);
+//
+//        // Optimize lookup by using a HashSet
+//        Set<String> employeeIdSet = new HashSet<>(employeeIds);
+//
+//        // Filter attendance records
+//        List<AttendanceEntity> filteredAttendance = attendanceList.stream()
+//                .filter(attendance -> employeeIdSet.contains(attendance.getUserid()))
+//                .collect(Collectors.toList());
+//
+//        // Prepare the user-wise attendance map
+//        Map<String, Map<String, String>> userAttendanceMap = new HashMap<>();
+//        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+//        SimpleDateFormat displayFormat = new SimpleDateFormat("MMM-dd");
+//
+//        for (AttendanceEntity attendance : filteredAttendance) {
+//            String username = attendance.getUsername();
+//            String formattedDate = displayFormat.format(dateFormat.parse(attendance.getDate()));
+//            String leaveType = attendance.getType(); //
+//
+//            // Ensure user entry exists and store leave type
+//            userAttendanceMap.computeIfAbsent(username, k -> new HashMap<>()).put(formattedDate, leaveType);
+//        }
+//
+//        // Log and return the final map
+//        System.out.println("Service layer returning Data : " + userAttendanceMap);
+//        return userAttendanceMap;
+//    }
 
-        // Fetch employees under the manager
-        List<String> employeeIds = monthBasedDao.getAllEmployeesUnderManager(managerId);
-        System.out.println("In Service Layer from Dao : " + employeeIds);
+    //trying
 
-        // Optimize lookup by using a HashSet
-        Set<String> employeeIdSet = new HashSet<>(employeeIds);
+    public Page<String> getPaginatedEmployees(String monthYear, int page, int limit) {
+        Pageable pageable = PageRequest.of(page, limit);
 
-        // Filter attendance records
-        List<AttendanceEntity> filteredAttendance = attendanceList.stream()
-                .filter(attendance -> employeeIdSet.contains(attendance.getUserid()))
-                .collect(Collectors.toList());
+        // Fetch distinct usernames (pagination needs to be handled in-memory)
+        List<String> allUsernames = attendanceRepository.findDistinctUsernamesByMonth(monthYear);
 
-        // Prepare the user-wise attendance map
-        Map<String, Map<String, String>> userAttendanceMap = new HashMap<>();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        SimpleDateFormat displayFormat = new SimpleDateFormat("MMM-dd");
+        // Manually paginate the usernames
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), allUsernames.size());
+        List<String> paginatedUsernames = allUsernames.subList(start, end);
 
-        for (AttendanceEntity attendance : filteredAttendance) {
-            String username = attendance.getUsername();
-            String formattedDate = displayFormat.format(dateFormat.parse(attendance.getDate()));
-            String leaveType = attendance.getType(); //
-
-            // Ensure user entry exists and store leave type
-            userAttendanceMap.computeIfAbsent(username, k -> new HashMap<>()).put(formattedDate, leaveType);
-        }
-
-        // Log and return the final map
-        System.out.println("Service layer returning Data : " + userAttendanceMap);
-        return userAttendanceMap;
+        return new PageImpl<>(paginatedUsernames, pageable, allUsernames.size());
     }
+
+
+
+    public List<AttendanceEntity> getAttendanceForEmployees(String monthYear, List<String> usernames) {
+        return attendanceRepository.findByDateStartingWithAndUsernameIn(monthYear, usernames);
+    }
+
+    //trying for manager
+    public Page<String> getPaginatedEmployeesForManager(String monthYear, String managerId, int page, int limit) {
+        Pageable pageable = PageRequest.of(page, limit);
+
+        // Fetch distinct usernames of employees under this manager
+        List<String> allUsernames = attendanceRepository.findDistinctUsernamesByManager(monthYear, managerId);
+
+        // Manually paginate the usernames
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), allUsernames.size());
+        List<String> paginatedUsernames = allUsernames.subList(start, end);
+
+        return new PageImpl<>(paginatedUsernames, pageable, allUsernames.size());
+    }
+
+
+
+
 }
