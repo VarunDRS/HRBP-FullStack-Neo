@@ -85,3 +85,4 @@ const LeaveRequestsPanel = ({ leaveRequests }) => {
 };
 
 export default LeaveRequestsPanel;
+
