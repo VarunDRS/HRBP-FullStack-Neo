@@ -121,3 +121,4 @@ const EmployeeInfoPanel = ({
 };
 
 export default EmployeeInfoPanel;
+
