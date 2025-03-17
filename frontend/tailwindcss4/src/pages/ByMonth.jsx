@@ -297,12 +297,12 @@ useEffect(() => {
           let apiEndpoint = "http://localhost:8080/";
 
           
-
           let params = { monthYear, page: currentPage, limit: pageSize }; // Base parameters
 
           if (roles.includes("ROLE_HR")) {
               apiEndpoint += "hr/bymonth";
           } else if (roles.includes("ROLE_MANAGER")) {
+              console.log(apiEndpoint)
               apiEndpoint += "manager/bymonth";
               params.userId = userId; // Corrected: Use 'userId' instead of 'userid'
           } else {

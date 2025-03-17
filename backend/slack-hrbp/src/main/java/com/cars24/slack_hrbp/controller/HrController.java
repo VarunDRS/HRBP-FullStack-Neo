@@ -175,6 +175,7 @@ public class HrController {
         }
     }
 
+    
     @PreAuthorize("hasRole('HR')")
     @GetMapping("/displayUsers/{userId}/{searchtag}")
     public ResponseEntity<List<GetUserResponse>> getAllUsers(
@@ -271,7 +272,6 @@ public class HrController {
         }
     }
 
-
     private String getRequestTypeCode(String type) {
         if (type == null) {
             return "N/A"; // Handle null case
@@ -305,9 +305,6 @@ public class HrController {
                 return "";
         }
     }
-
-
-
 
 }
 
