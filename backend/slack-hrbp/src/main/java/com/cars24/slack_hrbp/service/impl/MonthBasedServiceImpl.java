@@ -2,11 +2,13 @@ package com.cars24.slack_hrbp.service.impl;
 
 import com.cars24.slack_hrbp.data.dao.impl.MonthBasedDaoImpl;
 import com.cars24.slack_hrbp.data.entity.AttendanceEntity;
+import com.cars24.slack_hrbp.data.entity.EmployeeEntity;
 import com.cars24.slack_hrbp.data.repository.AttendanceRepository;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -367,58 +369,94 @@ public class MonthBasedServiceImpl {
     }
 
 
-    public Map<String, Object> getAttendanceReportForHR(String monthYear, int page, int limit) {
-        if (page > 0) page -= 1; // Convert to zero-based index
+//    public Map<String, Object> getAttendanceReportForHR(String monthYear, int page, int limit) {
+//        if (page > 0) page -= 1; // Convert to zero-based index
+//
+//        List<AttendanceEntity> attendanceRecords = monthBasedDao.getAttendanceForEmployees(monthYear,page,limit);
+//
+//        // Convert data to structured format
+//        Map<String, Map<String, String>> paginatedReportData = formatAttendanceData(attendanceRecords);
+//
+//        // Prepare response
+//        Map<String, Object> response = new HashMap<>();
+//        response.put("reportData", paginatedReportData);
+//        response.put("totalPages", attendanceRecords.getTotalPages());
+//        response.put("currentPage", page + 1);
+//        response.put("pageSize", limit);
+//        response.put("totalRecords", attendanceRecords.getTotalElements());
+//
+//        return response;
+//    }
 
-        // Fetch paginated employee user IDs
-        Page<String> employeePage = monthBasedDao.getPaginatedEmployees(monthYear, page, limit);
-        List<String> employeeUserIds = employeePage.getContent();
+    public Map<String, Object> getAttendanceReportForHR(String monthYear,int page, int limit) {
+        // Convert to zero-based index for pagination
+        if (page > 0) page -= 1;
 
-        // Fetch attendance only for those employees
-        List<AttendanceEntity> attendanceRecords = monthBasedDao.getAttendanceForEmployees(monthYear, employeeUserIds);
+        try {
+            // Fetch all data first
+            Map<String, Map<String, String>> allReportData = monthBasedDao.generateAttendanceReport(monthYear);
 
-        // Convert data to structured format
-        Map<String, Map<String, String>> paginatedReportData = formatAttendanceData(attendanceRecords, employeeUserIds);
+            // Convert to a list for pagination
+            List<Map.Entry<String, Map<String, String>>> allUsersList = new ArrayList<>(allReportData.entrySet());
 
-        // Prepare response
-        Map<String, Object> response = new HashMap<>();
-        response.put("reportData", paginatedReportData);
-        response.put("totalPages", employeePage.getTotalPages());
-        response.put("currentPage", page + 1);
-        response.put("pageSize", limit);
-        response.put("totalRecords", employeePage.getTotalElements());
+            // Paginate based on employees, not individual records
+            int totalRecords = allUsersList.size();
+            int startIndex = page * limit;
+            int endIndex = Math.min(startIndex + limit, totalRecords);
 
-        return response;
-    }
-
-    private Map<String, Map<String, String>> formatAttendanceData(List<AttendanceEntity> attendanceRecords, List<String> employeeUserIds) {
-        Map<String, Map<String, String>> paginatedReportData = new LinkedHashMap<>();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        SimpleDateFormat displayFormat = new SimpleDateFormat("MMM-dd");
-
-        // Initialize all employees with empty attendance
-        for (String userId : employeeUserIds) {
-            paginatedReportData.put(userId, new HashMap<>());
-        }
-
-        // Fill attendance data
-        for (AttendanceEntity attendance : attendanceRecords) {
-            String userId = attendance.getUserid();
-            String date = attendance.getDate();
-            String requestType = getRequestTypeCode(attendance.getType());
-
-            try {
-                Date parsedDate = dateFormat.parse(date);
-                String formattedDate = displayFormat.format(parsedDate);
-                paginatedReportData.get(userId).put(formattedDate, requestType);
-            } catch (ParseException e) {
-                e.printStackTrace(); // Log error
+            // Extract paginated data
+            Map<String, Map<String, String>> paginatedReportData = new LinkedHashMap<>();
+            for (int i = startIndex; i < endIndex; i++) {
+                Map.Entry<String, Map<String, String>> entry = allUsersList.get(i);
+                paginatedReportData.put(entry.getKey(), entry.getValue());
             }
-        }
 
-        System.out.println("paginatedReportData in formatAttendanceData: " + paginatedReportData);
-        return paginatedReportData;
+            // Calculate total pages based on employees
+            int totalPages = (int) Math.ceil((double) totalRecords / limit);
+
+            // Prepare response
+            Map<String, Object> response = new HashMap<>();
+            response.put("reportData", paginatedReportData);
+            response.put("totalPages", totalPages);
+            response.put("currentPage", page + 1);
+            response.put("pageSize", limit);
+            response.put("totalRecords", totalRecords);
+            System.out.println("The Response in controller is : "+response);
+
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error generating report: " + e.getMessage());
+        }
     }
+
+
+
+
+//    private Map<String, Map<String, String>> formatAttendanceData(List<AttendanceEntity> attendanceRecords) {
+//        Map<String, Map<String, String>> paginatedReportData = new LinkedHashMap<>();
+//        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+//        SimpleDateFormat displayFormat = new SimpleDateFormat("MMM-dd");
+//
+//
+//        // Fill attendance data
+//        for (AttendanceEntity attendance : attendanceRecords) {
+//            String userId = attendance.getUserid();
+//            String date = attendance.getDate();
+//            String requestType = getRequestTypeCode(attendance.getType());
+//
+//            try {
+//                Date parsedDate = dateFormat.parse(date);
+//                String formattedDate = displayFormat.format(parsedDate);
+//                paginatedReportData.get(userId).put(formattedDate, requestType);
+//            } catch (ParseException e) {
+//                e.printStackTrace(); // Log error
+//            }
+//        }
+//
+//        System.out.println("paginatedReportData in formatAttendanceData: " + paginatedReportData);
+//        return paginatedReportData;
+//    }
 
 
 
