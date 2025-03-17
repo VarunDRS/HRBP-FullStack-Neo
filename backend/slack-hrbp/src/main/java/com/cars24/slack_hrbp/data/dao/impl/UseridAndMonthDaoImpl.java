@@ -23,10 +23,10 @@ public class UseridAndMonthDaoImpl implements UseridAndMonthDao {
         log.info("Fetching attendance details for userid: {}", userid);
 
         List<AttendanceEntity> resp = attendanceRepository.findByUserid(userid);
+
         if (resp.isEmpty()) {
             return Collections.emptyMap(); // Return an empty map if no data found
         }
-
 
         String username = resp.get(0).getUsername();
         Map<String, String> attendanceMap = new LinkedHashMap<>();
@@ -40,6 +40,7 @@ public class UseridAndMonthDaoImpl implements UseridAndMonthDao {
             try {
                 Date parsedDate = inputFormat.parse(entity.getDate()); // Convert String to Date
                 formattedDate = outputFormat.format(parsedDate); // Format Date to "MMM-dd"
+//                System.out.println(entity);
             } catch (ParseException e) {
                 log.error("Error parsing date: {}", entity.getDate(), e);
                 continue; // Skip this entry if date parsing fails
@@ -49,7 +50,6 @@ public class UseridAndMonthDaoImpl implements UseridAndMonthDao {
             attendanceMap.put(formattedDate, leaveType);
         }
 
-        // Construct final response map
         Map<String, Map<String, String>> result = new LinkedHashMap<>();
         result.put(username, attendanceMap);
         return result;

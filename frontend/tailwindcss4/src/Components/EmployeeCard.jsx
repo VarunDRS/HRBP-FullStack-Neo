@@ -7,8 +7,7 @@ const EmployeeCard = ({ employee }) => {
   const navigate = useNavigate();
 
   const token = localStorage.getItem("Authorization");
-  const decodedToken = jwtDecode(token);
-  const userId = decodedToken.userId;  
+  const decodedToken = jwtDecode(token); 
   const role = decodedToken.roles?.[0];
 
   const viewCalender = () => {

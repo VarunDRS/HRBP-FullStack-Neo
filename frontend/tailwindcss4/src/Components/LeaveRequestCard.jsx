@@ -12,7 +12,8 @@ const STATUS_COLORS = {
   'Holiday': 'bg-green-100 text-green-800',
   'Planned Leave(First Half)': 'bg-yellow-100 text-yellow-800',
   'Planned Leave(Second Half)': 'bg-yellow-100 text-yellow-800',
-  'Elections': 'bg-blue-100 text-blue-800'
+  'Elections': 'bg-blue-100 text-blue-800',
+  'Undefined': 'bg-gray-100 text-gray-800'
 };
 
 const LeaveRequestCard = ({ request }) => {

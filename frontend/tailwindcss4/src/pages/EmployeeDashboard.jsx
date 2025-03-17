@@ -4,15 +4,15 @@ import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { LogOut, Lock } from "lucide-react";
 
-import Navbar from "../components/Navbar";
-import QuickActions from "../components/QuickActions";
-import SearchFilters from "../components/SearchFilters";
-import LeaveRequestsPanel from "../components/LeaveRequestsPanel";
+import Navbar from "../Components/Navbar";
+import QuickActions from "../Components/QuickActions";
+import SearchFilters from "../Components/SearchFilters";
+import LeaveRequestsPanel from "../Components/LeaveRequestsPanel";
 import EmployeeInfoPanel from "../components/EmployeeInfoPanel";
-import Footer from "../components/Footer";
+import Footer from "../Components/Footer";
 
 const EmployeeDashboard = () => {
-  const [employeeName, setEmployeeName] = useState("Employee");
+  const [employeeName, setEmployeeName] = useState("");
   const [leaveRequests, setLeaveRequests] = useState({});
   const [monthFilter, setMonthFilter] = useState("");
   const [employeeFilter, setEmployeeFilter] = useState("");
