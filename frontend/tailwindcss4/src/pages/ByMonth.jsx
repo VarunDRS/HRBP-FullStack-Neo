@@ -14,7 +14,6 @@ const ByMonth = () => {
   const [pageSize, setPageSize] = useState(5); 
   const [totalPages, setTotalPages] = useState(1);
 
-  
   // Convert the month-year format from the URL (Mar-2025) to the format needed by the API (YYYY-MM)
   const getFormattedMonthYear = () => {
     if (!month) return "";
@@ -162,10 +161,6 @@ const ByMonth = () => {
 useEffect(() => {
   console.log("Updated Data in State:", data);
 }, [data]); // Runs whenever 'data' changes
-
-
-
-
 
   // Handle navigation to previous and next months
   const navigateToMonth = (direction) => {
@@ -368,8 +363,8 @@ useEffect(() => {
       if (roles.includes("ROLE_HR")) {
         apiEndpoint += "hr/bymonth";
       } else if (roles.includes("ROLE_MANAGER")) {
-        apiEndpoint += "manager/bymonth";
-        params.userId = userId; // ✅ Correct userId assignment
+        apiEndpoint += "manager/bymonth/";
+        params.userId = userId; 
       } else {
         console.error("Unauthorized role");
         setError("Unauthorized access.");
@@ -440,6 +435,66 @@ useEffect(() => {
       case "J": return "Joined";
       case "P**": return "Planned Leave (First Half)";
       default: return "";
+    }
+  };
+
+  // Add this function to handle the report generation and download
+  const handleGenerateReport = async () => {
+    try {
+      const token = localStorage.getItem("Authorization");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+  
+      // Decode the token to get role and userId
+      const decodedToken = jwtDecode(token);
+      const role = decodedToken.roles?.[0]; // Get the user's role (ROLE_HR or ROLE_MANAGER)
+      const userId = decodedToken.userId; // Get the user's ID
+  
+      // Get the formatted month-year
+      const formattedMonthYear = getFormattedMonthYear();
+      if (!formattedMonthYear) {
+        setError("Invalid month format. Please select a valid month.");
+        return;
+      }
+  
+      // Dynamically generate the URL based on the role
+      let url;
+      if (role === "ROLE_HR") {
+        url = `http://localhost:8080/hr/bymonthreport?monthYear=${formattedMonthYear}`;
+      } else if (role === "ROLE_MANAGER") {
+        url = `http://localhost:8080/manager/bymonthreport?monthYear=${formattedMonthYear}&userId=${userId}`;
+      } else {
+        setError("Unauthorized role. You do not have permission to generate reports.");
+        return;
+      }
+  
+      // Make the API request
+      const response = await axios.get(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        responseType: "blob", // Ensure this is set to "blob"
+      });
+  
+      // Create a URL for the blob
+      const urlObject = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = urlObject;
+      link.setAttribute("download", `Attendance_Report_${formattedMonthYear}.xlsx`);
+      document.body.appendChild(link);
+  
+      // Trigger the download
+      link.click();
+  
+      // Clean up
+      link.remove();
+      window.URL.revokeObjectURL(urlObject);
+    } catch (error) {
+      console.error("Error generating report:", error);
+      setError("Failed to generate report. Please try again.");
     }
   };
 
@@ -673,6 +728,26 @@ useEffect(() => {
                     />
                   </svg>
                 </button>
+                <button
+                onClick={handleGenerateReport}
+                className="py-2 px-4 bg-green-500 text-white rounded-lg text-sm font-medium cursor-pointer transition-colors hover:bg-green-600 flex items-center gap-2"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                  />
+                </svg>
+                Generate Report
+              </button>
               </div>
             </div>
           </div>
