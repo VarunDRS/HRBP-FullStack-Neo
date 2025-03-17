@@ -74,6 +74,7 @@ const ByMonth = () => {
 
         const decodedToken = jwtDecode(token);
         const role = decodedToken.roles?.[0];
+        const userId = decodedToken.userId;
 
         if (!role) {
             console.error("No role found, redirecting to login.");
@@ -101,7 +102,7 @@ const ByMonth = () => {
         if (role === "ROLE_HR") {
             url = `${API_BASE_URL}/hr/bymonth?monthYear=${formattedMonthYear}&page=${page}&limit=${limit}`;
         } else if (role === "ROLE_MANAGER") {
-            url = `${API_BASE_URL}/manager/bymonth?monthYear=${formattedMonthYear}&userId=${userid}&page=${page}&limit=${limit}`;
+            url = `${API_BASE_URL}/manager/bymonth?monthYear=${formattedMonthYear}&userId=${userId}&page=${page}&limit=${limit}`;
         }
 
         console.log("Fetching data from:", url);
@@ -118,7 +119,7 @@ const ByMonth = () => {
         // Handle authentication issues
         if (response.status === 401 || response.status === 403) {
             console.error("Unauthorized or Forbidden - Redirecting to login.");
-            navigate("/login");
+            // navigate("/login");
             return;
         }
 
@@ -210,6 +211,7 @@ useEffect(() => {
     const token = localStorage.getItem("Authorization");
     const decodedToken = jwtDecode(token);
     const role = decodedToken.roles?.[0];
+    const userId=decodedToken.userId;
 
     if (!token) {
       console.error("No token found, redirecting to login.");
@@ -224,8 +226,8 @@ useEffect(() => {
     }
     
     return role === "ROLE_HR"
-      ? `/hr/monthly/${userid}/${newMonthYear}`
-      : `/manager/monthly/${userid}/${newMonthYear}`;
+      ? `/hr/monthly/${userId}/${newMonthYear}`
+      : `/manager/monthly/${userId}/${newMonthYear}`;
   };
 
   const handleBackButton = () => {

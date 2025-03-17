@@ -1,6 +1,7 @@
 package com.cars24.slack_hrbp.controller;
 
 import com.cars24.slack_hrbp.data.dao.impl.ListAllEmployeesUnderManagerDaoImpl;
+import com.cars24.slack_hrbp.data.entity.AttendanceEntity;
 import com.cars24.slack_hrbp.data.entity.EmployeeEntity;
 import com.cars24.slack_hrbp.data.request.EmployeeUpdateRequest;
 import com.cars24.slack_hrbp.data.request.CreateEmployeeRequest;
@@ -24,6 +25,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -220,46 +222,47 @@ public class HrController {
         return ResponseEntity.ok(response);
     }
 
+
+
+    //trying
     @PreAuthorize("hasRole('HR')")
     @GetMapping("/bymonth")
-    public ResponseEntity<Map<String, Object>> getByMonthandManagerid(
+    public ResponseEntity<Map<String, Object>> getByMonth(
             @RequestParam String monthYear,
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "limit", defaultValue = "5") int limit) {
 
-        // Convert to zero-based index for pagination
-        if (page > 0) page -= 1;
+        if (page > 0) page -= 1; // Convert to zero-based index
 
         try {
-            // Fetch all data first
-            Map<String, Map<String, String>> allReportData = monthBasedService.generateAttendanceReport(monthYear);
+            Page<String> employeePage = monthBasedService.getPaginatedEmployees(monthYear, page, limit);
+            List<String> employeeUsernames = employeePage.getContent();
 
-            // Convert to a list for pagination
-            List<Map.Entry<String, Map<String, String>>> allUsersList = new ArrayList<>(allReportData.entrySet());
+            List<AttendanceEntity> attendanceRecords = monthBasedService.getAttendanceForEmployees(monthYear, employeeUsernames);
 
-            // Paginate based on employees, not individual records
-            int totalRecords = allUsersList.size();
-            int startIndex = page * limit;
-            int endIndex = Math.min(startIndex + limit, totalRecords);
-
-            // Extract paginated data
+            // Convert fetched data into required structure
             Map<String, Map<String, String>> paginatedReportData = new LinkedHashMap<>();
-            for (int i = startIndex; i < endIndex; i++) {
-                Map.Entry<String, Map<String, String>> entry = allUsersList.get(i);
-                paginatedReportData.put(entry.getKey(), entry.getValue());
-            }
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            SimpleDateFormat displayFormat = new SimpleDateFormat("MMM-dd");
 
-            // Calculate total pages based on employees
-            int totalPages = (int) Math.ceil((double) totalRecords / limit);
+            for (AttendanceEntity attendance : attendanceRecords) {
+                String username = attendance.getUsername();
+                String date = attendance.getDate();
+                String requestType = getRequestTypeCode(attendance.getType());
+
+                Date parsedDate = dateFormat.parse(date);
+                String formattedDate = displayFormat.format(parsedDate);
+
+                paginatedReportData.computeIfAbsent(username, k -> new HashMap<>()).put(formattedDate, requestType);
+            }
 
             // Prepare response
             Map<String, Object> response = new HashMap<>();
             response.put("reportData", paginatedReportData);
-            response.put("totalPages", totalPages);
+            response.put("totalPages", employeePage.getTotalPages());
             response.put("currentPage", page + 1);
             response.put("pageSize", limit);
-            response.put("totalRecords", totalRecords);
-            System.out.println("The Response in controller is : "+response);
+            response.put("totalRecords", employeePage.getTotalElements());
 
             return ResponseEntity.ok().body(response);
         } catch (Exception e) {
@@ -267,6 +270,43 @@ public class HrController {
             throw new RuntimeException("Error generating report: " + e.getMessage());
         }
     }
+
+
+    private String getRequestTypeCode(String type) {
+        if (type == null) {
+            return "N/A"; // Handle null case
+        }
+        switch (type) {
+            case "Planned Leave":
+                return "P";
+            case "Unplanned Leave":
+                return "U";
+            case "UnPlanned Leave":
+                return "U";
+            case "Planned Leave (Second Half)":
+                return "P*";
+            case "Sick Leave":
+                return "S";
+            case "Work From Home":
+                return "W";
+            case "WFH":
+                return "W";
+            case "Travelling to HQ":
+                return "T";
+            case "Holiday":
+                return "H";
+            case "Elections":
+                return "E";
+            case "Joined":
+                return "J";
+            case "Planned Leave (First Half)":
+                return "P**";
+            default:
+                return "";
+        }
+    }
+
+
 
 
 }
