@@ -696,9 +696,19 @@ const EnhancedCalendarView = () => {
       navigate("/login");
       return;
     }
+
+    const decodedToken = jwtDecode(token);
+        const role = decodedToken.roles?.[0];
+        const roleEndpoints = {
+            ROLE_HR: "hr",
+            ROLE_MANAGER: "manager",
+            ROLE_EMPLOYEE: "employee",
+        };
+
+        const rolePath = roleEndpoints[role] || "employee";
   
     // Establish SSE connection
-    const eventSource = new EventSource(`http://localhost:8080/hr/events/${userId}`);
+    const eventSource = new EventSource(`http://localhost:8080/${rolePath}/events/${userId}`);
   
     eventSource.onmessage = (event) => {
       console.log("SSE Message:", event.data);
@@ -728,7 +738,7 @@ const EnhancedCalendarView = () => {
     
   
     // Call backend to generate & download Excel
-    fetch(`http://localhost:8080/hr/download/${userId}/${currentMonth}`, {
+    fetch(`http://localhost:8080/${rolePath}/download/${userId}/${currentMonth}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,

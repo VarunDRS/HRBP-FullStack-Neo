@@ -223,9 +223,7 @@ public class HrController {
         return ResponseEntity.ok(response);
     }
 
-
-
-    //trying
+    //cleanining
     @PreAuthorize("hasRole('HR')")
     @GetMapping("/bymonth")
     public ResponseEntity<Map<String, Object>> getByMonth(
@@ -233,78 +231,32 @@ public class HrController {
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "limit", defaultValue = "5") int limit) {
 
-        if (page > 0) page -= 1; // Convert to zero-based index
+        return ResponseEntity.ok(monthBasedService.getAttendanceReportForHR(monthYear, page, limit));
+    }
 
+
+    @PreAuthorize("hasRole('HR')")
+    @GetMapping("bymonthreport")
+    public ResponseEntity<byte[]> getByMonth(@RequestParam String monthYear) {
         try {
-            Page<String> employeePage = monthBasedService.getPaginatedEmployees(monthYear, page, limit);
-            List<String> employeeUsernames = employeePage.getContent();
+            // Generate the report and Excel file
+            byte[] excelFile = monthBasedService.generateAttendanceReport(monthYear);
 
-            List<AttendanceEntity> attendanceRecords = monthBasedService.getAttendanceForEmployees(monthYear, employeeUsernames);
+            // Set headers for file download
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", "Attendance_Report_" + monthYear + ".xlsx");
 
-            // Convert fetched data into required structure
-            Map<String, Map<String, String>> paginatedReportData = new LinkedHashMap<>();
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-            SimpleDateFormat displayFormat = new SimpleDateFormat("MMM-dd");
-
-            for (AttendanceEntity attendance : attendanceRecords) {
-                String username = attendance.getUsername();
-                String date = attendance.getDate();
-                String requestType = getRequestTypeCode(attendance.getType());
-
-                Date parsedDate = dateFormat.parse(date);
-                String formattedDate = displayFormat.format(parsedDate);
-
-                paginatedReportData.computeIfAbsent(username, k -> new HashMap<>()).put(formattedDate, requestType);
-            }
-
-            // Prepare response
-            Map<String, Object> response = new HashMap<>();
-            response.put("reportData", paginatedReportData);
-            response.put("totalPages", employeePage.getTotalPages());
-            response.put("currentPage", page + 1);
-            response.put("pageSize", limit);
-            response.put("totalRecords", employeePage.getTotalElements());
-
-            return ResponseEntity.ok().body(response);
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelFile);
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Error generating report: " + e.getMessage());
         }
     }
 
-    private String getRequestTypeCode(String type) {
-        if (type == null) {
-            return "N/A"; // Handle null case
-        }
-        switch (type) {
-            case "Planned Leave":
-                return "P";
-            case "Unplanned Leave":
-                return "U";
-            case "UnPlanned Leave":
-                return "U";
-            case "Planned Leave (Second Half)":
-                return "P*";
-            case "Sick Leave":
-                return "S";
-            case "Work From Home":
-                return "W";
-            case "WFH":
-                return "W";
-            case "Travelling to HQ":
-                return "T";
-            case "Holiday":
-                return "H";
-            case "Elections":
-                return "E";
-            case "Joined":
-                return "J";
-            case "Planned Leave (First Half)":
-                return "P**";
-            default:
-                return "";
-        }
-    }
+
 
 }
 

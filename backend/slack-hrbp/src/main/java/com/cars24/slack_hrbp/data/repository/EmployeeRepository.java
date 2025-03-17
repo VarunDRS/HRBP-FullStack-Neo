@@ -100,5 +100,9 @@ public interface EmployeeRepository extends Neo4jRepository<EmployeeEntity, Stri
             countQuery = "MATCH (e:Employee)-[:REPORTED_BY]->(m:Employee {userId: $managerId}) RETURN COUNT(e)")
     List<EmployeeEntity> findByManagerId(@Param("managerId") String managerId);
 
+    @Query("MATCH (m:Manager {id: $managerId})-[:MANAGES]->(e:Employee) WHERE e.joiningDate STARTS WITH $monthYear RETURN DISTINCT e.username")
+    List<String> findDistinctUsernamesByManager(@Param("monthYear") String monthYear, @Param("managerId") String managerId);
+
+
 
 }
