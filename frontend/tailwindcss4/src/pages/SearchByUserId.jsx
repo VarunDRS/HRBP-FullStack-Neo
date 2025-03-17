@@ -5,13 +5,16 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const EnhancedCalendarView = () => {
-  const { userid, month: routeMonth } = useParams();
+  const { userId, month: routeMonth } = useParams();
   const navigate = useNavigate();
   const [attendanceData, setAttendanceData] = useState(null);
   const [error, setError] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(routeMonth || "Mar-2025"); // Default value if no route param
   const [isLoading, setIsLoading] = useState(true);
   const [employeeName, setEmployeeName] = useState("");
+  
+  const [showMonthDropdown, setShowMonthDropdown] = useState(false);
+
 
   // Function to fetch attendance data
   const fetchAttendanceData = (month) => {
@@ -19,45 +22,66 @@ const EnhancedCalendarView = () => {
     const token = localStorage.getItem("Authorization");
 
     if (!token) {
-      console.error("No token found, redirecting to login.");
-      navigate("/login");
-      return;
+        console.error("No token found, redirecting to login.");
+        navigate("/login");
+        return;
     }
 
-    //console.log(month)
+    try {
+        const decodedToken = jwtDecode(token);
+        const role = decodedToken.roles?.[0];
+        const roleEndpoints = {
+            ROLE_HR: "hr",
+            ROLE_MANAGER: "manager",
+            ROLE_EMPLOYEE: "employee",
+        };
 
-    fetch(`http://localhost:8080/hr/${userid}/${month}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        setAttendanceData(data);
-        if (data && Object.keys(data).length > 0) {
-          setEmployeeName(Object.keys(data)[0]);
-        }
-        setIsLoading(false);
-      })
-      .catch((error) => {
-        console.error("Error fetching attendance data:", error);
-        setError("Failed to load attendance data.");
-        setIsLoading(false);
-      });
+        // Determine API path based on role
+        const rolePath = roleEndpoints[role] || "employee"; // Default to "employee" if role is undefined
+        const apiUrl = `http://localhost:8080/${rolePath}/${userId}/${month}`;
+
+        fetch(apiUrl, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        })
+        .then((response) => response.json())
+        .then((data) => {
+            setAttendanceData(data);
+            if (data && Object.keys(data).length > 0) {
+                setEmployeeName(Object.keys(data)[0]);
+            }
+            setIsLoading(false);
+        })
+        .catch((error) => {
+            console.error("Error fetching attendance data:", error);
+            setError("Failed to load attendance data.");
+            setIsLoading(false);
+        });
+
+    } catch (error) {
+        console.error("Error decoding token:", error);
+        navigate("/login");
+    }
   };
 
   const handleGraphClick = () => {
     const token = localStorage.getItem("Authorization");
     const decodedToken = jwtDecode(token);
     const role = decodedToken.roles?.[0];
-    if (role === "ROLE_HR") navigate(`/hr/graph/${userid}/${currentMonth}`);
-    else navigate(`/manager/graph/${userid}/${currentMonth}`);
+    
+    console.log("hiiiiii" + userId);
+
+    if (role === "ROLE_HR") navigate(`/hr/graph/${userId}/${currentMonth}`);
+    else if (role === "ROLE_MANAGER") navigate(`/manager/graph/${userId}/${currentMonth}`);
+    else navigate(`/employee/graph/${userId}/${currentMonth}`);
+
   };
 
   useEffect(() => {
     fetchAttendanceData(currentMonth);
-  }, [userid, currentMonth, navigate]);
+  }, [userId, currentMonth, navigate]);
 
   // Function to get days in month
   const getDaysInMonth = (monthStr) => {
@@ -159,32 +183,12 @@ const EnhancedCalendarView = () => {
   const changeMonth = (increment) => {
     const [month, year] = currentMonth.split("-");
     const monthMap = {
-      Jan: 0,
-      Feb: 1,
-      Mar: 2,
-      Apr: 3,
-      May: 4,
-      Jun: 5,
-      Jul: 6,
-      Aug: 7,
-      Sep: 8,
-      Oct: 9,
-      Nov: 10,
-      Dec: 11,
+        Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+        Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
     };
     const reverseMonthMap = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
     ];
 
     let monthIndex = monthMap[month];
@@ -193,18 +197,87 @@ const EnhancedCalendarView = () => {
     monthIndex += increment;
 
     if (monthIndex > 11) {
-      monthIndex = 0;
-      yearNum += 1;
+        monthIndex = 0;
+        yearNum += 1;
     } else if (monthIndex < 0) {
-      monthIndex = 11;
-      yearNum -= 1;
+        monthIndex = 11;
+        yearNum -= 1;
     }
 
     const newMonth = `${reverseMonthMap[monthIndex]}-${yearNum}`;
     setCurrentMonth(newMonth);
-    // Fixed navigation path to include userid
-    navigate(`/hr/${userid}/${newMonth}`);
+
+    // Get user role from token
+    const token = localStorage.getItem("Authorization");
+    if (!token) {
+        console.error("No token found, redirecting to login.");
+        navigate("/login");
+        return;
+    }
+
+    try {
+        const decodedToken = jwtDecode(token);
+        const role = decodedToken.roles?.[0];
+
+        const rolePaths = {
+            ROLE_HR: "hr",
+            ROLE_MANAGER: "manager",
+            ROLE_EMPLOYEE: "employee",
+        };
+
+        const rolePath = rolePaths[role] || "employee"; // Default to employee if role is unknown
+        navigate(`/${rolePath}/${userId}/${newMonth}`);
+
+    } catch (error) {
+        console.error("Error decoding token:", error);
+        navigate("/login");
+    }
   };
+
+  const handleMonthSelection = (monthStr) => {
+      setCurrentMonth(monthStr);
+
+      const token = localStorage.getItem("Authorization");
+      if (!token) {
+          console.error("No token found, redirecting to login.");
+          navigate("/login");
+          return;
+      }
+
+      try {
+          const decodedToken = jwtDecode(token);
+          const role = decodedToken.roles?.[0];
+
+          const rolePaths = {
+              ROLE_HR: "hr",
+              ROLE_MANAGER: "manager",
+              ROLE_EMPLOYEE: "employee",
+          };
+
+          const rolePath = rolePaths[role] || "employee"; // Default to employee if role is unknown
+          navigate(`/${rolePath}/${userId}/${monthStr}`);
+          setShowMonthDropdown(false);
+          
+      } catch (error) {
+          console.error("Error decoding token:", error);
+          navigate("/login");
+      }
+  };
+
+
+  const generateMonthOptions = () => {
+    const monthNames = [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    ];
+    const currentYear = new Date().getFullYear();
+    const years = [currentYear - 1, currentYear, currentYear + 1];
+    
+    return years.map(year => (
+      monthNames.map(month => `${month}-${year}`)
+    )).flat();
+  };
+
 
   // Sync state when URL changes
   useEffect(() => {
@@ -625,7 +698,7 @@ const EnhancedCalendarView = () => {
     }
   
     // Establish SSE connection
-    const eventSource = new EventSource(`http://localhost:8080/hr/events/${userid}`);
+    const eventSource = new EventSource(`http://localhost:8080/hr/events/${userId}`);
   
     eventSource.onmessage = (event) => {
       console.log("SSE Message:", event.data);
@@ -655,7 +728,7 @@ const EnhancedCalendarView = () => {
     
   
     // Call backend to generate & download Excel
-    fetch(`http://localhost:8080/hr/download/${userid}/${currentMonth}`, {
+    fetch(`http://localhost:8080/hr/download/${userId}/${currentMonth}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -666,7 +739,7 @@ const EnhancedCalendarView = () => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `Attendance_${userid}_${currentMonth}.xlsx`;
+        a.download = `Attendance_${userId}_${currentMonth}.xlsx`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -684,8 +757,7 @@ const EnhancedCalendarView = () => {
   
   const handleBackButton = () => {
       const token = localStorage.getItem("Authorization");
-      const decodedToken = jwtDecode(token);
-      const userId = decodedToken.userId;  
+      const decodedToken = jwtDecode(token); 
       const roles = decodedToken.roles; 
   
       if (roles.includes("ROLE_HR")) {
@@ -705,7 +777,7 @@ const EnhancedCalendarView = () => {
           <h1 className="text-2xl font-bold">Attendance Dashboard</h1>
           <div className="flex flex-col text-right pl-200">
             <span className="font-medium text-lg">{employeeName}</span>
-            <span className="text-blue-100 text-sm">Employee ID: {userid}</span>
+            <span className="text-blue-100 text-sm">Employee ID: {userId}</span>
           </div>
           <button
               onClick={handleBackButton}
@@ -747,9 +819,45 @@ const EnhancedCalendarView = () => {
                 </svg>
               </button>
 
-              <h2 className="text-xl font-semibold text-gray-800">
-                {currentMonth}
-              </h2>
+              <div className="relative">
+                <button
+                  onClick={() => setShowMonthDropdown(!showMonthDropdown)}
+                  className="px-4 py-2 bg-white border border-gray-300 rounded-md mx-2 hover:bg-gray-50 transition duration-300 ease-in-out flex items-center"
+                >
+                  {currentMonth}
+                  <svg
+                    className="w-4 h-4 ml-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    ></path>
+                  </svg>
+                </button>
+                
+                {showMonthDropdown && (
+                  <div className="absolute right-0 mt-2 py-2 w-40 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+                    {generateMonthOptions().map((month) => (
+                      <button
+                        key={month}
+                        onClick={() => handleMonthSelection(month)}
+                        className={`block px-4 py-2 text-left w-full hover:bg-gray-100 ${
+                          currentMonth === month ? "bg-blue-100 font-medium" : ""
+                        }`}
+                      >
+                        {month}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
 
               <button
                 onClick={() => changeMonth(1)}

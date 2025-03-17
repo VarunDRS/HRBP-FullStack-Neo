@@ -310,10 +310,10 @@ const AstronautLogin = () => {
             navigate("/manager");
         }
       } else {
-        throw new Error(response.data.message || "Login failed.");
+        throw new Error(response.data.message || "Login failed. Please enter correct details");
       }
     } catch (error) {
-      setError(error.response?.data?.message || "Login failed. Please try again.");
+      setError(error.response?.data?.message || "Login failed. Please enter correct details.");
     } finally {
       setIsLoading(false);
     }

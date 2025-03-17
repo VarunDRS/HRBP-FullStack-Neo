@@ -1,6 +1,8 @@
 import React from "react";
 import { Calendar } from "lucide-react";
 import LeaveRequestCard from "./LeaveRequestCard";
+import { jwtDecode } from "jwt-decode";
+import { useNavigate } from "react-router-dom";
 
 // Status code mapping
 const STATUS_CODES = {
@@ -8,13 +10,13 @@ const STATUS_CODES = {
   'W': 'Work From Home',
   'S': 'Sick Leave',
   'T': 'Traveling to Gurugram',
-  '?': 'Awaiting Approval',
   'U': 'Unplanned Leave',
   'A': 'Approved',
   'H': "Holiday",
   'P**': 'Planned Leave(First Half)',
   'P*': 'Planned Leave(Second Half)',
-  'E': 'Elections'
+  'E': 'Elections',
+  '?': 'Undefined'
 };
 
 const LeaveRequestsPanel = ({ leaveRequests }) => {
@@ -22,7 +24,6 @@ const LeaveRequestsPanel = ({ leaveRequests }) => {
   const transformLeaveRequests = (requests) => {
     const transformedRequests = [];
 
-    // If requests is an object with employee names as keys
     if (requests && typeof requests === 'object' && !Array.isArray(requests)) {
       Object.entries(requests).forEach(([employeeName, monthlyRequests]) => {
         Object.entries(monthlyRequests).forEach(([date, status]) => {
@@ -36,7 +37,6 @@ const LeaveRequestsPanel = ({ leaveRequests }) => {
         });
       });
     } else if (Array.isArray(requests)) {
-      // If already in the expected format, use as-is
       return requests;
     }
 
@@ -46,13 +46,37 @@ const LeaveRequestsPanel = ({ leaveRequests }) => {
   // Process leave requests
   const processedLeaveRequests = transformLeaveRequests(leaveRequests);
 
+  const token = localStorage.getItem("Authorization");
+  const decodedToken = jwtDecode(token);
+  const userId = decodedToken.userId;  
+  const role = decodedToken.roles?.[0];
+
+  const navigate = useNavigate();
+  
+  const viewCalender = () => {
+    if (role === "ROLE_HR") navigate(`/hr/${userId}/Mar-2025`);
+    else if (role === "ROLE_MANAGER") navigate(`/manager/${userId}/Mar-2025`);
+    else navigate(`/employee/${userId}/Mar-2025`);
+  };
+
   return (
     <div className="bg-white rounded-lg p-4 overflow-hidden flex flex-col shadow-sm flex-1 max-h-full">
-      <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
-        <Calendar size={20} className="mr-2 text-blue-600" />
-        My Leave Requests
-      </h2>
+      
+      {/* Header with Title and Button */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+          <Calendar size={20} className="mr-2 text-blue-600" />
+          My Leave Requests
+        </h2>
+        <button 
+          className="px-4 py-1 text-sm text-white bg-purple-400 rounded-md hover:bg-pink-700 transition"
+          onClick={viewCalender}
+        >
+          View My Calendar
+        </button>
+      </div>
 
+      {/* Leave Requests */}
       <div className="flex-1 overflow-y-auto pr-2
             [&::-webkit-scrollbar]:w-2
             [&::-webkit-scrollbar-track]:rounded-full
@@ -85,4 +109,3 @@ const LeaveRequestsPanel = ({ leaveRequests }) => {
 };
 
 export default LeaveRequestsPanel;
-

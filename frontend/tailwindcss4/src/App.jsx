@@ -26,9 +26,8 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
         <Route path="/not-found" element={<NotFoundPage />} />
-        <Route path="/hr/:userid/:month" element={<SearchByUserid />} />
         <Route path="/users/update-password" element={<UpdatePassword />} />
-        
+
         
         {/* Protected HR Routes */}
         <Route
@@ -147,6 +146,23 @@ export default function App() {
           }
         />
 
+        <Route
+          path="/employee/:userId/:month"
+          element={
+            <ProtectedRoute allowedRoles={["ROLE_EMPLOYEE"]}>
+              <SearchByUserid />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/employee/graph/:userId/:month"
+          element={
+            <ProtectedRoute allowedRoles={["ROLE_EMPLOYEE"]}>
+              <GraphView />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Redirect unknown paths to 404 */}
         <Route path="*" element={<Navigate to="/not-found" replace />} />
