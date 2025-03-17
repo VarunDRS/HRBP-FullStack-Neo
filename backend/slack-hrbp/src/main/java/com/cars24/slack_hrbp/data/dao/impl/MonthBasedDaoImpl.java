@@ -40,40 +40,45 @@ public class MonthBasedDaoImpl {
 
         // Fetch employees under this manager
         List<EmployeeEntity> employees = employeeRepository.findByManagerId(managerId);
+        System.out.println("getPaginatedEmployeesForManager: " + employees);
 
-        // Extract usernames
-        List<String> allUsernames = employees.stream()
-                .map(EmployeeEntity::getUsername)
+        // Extract userIds instead of usernames
+        List<String> allUserIds = employees.stream()
+                .map(EmployeeEntity::getUserId)
                 .toList();
 
-        // Manually paginate the usernames
+        // Manually paginate the userIds
         int start = (int) pageable.getOffset();
-        int end = Math.min(start + pageable.getPageSize(), allUsernames.size());
+        int end = Math.min(start + pageable.getPageSize(), allUserIds.size());
 
-        List<String> paginatedUsernames = allUsernames.subList(start, end);
+        List<String> paginatedUserIds = allUserIds.subList(start, end);
 
-        return new PageImpl<>(paginatedUsernames, pageable, allUsernames.size());
+        return new PageImpl<>(paginatedUserIds, pageable, allUserIds.size());
     }
 
 
 
-    public List<AttendanceEntity> getAttendanceForEmployees(String monthYear, List<String> usernames) {
-        return attendanceRepository.findByDateStartingWithAndUsernameIn(monthYear, usernames);
+
+    public List<AttendanceEntity> getAttendanceForEmployees(String monthYear, List<String> userIds) {
+        return attendanceRepository.findByDateStartingWithAndUseridIn(monthYear, userIds); // Use userId
     }
+
 
     public Page<String> getPaginatedEmployees(String monthYear, int page, int limit) {
         Pageable pageable = PageRequest.of(page, limit);
 
-        // Fetch distinct usernames (pagination needs to be handled in-memory)
-        List<String> allUsernames = attendanceRepository.findDistinctUsernamesByMonth(monthYear);
+        // Directly fetch paginated employees from Neo4j
+        Page<EmployeeEntity> employeePage = employeeRepository.findAll(pageable);
 
-        // Manually paginate the usernames
-        int start = (int) pageable.getOffset();
-        int end = Math.min(start + pageable.getPageSize(), allUsernames.size());
-        List<String> paginatedUsernames = allUsernames.subList(start, end);
+        List<String> employeeUserIds = employeePage.getContent()
+                .stream()
+                .map(EmployeeEntity::getUserId) // Extract user IDs
+                .toList();
 
-        return new PageImpl<>(paginatedUsernames, pageable, allUsernames.size());
+        return new PageImpl<>(employeeUserIds, pageable, employeePage.getTotalElements());
     }
+
+
 
 
 }
