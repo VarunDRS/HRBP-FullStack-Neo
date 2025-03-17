@@ -26,6 +26,8 @@ public interface AttendanceRepository extends MongoRepository<AttendanceEntity, 
     // Fetch attendance records for a list of usernames
     List<AttendanceEntity> findByDateStartingWithAndUsernameIn(String monthYear, List<String> usernames);
 
+
+
     // Fetch distinct usernames (MongoDB way)
     @Query(value = "{ 'date': { $regex: ?0 } }", fields = "{ 'username': 1 }")
     List<AttendanceEntity> findDistinctByDateStartingWith(String monthYear);
@@ -47,8 +49,8 @@ public interface AttendanceRepository extends MongoRepository<AttendanceEntity, 
     })
     List<String> findDistinctUsernamesByManager(String monthYear, String managerId);
 
-    // Fetch attendance records for employees under a specific manager
+    List<AttendanceEntity> findByDateStartingWithAndUseridIn(String monthYear, List<String> userids);
 
-
-
+//    List<AttendanceEntity> findByDateStartingWithAndUserIdIn(String monthYear, List<String> userIds);
 }
+
