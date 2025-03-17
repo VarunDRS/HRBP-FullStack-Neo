@@ -63,144 +63,141 @@ const ByMonth = () => {
   const API_BASE_URL = "http://localhost:8080"; // Ensure this matches your backend
 
   const fetchData = async () => {
-    try {
-        const token = localStorage.getItem("Authorization");
-        if (!token) {
-            console.error("No token found, redirecting to login.");
-            navigate("/login");
-            return;
-        }
-
-        const decodedToken = jwtDecode(token);
-        const role = decodedToken.roles?.[0];
-        const userId = decodedToken.userId;
-
-        if (!role) {
-            console.error("No role found, redirecting to login.");
-            navigate("/login");
-            return;
-        }
-
-        // Pagination parameters
-        const page = 1;  
-        const limit = 5;
-
-        console.log("Current selectedMonth:", selectedMonth);
-
-        // Convert selectedMonth format (e.g., Feb-2025 ➝ 2025-02)
-        const monthMap = {
-          Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06",
-          Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12"
-        };
-        const [monthStr, year] = selectedMonth.split("-");
-        const formattedMonthYear = `${year}-${monthMap[monthStr]}`;
+    setLoading(true);
+    setError("");
     
-        console.log("Converted monthYear:", formattedMonthYear);
-
-        let url = "";
-        if (role === "ROLE_HR") {
-            url = `${API_BASE_URL}/hr/bymonth?monthYear=${formattedMonthYear}&page=${page}&limit=${limit}`;
-        } else if (role === "ROLE_MANAGER") {
-            url = `${API_BASE_URL}/manager/bymonth?monthYear=${formattedMonthYear}&userId=${userId}&page=${page}&limit=${limit}`;
+    try {
+      const token = localStorage.getItem("Authorization");
+      if (!token) {
+        console.error("No token found, redirecting to login.");
+        navigate("/login");
+        return;
+      }
+  
+      const decodedToken = jwtDecode(token);
+      const role = decodedToken.roles?.[0];
+      const userId = decodedToken.userId;
+  
+      if (!role) {
+        console.error("No role found, redirecting to login.");
+        navigate("/login");
+        return;
+      }
+  
+      // Convert selectedMonth format (e.g., Feb-2025 ➝ 2025-02)
+      const [monthStr, year] = selectedMonth.split("-");
+      const monthMap = {
+        Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06",
+        Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12"
+      };
+      const formattedMonthYear = `${year}-${monthMap[monthStr]}`;
+      
+      console.log("Fetching data for:", formattedMonthYear);
+      console.log("Current page:", currentPage);
+      console.log("Page size:", pageSize);
+  
+      // Build the URL with proper pagination parameters
+      let url = "";
+      if (role === "ROLE_HR") {
+        url = `${API_BASE_URL}/hr/bymonth?monthYear=${formattedMonthYear}&page=${currentPage}&limit=${pageSize}`;
+      } else if (role === "ROLE_MANAGER") {
+        url = `${API_BASE_URL}/manager/bymonth?monthYear=${formattedMonthYear}&userId=${userId}&page=${currentPage}&limit=${pageSize}`;
+      }
+  
+      console.log("Fetching data from:", url);
+  
+      const response = await fetch(url, {
+        headers: { 
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
         }
-
-        console.log("Fetching data from:", url);
-
-        const response = await fetch(url, {
-            headers: { 
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json"
-            }
-        });
-
-        console.log("Response Status:", response.status);
-
-        // Handle authentication issues
-        if (response.status === 401 || response.status === 403) {
-            console.error("Unauthorized or Forbidden - Redirecting to login.");
-            // navigate("/login");
-            return;
-        }
-
-        if (!response.ok) {
-            const errorText = await response.text(); // Get response body for debugging
-            console.error("API Error:", errorText);
-            throw new Error("Failed to fetch data");
-        }
-
-        // 🔹 Parse JSON response here
-        const result = await response.json();
-        console.log("Fetched Data:", result);
-
-        if (result && Object.keys(result).length > 0) {
-            setReportData(result.reportData);
-            setData(result); // ✅ Ensuring new reference to trigger re-render
-
-            // ✅ Set total pages from response or fetch separately
-            const totalPagesHeader = response.headers.get("x-total-pages"); 
-            if (totalPagesHeader) {
-                setTotalPages(parseInt(totalPagesHeader, 10) || 1);
-            } else if (result.totalPages) {
-                setTotalPages(result.totalPages);
-            } else {
-                fetchTotalPages(); // ✅ Fetch if not present in headers
-            }
+      });
+  
+      if (response.status === 401 || response.status === 403) {
+        console.error("Unauthorized or Forbidden - Redirecting to login.");
+        navigate("/login");
+        return;
+      }
+  
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API Error:", errorText);
+        throw new Error("Failed to fetch data");
+      }
+  
+      const result = await response.json();
+      console.log("Fetched Data:", result);
+  
+      if (result && Object.keys(result).length > 0) {
+        setReportData(result.reportData);
+        setData(result);
+        
+        // Set pagination information
+        if (result.totalPages) {
+          setTotalPages(result.totalPages);
         } else {
-            console.warn("No data found for the specified month and year.");
-            setError("No data found for the specified month and year.");
+          setTotalPages(Math.ceil(result.totalRecords / pageSize) || 1);
         }
         
+        // Update current page if it's provided in the response
+        if (result.currentPage) {
+          setCurrentPage(result.currentPage);
+        }
+      } else {
+        console.warn("No data found for the specified month and year.");
+        setError("No data found for the specified month and year.");
+      }
     } catch (error) {
-        console.error("Error fetching data:", error);
-        setError("Error fetching data. Please try again later.");
+      console.error("Error fetching data:", error);
+      setError("Error fetching data. Please try again later.");
+    } finally {
+      setLoading(false);
     }
-};
-
+  };
+  
+  // Update the useEffect to properly handle dependencies
+  useEffect(() => {
+    fetchData();
+  }, [selectedMonth, currentPage, pageSize]);
 
 
 useEffect(() => {
   console.log("Updated Data in State:", data);
 }, [data]); // Runs whenever 'data' changes
 
-  // Handle navigation to previous and next months
-  const navigateToMonth = (direction) => {
-    const [monthName, yearStr] = selectedMonth.split("-");
-    const year = parseInt(yearStr);
-    const monthNum = getMonthNumber(monthName);
-    
-    // Reset to first page when navigating to different month
-    setCurrentPage(1);
+const navigateToMonth = (direction) => {
+  const [monthName, yearStr] = selectedMonth.split("-");
+  const year = parseInt(yearStr);
+  const monthNum = getMonthNumber(monthName);
+  
+  let newDate;
+  if (direction === "prev") {
+    newDate = new Date(year, monthNum - 1, 1);
+  } else {
+    newDate = new Date(year, monthNum + 1, 1);
+  }
 
-    let newDate;
-    if (direction === "prev") {
-      newDate = new Date(year, monthNum - 1, 1);
-    } else {
-      newDate = new Date(year, monthNum + 1, 1);
-    }
+  const newMonthYear = formatMonthForUrl(newDate);
+  setSelectedMonth(newMonthYear);
+  setCurrentPage(1); // Reset to first page when changing month
+  navigate(generatePath(newMonthYear));
+};
 
-    const newMonthYear = formatMonthForUrl(newDate);
-    setSelectedMonth(newMonthYear); // Update state to trigger useEffect
-    navigate(generatePath(newMonthYear));
-        
-  };
-
-  // Jump to a specific month
-  const jumpToMonth = (event) => {
-    const selectedMonthYear = event.target.value; // Format: 2025-03
-    const [year, monthNum] = selectedMonthYear.split("-");
-    const monthNames = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-    ];
-    const monthName = monthNames[parseInt(monthNum) - 1];
-    
-    // Reset to first page when changing month
-    setCurrentPage(1);
-    const newMonthYear = `${monthName}-${year}`;
-    setSelectedMonth(newMonthYear); // Update state to trigger useEffect
-    navigate(generatePath(newMonthYear));
-    
-  };
+// Update the jump to month function
+const jumpToMonth = (event) => {
+  const selectedMonthYear = event.target.value; // Format: 2025-03
+  const [year, monthNum] = selectedMonthYear.split("-");
+  const monthNames = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  ];
+  const monthName = monthNames[parseInt(monthNum) - 1];
+  
+  const newMonthYear = `${monthName}-${year}`;
+  setSelectedMonth(newMonthYear);
+  setCurrentPage(1); // Reset to first page when changing month
+  navigate(generatePath(newMonthYear));
+};
 
   const generatePath = (newMonthYear) => {
     const token = localStorage.getItem("Authorization");
@@ -243,168 +240,25 @@ useEffect(() => {
   // Pagination handlers
   const handlePrevPage = () => {
     if (currentPage > 1) {
-      setCurrentPage(prev => prev - 1);
+      setCurrentPage(prevPage => prevPage - 1);
     }
   };
   
   const handleNextPage = () => {
     if (currentPage < totalPages) {
-      setCurrentPage(prev => prev + 1);
+      setCurrentPage(prevPage => prevPage + 1);
     }
   };
-
+  
   const handlePageSizeChange = (e) => {
     setPageSize(parseInt(e.target.value));
     setCurrentPage(1); // Reset to first page when changing page size
   };
 
-  useEffect(() => {
-    const token = localStorage.getItem("Authorization");
-    if (!token) {
-        navigate("/login");
-        return;
-    }
-
-    // Fetch both total pages and report data together
-    fetchTotalPages();
-    fetchReportData();
-
-}, [currentPage, pageSize]); // Removed location.pathname to avoid redundant calls
+   // Removed location.pathname to avoid redundant calls
 
 
-  // Fetch total pages separately - this fixes a bug in the original code
-    const fetchTotalPages = async () => {
-      const monthYear = getFormattedMonthYear();
-      if (!monthYear) return;
-
-      try {
-          const token = localStorage.getItem("Authorization");
-          if (!token) {
-              navigate("/login");
-              return;
-          }
-
-          const decodedToken = jwtDecode(token);
-          const roles = decodedToken.roles || [];
-          const userId = decodedToken.userId; // Extract userId from token
-
-          // Determine API endpoint dynamically
-          let apiEndpoint = "http://localhost:8080/";
-
-          
-          let params = { monthYear, page: currentPage, limit: pageSize }; // Base parameters
-
-          if (roles.includes("ROLE_HR")) {
-              apiEndpoint += "hr/bymonth";
-          } else if (roles.includes("ROLE_MANAGER")) {
-              console.log(apiEndpoint)
-              apiEndpoint += "manager/bymonth";
-              params.userId = userId; // Corrected: Use 'userId' instead of 'userid'
-          } else {
-              console.error("Unauthorized role");
-              return;
-          }
-
-          console.log("Decoded Token at 175:", decodedToken);
-          console.log("Roles at 175:", roles);
-          console.log("API Endpoint at 175:", apiEndpoint);
-          console.log("Request Params at 175:", params);
-
-          // API call with dynamic parameters
-          const response = await axios.get(apiEndpoint, {
-              headers: {
-                  Authorization: `Bearer ${token}`,
-                  "Content-Type": "application/json",
-              },
-              params, // Use the dynamic params object
-          });
-
-          if (response.data && response.data.totalPages) {
-              setTotalPages(response.data.totalPages);
-          } else {
-              setTotalPages(Math.max(1, Math.ceil(Object.keys(response.data || {}).length / pageSize)));
-          }
-      } catch (err) {
-          console.error("Error fetching total pages:", err);
-          setTotalPages(1);
-      }
-  };
-
-
-
-
-  const fetchReportData = async () => {
-    const monthYear = getFormattedMonthYear();
   
-    if (!monthYear) {
-      setError("Invalid month format in URL. Expected format: Mar-2025");
-      setLoading(false);
-      return;
-    }
-  
-    setLoading(true);
-    setError("");
-  
-    try {
-      const token = localStorage.getItem("Authorization");
-      if (!token) {
-        navigate("/login");
-        return;
-      }
-  
-      const decodedToken = jwtDecode(token);
-      const roles = decodedToken.roles || [];
-      const userId = decodedToken.userId;
-  
-      let apiEndpoint = "http://localhost:8080/";
-      let params = { monthYear, page: currentPage, limit: pageSize };
-      console.log("The monthYear not in change month :", monthYear);
-  
-      if (roles.includes("ROLE_HR")) {
-        apiEndpoint += "hr/bymonth";
-      } else if (roles.includes("ROLE_MANAGER")) {
-        apiEndpoint += "manager/bymonth/";
-        params.userId = userId; 
-      } else {
-        console.error("Unauthorized role");
-        setError("Unauthorized access.");
-        return;
-      }
-  
-      console.log("Decoded Token:", decodedToken);
-      console.log("Roles:", roles);
-      console.log("API Endpoint:", apiEndpoint);
-      console.log("Request Params:", params);
-  
-      const response = await axios.get(apiEndpoint, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        params, // ✅ Pass the corrected params
-      });
-  
-      if (response.data && Object.keys(response.data).length > 0) {
-        console.log("Response Data:", response.data, response.headers);
-        setReportData(response.data.reportData);
-  
-        // ✅ Check if total pages info is present in headers
-        const totalPagesHeader = response.headers["x-total-pages"];
-        if (totalPagesHeader) {
-          setTotalPages(parseInt(totalPagesHeader, 10) || 1);
-        } else {
-          fetchTotalPages(); // ✅ Fetch pages if not in headers
-        }
-      } else {
-        setError("No data found for the specified month and year.");
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || "An error occurred while fetching data");
-      console.error("Error fetching data:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
   
   const getAttendanceColor = (code) => {
     switch (code) {

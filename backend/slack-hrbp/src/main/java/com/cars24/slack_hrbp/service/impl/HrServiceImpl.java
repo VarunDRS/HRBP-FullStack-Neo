@@ -68,6 +68,18 @@ public class HrServiceImpl implements HrService {
 
     @Transactional
     public void updateManager(String userId, String newManagerId) {
+        // Fetch all subordinates of the employee being updated
+        List<EmployeeEntity> subordinates = employeeRepository.findByManagerId(userId);
+
+        // Check if the newManagerId is in the list of subordinates
+        boolean isNewManagerASubordinate = subordinates.stream()
+                .anyMatch(employee -> employee.getUserId().equals(newManagerId));
+
+        if (isNewManagerASubordinate) {
+            throw new IllegalArgumentException("Cannot update manager to a subordinate.");
+        }
+
+        // Proceed with the update if validation passes
         String query = """
         MATCH (e:Employee {userId: $userId})-[r:REPORTED_BY]->(oldManager)
         DELETE r

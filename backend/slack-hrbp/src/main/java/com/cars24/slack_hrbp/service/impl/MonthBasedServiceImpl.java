@@ -323,15 +323,17 @@ public class MonthBasedServiceImpl {
         if (page > 0) page -= 1; // Convert to zero-based index
 
         // Get paginated employees under the manager
-        Page<String> employeePage = monthBasedDao.getPaginatedEmployeesForManager(monthYear, managerId, page, limit);
+        Page<String> employeePage = monthBasedDao.getPaginatedEmployeesForManager(managerId, page, limit);
         List<String> employeeUserIds = employeePage.getContent(); // Use userId instead of username
+
+        System.out.println(employeeUserIds);
 
         // Fetch attendance records for these employees
         List<AttendanceEntity> attendanceRecords = monthBasedDao.getAttendanceForEmployees(monthYear, employeeUserIds);
         System.out.println("getAttendanceForEmployees in service layer: " + attendanceRecords);
 
         // Transform attendance records into structured data
-        Map<String, Map<String, String>> paginatedReportData = formatAttendanceData(attendanceRecords);
+        Map<String, Map<String, String>> paginatedReportData = formatAttendanceData(attendanceRecords,employeeUserIds);
 
         // Prepare response
         Map<String, Object> response = new HashMap<>();
@@ -345,13 +347,18 @@ public class MonthBasedServiceImpl {
     }
 
 
-    private Map<String, Map<String, String>> formatAttendanceData(List<AttendanceEntity> attendanceRecords) {
+    private Map<String, Map<String, String>> formatAttendanceData(List<AttendanceEntity> attendanceRecords, List<String> employeeUserIds) {
         Map<String, Map<String, String>> paginatedReportData = new LinkedHashMap<>();
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         SimpleDateFormat displayFormat = new SimpleDateFormat("MMM-dd");
 
+        // Initialize the report data for all employees with empty maps
+        for (String userId : employeeUserIds) {
+            paginatedReportData.putIfAbsent(userId, new LinkedHashMap<>());
+        }
+
         for (AttendanceEntity attendance : attendanceRecords) {
-            String userId = attendance.getUserid(); // Use userId instead of username
+            String userId = attendance.getUserid();
             String date = attendance.getDate();
             String requestType = getRequestTypeCode(attendance.getType());
 
@@ -359,14 +366,16 @@ public class MonthBasedServiceImpl {
                 Date parsedDate = dateFormat.parse(date);
                 String formattedDate = displayFormat.format(parsedDate);
 
-                paginatedReportData.computeIfAbsent(userId, k -> new HashMap<>()).put(formattedDate, requestType);
+                paginatedReportData.computeIfAbsent(userId, k -> new LinkedHashMap<>()).put(formattedDate, requestType);
             } catch (ParseException e) {
                 e.printStackTrace(); // Log error
             }
         }
+
         System.out.println("paginatedReportData in formatAttendanceData: " + paginatedReportData);
         return paginatedReportData;
     }
+
 
 
 //    public Map<String, Object> getAttendanceReportForHR(String monthYear, int page, int limit) {
