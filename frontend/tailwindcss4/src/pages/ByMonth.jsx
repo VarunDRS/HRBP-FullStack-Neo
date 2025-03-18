@@ -255,10 +255,6 @@ const jumpToMonth = (event) => {
     setCurrentPage(1); // Reset to first page when changing page size
   };
 
-   // Removed location.pathname to avoid redundant calls
-
-
-  
   
   const getAttendanceColor = (code) => {
     switch (code) {

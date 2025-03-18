@@ -7,13 +7,7 @@ import { jwtDecode } from "jwt-decode";
 
 const EmployeeInfoPanel = ({ 
   employees, 
-  loading, 
-  currentPage, 
-  totalPages, 
-  pageSize, 
-  onPrevPage, 
-  onNextPage, 
-  onPageSizeChange 
+  loading
 }) => {
   const navigate = useNavigate();
 
@@ -29,7 +23,6 @@ const EmployeeInfoPanel = ({
 
   return (
     <>
-      {/* Header with Employee Information and View Month Button */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold text-gray-800 flex items-center">
           <Users size={20} className="mr-2 text-blue-600" />
@@ -79,42 +72,6 @@ const EmployeeInfoPanel = ({
 
       {/* Pagination Controls */}
       <div className="flex items-center justify-between mt-4 text-gray-700">
-        {/* <div className="flex items-center">
-          <label htmlFor="pageSize" className="mr-2 text-sm">Show:</label>
-          <select 
-            id="pageSize" 
-            value={pageSize} 
-            onChange={onPageSizeChange}
-            className="border rounded px-2 py-1 text-sm bg-white"
-          >
-            <option value="2">2</option>
-            <option value="4">4</option>
-            <option value="6">6</option>
-            <option value="8">8</option>
-          </select>
-        </div> */}
-        
-        {/* <div className="flex items-center">
-          <span className="text-sm mr-4">
-            Page {currentPage} of {totalPages || 1}
-          </span>
-          <div className="flex space-x-1">
-            <button 
-              onClick={onPrevPage} 
-              disabled={currentPage === 1}
-              className={`p-1 rounded ${currentPage === 1 ? 'text-gray-400' : 'text-blue-600 hover:bg-blue-100'}`}
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <button 
-              onClick={onNextPage} 
-              disabled={currentPage === totalPages}
-              className={`p-1 rounded ${currentPage === totalPages ? 'text-gray-400' : 'text-blue-600 hover:bg-blue-100'}`}
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
-        </div> */}
       </div>
     </>
   );
