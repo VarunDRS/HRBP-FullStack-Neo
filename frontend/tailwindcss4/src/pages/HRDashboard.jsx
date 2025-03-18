@@ -3,7 +3,6 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 
-// Import components
 import Navbar from "../Components/Navbar";
 import QuickActions from "../Components/QuickActions";
 import SearchFilters from "../Components/SearchFilters";
@@ -24,8 +23,9 @@ const HRDashboard = () => {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  
 
-  // Fetch HR data on component mount
+  // Initial data fetch
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -34,7 +34,6 @@ const HRDashboard = () => {
         const userId = decodedToken.userId;  
         const role = decodedToken.roles?.[0];
 
-        // Fetch HR details
         const userResponse = await axios.get(
           `http://localhost:8080/users/${userId}`,
           {
@@ -42,21 +41,17 @@ const HRDashboard = () => {
           }
         );
 
-        // Set HR name
         setHrName(userResponse.data || "HR Admin");
 
-        // Fetch leave requests
         const leaveResponse = await axios.get(
           `http://localhost:8080/hr/${userId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        // Set leave requests
         if (leaveResponse.data) {
           setLeaveRequests(leaveResponse.data);
         }
 
-        // Fetch initial team members data
         fetchTeamMembers(userId, token, role);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -66,6 +61,8 @@ const HRDashboard = () => {
     fetchData();
   }, []);
 
+
+  // Fetch again on page change or page size change
   useEffect(() => {
     const fetchData = async () => {
       const token = localStorage.getItem("Authorization");
@@ -78,7 +75,9 @@ const HRDashboard = () => {
   
     fetchData();
   }, [currentPage, pageSize]);
+
   
+  // Fetch on search query change
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       const token = localStorage.getItem("Authorization");
@@ -91,7 +90,10 @@ const HRDashboard = () => {
   
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]);
+  
+  
 
+  // Fetch team members
   const fetchTeamMembers = async (userId, token, role, search = "%20") => {
     setLoading(true);
     try {
@@ -111,8 +113,6 @@ const HRDashboard = () => {
           id: employee.userId,
           email: employee.email,
           name: employee.username,
-          position: employee.position || "Employee",
-          department: employee.department || "General",
         }));
   
         setTeamMembers(formattedEmployees);
@@ -123,7 +123,9 @@ const HRDashboard = () => {
       setLoading(false);
     }
   };
+  
 
+  // Fetch total pages for pagination
   useEffect(() => {
     const fetchTotalPages = async () => {
       try {
@@ -156,7 +158,8 @@ const HRDashboard = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [pageSize, searchQuery]); 
   
-  // Filtering logic for leave requests
+  
+
   const getFilteredLeaveRequests = () => {
     if (
       leaveRequests &&
@@ -213,7 +216,6 @@ const HRDashboard = () => {
     setCurrentPage(1);
   };
 
-  // Navigation handlers
   const handleCreateUser = () => {
     navigate("/hr/create-user");
   };
@@ -228,31 +230,22 @@ const HRDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800">
-      {/* Navbar Component */}
+
       <Navbar hrName={hrName} />
 
-      {/* Main content */}
       <div className="container mx-auto px-4 py-6">
-        {/* Quick Actions Component */}
+
         <QuickActions 
           onCreateUser={handleCreateUser} 
           onUpdatePassword={handleUpdatePassword} 
         />
 
-        {/* Search and Filters Component */}
         <SearchFilters
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
-          monthFilter={monthFilter}
-          setMonthFilter={setMonthFilter}
-          employeeFilter={employeeFilter}
-          setEmployeeFilter={setEmployeeFilter}
-          teamMembers={teamMembers}
         />
 
-        {/* Main content grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Leave Requests Section */}
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="bg-indigo-50 border-b border-gray-200 px-4 py-3 flex justify-between items-center">
               <h3 className="text-lg font-medium text-indigo-800">Leave Requests</h3>
@@ -274,8 +267,8 @@ const HRDashboard = () => {
             </div>
           </div>
 
-          {/* Employee Information Section */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="bg-indigo-50 border-b border-gray-200 px-4 py-3 flex justify-between items-center">
             <h3 className="text-lg font-medium text-indigo-800">Team Members</h3>
             <div className="flex items-center">
@@ -399,7 +392,6 @@ const HRDashboard = () => {
         </div>
         </div>
 
-        {/* Footer */}
         <Footer />
       </div>
     </div>

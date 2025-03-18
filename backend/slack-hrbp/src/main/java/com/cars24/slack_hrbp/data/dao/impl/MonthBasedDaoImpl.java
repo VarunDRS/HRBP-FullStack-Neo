@@ -21,6 +21,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.data.neo4j.core.Neo4jClient;
+
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +30,7 @@ import java.util.stream.Collectors;
 public class MonthBasedDaoImpl {
 
     private final EmployeeRepository employeeRepository;
-
+    private final Neo4jClient neo4jClient;
     private final AttendanceRepository attendanceRepository;
 
     public List<String> getAllEmployeesUnderManager(String managerId) {
@@ -39,29 +41,24 @@ public class MonthBasedDaoImpl {
                 .collect(Collectors.toList());
     }
 
-    //clean
 
-    public Page<String> getPaginatedEmployeesForManager(String monthYear, String managerId, int page, int limit) {
+    public Page<String> getPaginatedEmployeesForManager(String managerId, int page, int limit) {
+        String query = "MATCH (:Employee {userId: $managerId})<-[:REPORTED_BY*]-(e:Employee) " +
+                "RETURN e.userId SKIP $skip LIMIT $limit";
+
+        var queryBuilder = neo4jClient.query(query)
+                .bind(managerId).to("managerId")
+                .bind(page * limit).to("skip")
+                .bind(limit).to("limit");
+
+        List<String> userIds = (List<String>) queryBuilder.fetchAs(String.class)
+                .all();
+
+        long totalEmployees = employeeRepository.countByManagerId(managerId); // Fetch total count separately for pagination
+
         Pageable pageable = PageRequest.of(page, limit);
-
-        // Fetch employees under this manager
-        List<EmployeeEntity> employees = employeeRepository.findByManagerId(managerId);
-        System.out.println("getPaginatedEmployeesForManager: " + employees);
-
-        // Extract userIds instead of usernames
-        List<String> allUserIds = employees.stream()
-                .map(EmployeeEntity::getUserId)
-                .toList();
-
-        // Manually paginate the userIds
-        int start = (int) pageable.getOffset();
-        int end = Math.min(start + pageable.getPageSize(), allUserIds.size());
-
-        List<String> paginatedUserIds = allUserIds.subList(start, end);
-
-        return new PageImpl<>(paginatedUserIds, pageable, allUserIds.size());
+        return new PageImpl<>(userIds, pageable, totalEmployees);
     }
-
 
 
 
@@ -84,20 +81,12 @@ public class MonthBasedDaoImpl {
         return new PageImpl<>(employeeUserIds, pageable, employeePage.getTotalElements());
     }
 
-//    public List<AttendanceEntity> getAttendanceForEmployees(String monthYear,int page,int limit) {
-//
-//        Pageable pageable = PageRequest.of(page, limit);
-//        return attendanceRepository.findByDateStartingWith(monthYear, pageable);
-//    }
 
     public Page<EmployeeEntity> getEmployees(int page, int limit) {
         Pageable pageable = PageRequest.of(page, limit);
         return employeeRepository.findAll(pageable);
     }
 
-//    public List<AttendanceEntity> getAttendanceForEmployee2(String monthYear,String userId) {
-//        return attendanceRepository.findByDateStartingWithAndUseridIn(monthYear, userId);
-//    }
     private String getRequestTypeCode(String requestType) {
         switch (requestType) {
             case "Planned Leave":

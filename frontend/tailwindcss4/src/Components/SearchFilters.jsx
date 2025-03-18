@@ -2,12 +2,7 @@ import React from "react";
 
 const SearchFilters = ({ 
   searchQuery, 
-  setSearchQuery, 
-  monthFilter, 
-  setMonthFilter, 
-  employeeFilter, 
-  setEmployeeFilter,
-  teamMembers 
+  setSearchQuery
 }) => {
   return (
     <div className="bg-white p-4 rounded-lg shadow-sm mb-6">

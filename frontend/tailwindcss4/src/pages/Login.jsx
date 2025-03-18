@@ -5,7 +5,7 @@ import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
 import loginImage from "../assets/logo2.jpg";
 import { jwtDecode } from "jwt-decode";
-import SpaceBackground from "../Components/SpaceBackground"; // Import the background component
+import SpaceBackground from "../Components/SpaceBackground"; 
 
 const AstronautLogin = () => {
   const navigate = useNavigate();
@@ -30,19 +30,17 @@ const AstronautLogin = () => {
       if (response.status === 200) {
         console.log("Login Successful:", response.data);
     
-        // Store only the JWT token
+
         localStorage.setItem("Authorization", response.data.token);
-    
         const decodedToken = jwtDecode(response.data.token);
         console.log("Decoded Token:", decodedToken);
 
-        const userId = decodedToken.userId;  // Extract userId
-        const roles = decodedToken.roles; // Extract roles array
+        const userId = decodedToken.userId;  
+        const roles = decodedToken.roles; 
 
         console.log("Extracted UserId:", userId);
         console.log("Extracted Roles:", roles);
 
-        // Navigation based on role
         if (roles.includes("ROLE_HR")) {
             navigate("/hr");
         } else if (roles.includes("ROLE_EMPLOYEE")) {
@@ -66,7 +64,7 @@ const AstronautLogin = () => {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-black fixed inset-0 overflow-hidden">
-      {/* The background component is now imported and used here */}
+      
       <SpaceBackground />
 
       <div className="relative z-10 flex items-center justify-center w-full h-full p-4">

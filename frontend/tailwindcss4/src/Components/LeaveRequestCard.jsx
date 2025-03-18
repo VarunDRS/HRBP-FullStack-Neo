@@ -19,7 +19,6 @@ const STATUS_COLORS = {
 const LeaveRequestCard = ({ request }) => {
   const { employeeName, startDate, status, type } = request;
 
-  // Get status color, default to gray if not found
   const statusColorClass = STATUS_COLORS[status] || STATUS_COLORS['Pending'];
 
   return (

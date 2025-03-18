@@ -4,7 +4,6 @@ import LeaveRequestCard from "./LeaveRequestCard";
 import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
 
-// Status code mapping
 const STATUS_CODES = {
   'P': 'Planned Leave',
   'W': 'Work From Home',
@@ -20,7 +19,7 @@ const STATUS_CODES = {
 };
 
 const LeaveRequestsPanel = ({ leaveRequests }) => {
-  // Transform the data structure to be compatible with LeaveRequestCard
+  // Transforming the data structure to be compatible with LeaveRequestCard
   const transformLeaveRequests = (requests) => {
     const transformedRequests = [];
 
@@ -28,7 +27,7 @@ const LeaveRequestsPanel = ({ leaveRequests }) => {
       Object.entries(requests).forEach(([employeeName, monthlyRequests]) => {
         Object.entries(monthlyRequests).forEach(([date, status]) => {
           transformedRequests.push({
-            id: `${employeeName}-${date}`, // Create a unique identifier
+            id: `${employeeName}-${date}`, 
             employeeName,
             startDate: date,
             status: STATUS_CODES[status] || status,
@@ -43,7 +42,7 @@ const LeaveRequestsPanel = ({ leaveRequests }) => {
     return transformedRequests;
   };
 
-  // Process leave requests
+
   const processedLeaveRequests = transformLeaveRequests(leaveRequests);
 
   const token = localStorage.getItem("Authorization");

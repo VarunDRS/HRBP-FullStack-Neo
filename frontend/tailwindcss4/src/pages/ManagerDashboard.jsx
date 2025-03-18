@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { LogOut, Lock } from "lucide-react";
 
-// Import components
 import Navbar from "../Components/Navbar";
 import QuickActions from "../Components/QuickActions";
 import SearchFilters from "../Components/SearchFilters";
@@ -26,7 +25,7 @@ const ManagerDashboard = () => {
 
   const navigate = useNavigate();
 
-  // Fetch Manager data on component mount
+  // Initial data fetch
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -35,7 +34,6 @@ const ManagerDashboard = () => {
         const userId = decodedToken.userId;  
         const userRole = decodedToken.roles?.[0];
 
-        // Fetch Manager details
         const response = await axios.get(
           `http://localhost:8080/users/${userId}`,
           {
@@ -43,22 +41,19 @@ const ManagerDashboard = () => {
           }
         );
         
-        // Set Manager name
         setManagerName(response.data || "Manager");
 
-        // Fetch leave requests
         const leaveResponse = await axios.get(
           `http://localhost:8080/manager/${userId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        // Set leave requests
         if (leaveResponse.data) {
           setLeaveRequests(leaveResponse.data);
         }
 
-        // Fetch initial team members data (will be updated with pagination)
         fetchTeamMembers(userId, token, userRole);
+
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -66,7 +61,8 @@ const ManagerDashboard = () => {
 
     fetchData();
   }, []);
-
+  
+  // Fetch data on page change or page size change
   useEffect(() => {
     const fetchData = async () => {
       const token = localStorage.getItem("Authorization");
@@ -74,12 +70,14 @@ const ManagerDashboard = () => {
       const userId = decodedToken.userId;  
       const role = decodedToken.roles?.[0];
   
-      await fetchTeamMembers(userId, token, role); // Ensure it's awaited
+      await fetchTeamMembers(userId, token, role); 
     };
   
     fetchData();
-  }, [currentPage, pageSize]); // Dependencies include `currentPage`
+  }, [currentPage, pageSize]); 
   
+
+  // Fetch data on search query change
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       const token = localStorage.getItem("Authorization");
@@ -92,6 +90,7 @@ const ManagerDashboard = () => {
   
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]);
+  
 
   const fetchTeamMembers = async (userId, token, role, search = "%20") => {
     setLoading(true);
@@ -112,8 +111,6 @@ const ManagerDashboard = () => {
           id: employee.userId,
           email: employee.email,
           name: employee.username,
-          position: employee.position || "Employee",
-          department: employee.department || "General",
         }));
   
         setTeamMembers(formattedEmployees);
@@ -124,6 +121,7 @@ const ManagerDashboard = () => {
       setLoading(false);
     }
   };
+  
 
   useEffect(() => {
     const fetchTotalPages = async () => {
@@ -157,7 +155,7 @@ const ManagerDashboard = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [pageSize, searchQuery]); 
   
-  // Filtering logic for leave requests
+
   const getFilteredLeaveRequests = () => {
     if (
       leaveRequests &&
@@ -221,30 +219,21 @@ const ManagerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800">
-      {/* Navbar Component */}
+
       <Navbar hrName={managerName} />
 
-      {/* Main content */}
       <div className="container mx-auto px-4 py-6">
-        {/* Quick Actions Component */}
+
         <QuickActions 
           onUpdatePassword={handleUpdatePassword} 
         />
 
-        {/* Search and Filters Component */}
         <SearchFilters
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
-          monthFilter={monthFilter}
-          setMonthFilter={setMonthFilter}
-          employeeFilter={employeeFilter}
-          setEmployeeFilter={setEmployeeFilter}
-          teamMembers={teamMembers}
         />
 
-        {/* Main content grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Leave Requests Section */}
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="bg-indigo-50 border-b border-gray-200 px-4 py-3 flex justify-between items-center">
               <h3 className="text-lg font-medium text-indigo-800">Leave Requests</h3>
@@ -266,7 +255,6 @@ const ManagerDashboard = () => {
             </div>
           </div>
 
-          {/* Employee Information Section */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="bg-indigo-50 border-b border-gray-200 px-4 py-3 flex justify-between items-center">
             <h3 className="text-lg font-medium text-indigo-800">Team Members</h3>
@@ -391,7 +379,6 @@ const ManagerDashboard = () => {
         </div>
         </div>
 
-        {/* Footer */}
         <Footer />
       </div>
     </div>

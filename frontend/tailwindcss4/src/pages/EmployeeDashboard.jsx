@@ -21,7 +21,7 @@ const EmployeeDashboard = () => {
 
   const navigate = useNavigate();
 
-  // Fetch Employee data on component mount
+  // Initial data fetch
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -30,7 +30,6 @@ const EmployeeDashboard = () => {
         const decodedToken = jwtDecode(token);
         const userId = decodedToken.userId;  
 
-        // Fetch employee name and info
         const userResponse = await axios.get(
           `http://localhost:8080/users/${userId}`,
           {
@@ -38,10 +37,8 @@ const EmployeeDashboard = () => {
           }
         );
         
-        // Set Employee name
         setEmployeeName(userResponse.data || "Employee");
 
-        // Fetch leave requests
         const leaveResponse = await axios.get(
           `http://localhost:8080/employee/${userId}`,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -49,7 +46,6 @@ const EmployeeDashboard = () => {
 
         console.log(leaveResponse);
 
-        // Set leave requests
         if (leaveResponse.data) {
           setLeaveRequests(leaveResponse.data);
         }
@@ -63,7 +59,6 @@ const EmployeeDashboard = () => {
     fetchData();
   }, []);
 
-  // Get filtered leave requests
   const getFilteredLeaveRequests = () => {
     if (leaveRequests && typeof leaveRequests === 'object' && !Array.isArray(leaveRequests)) {
       if (!monthFilter && !employeeFilter) return leaveRequests;
@@ -93,31 +88,23 @@ const EmployeeDashboard = () => {
     return leaveRequests;
   };
 
-  // Navigation handlers
   const handleUpdatePassword = () => {
     navigate("/users/update-password");
   };
 
-  // Handle apply for leave
-  const handleApplyForLeave = () => {
-    navigate("/apply-leave");
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800">
-      {/* Navbar Component */}
+  
       <Navbar hrName={employeeName} />
 
-      {/* Main content */}
       <div className="container mx-auto px-4 py-6">
-        {/* Quick Actions Component */}
+
         <QuickActions 
           onUpdatePassword={handleUpdatePassword} 
         />
 
-        {/* Main content grid */}
         <div className="grid grid-cols-1 gap-6">
-          {/* Leave Requests Section */}
+
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="bg-indigo-50 border-b border-gray-200 px-4 py-3 flex justify-between items-center">
               <h3 className="text-lg font-medium text-indigo-800">My Leave Requests</h3>
@@ -144,7 +131,6 @@ const EmployeeDashboard = () => {
           </div>
         </div >
 
-        {/* Footer */}
         <Footer />
       </div>
     </div>

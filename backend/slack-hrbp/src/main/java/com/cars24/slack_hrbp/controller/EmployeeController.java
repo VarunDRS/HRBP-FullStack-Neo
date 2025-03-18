@@ -30,12 +30,6 @@ public class EmployeeController {
         return resp;
     }
 
-//    @PreAuthorize("hasRole('EMPLOYEE')")
-//    @GetMapping("/getDetails")
-//    public ResponseEntity<Map<String, Map<String, String>>> getUserDetails(@RequestBody String userid){
-//        Map<String, Map<String, String>> responses = usernameService.getCustomerDetails(userid);
-//        return ResponseEntity.ok().body(responses);
-//    }
 
     @PreAuthorize("hasRole('EMPLOYEE')")
     @GetMapping("/{userId}")

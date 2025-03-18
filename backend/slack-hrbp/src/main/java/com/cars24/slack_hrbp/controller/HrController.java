@@ -40,13 +40,9 @@ import java.util.concurrent.Executors;
 public class HrController {
 
     private final HrServiceImpl hrService;
-    private final UserServiceImpl userService;
     private final MonthBasedServiceImpl monthBasedService;
     private final UseridAndMonthImpl useridandmonth;
-    private final EmployeeServiceImpl employeeService;
-    private final ListAllEmployeesUnderManagerDaoImpl listAllEmployeesUnderManagerDao;
     private final ConcurrentHashMap<String, SseEmitter> emitters = new ConcurrentHashMap<>();
-    private final ExecutorService executor = Executors.newCachedThreadPool();
 
 
     @PreAuthorize("hasRole('HR')")
@@ -57,13 +53,18 @@ public class HrController {
         return ResponseEntity.ok("Creation was successful");
     }
 
+
     @PreAuthorize("hasRole('HR')")
     @PutMapping("/updateManager/{userId}/{newManagerId}")
     public ResponseEntity<String> updateManager(
             @PathVariable("userId") String userId,
             @PathVariable("newManagerId") String newManagerId) {
-        hrService.updateManager(userId, newManagerId);
-        return ResponseEntity.ok("Manager updated successfully");
+        try {
+            hrService.updateManager(userId, newManagerId);
+            return ResponseEntity.ok("Manager updated successfully");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
 
@@ -79,7 +80,6 @@ public class HrController {
     @PreAuthorize("hasRole('HR')")
     @GetMapping("/{userid}/{month}")
     public Map<String, Map<String, String>> getUserDetails(@PathVariable String userid, @PathVariable String month){
-
         Map<String, Map<String, String>> resp = useridandmonth.getCustomerDetails(userid,month);
         return resp;
 
@@ -97,10 +97,10 @@ public class HrController {
 
     }
 
-    // SSE Endpoint to listen for events
+
     @GetMapping(value = "/events/{userid}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamEvents(@PathVariable String userid) {
-        SseEmitter emitter = new SseEmitter(0L); // it will remain open indefinitely
+        SseEmitter emitter = new SseEmitter(0L); // No timeout
         ExecutorService executor = Executors.newSingleThreadExecutor();
 
         executor.execute(() -> {
@@ -139,11 +139,10 @@ public class HrController {
             byte[] excelData = useridandmonth.generateAttendanceExcel(userid, month);
 
             // Set response headers for file download
-            //configures the HTTP response to return the generated Excel file as a downloadable attachment
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             response.setHeader("Content-Disposition", "attachment; filename=Attendance_" + userid + "_" + month + ".xlsx");
-            response.getOutputStream().write(excelData); //response is stored in the response buffer.
-            response.flushBuffer(); //forces the server to send all buffered data immediately
+            response.getOutputStream().write(excelData);
+            response.flushBuffer();
 
             // Notify frontend that download is ready
             if (emitter != null) {
@@ -172,21 +171,18 @@ public class HrController {
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "limit", defaultValue = "2") int limit) {
 
-        // Convert page number to zero-based index
-        if (page > 0) page -= 1;
+        if (page > 0)
+            page -= 1;
 
         Page<List<String>> users = hrService.getAllUsers(userId, page, limit, searchtag);
         List<GetUserResponse> responses = new ArrayList<>();
 
-        // Iterate over users.getContent()
         for (List<String> userDto : users.getContent()) {
-            if (userDto.size() >= 3) { // Ensure list contains required values
                 GetUserResponse res = new GetUserResponse();
                 res.setUserId(userDto.get(0));
                 res.setEmail(userDto.get(1));
                 res.setUsername(userDto.get(2));
                 responses.add(res);
-            }
         }
 
         return ResponseEntity.ok().body(responses);
@@ -243,8 +239,6 @@ public class HrController {
             throw new RuntimeException("Error generating report: " + e.getMessage());
         }
     }
-
-
 
 }
 

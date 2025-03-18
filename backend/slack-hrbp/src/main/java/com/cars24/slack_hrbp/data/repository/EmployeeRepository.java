@@ -20,9 +20,9 @@ public interface EmployeeRepository extends Neo4jRepository<EmployeeEntity, Stri
     @Query("""
     CREATE (e:Employee {userId: $userId, username: $username, email: $email,
         encryptedPassword: $encryptedPassword,
-        managerName: $managerName, managerId: $managerId, roles: $roles}) 
+        managerName: $managerName, managerId: $managerId, roles: $roles})
     WITH e
-    OPTIONAL MATCH (m:Employee {userId: $managerId}) 
+    OPTIONAL MATCH (m:Employee {userId: $managerId})
     FOREACH (_ IN CASE WHEN m IS NOT NULL THEN [1] ELSE [] END | CREATE (e)-[:REPORTED_BY]->(m))
     RETURN e
 """)
@@ -96,8 +96,9 @@ public interface EmployeeRepository extends Neo4jRepository<EmployeeEntity, Stri
             "RETURN COUNT(e)")
     long countBySearchtag(@Param("searchtag") String searchtag);
 
-    @Query(value = "MATCH (e:Employee)-[:REPORTED_BY]->(m:Employee {userId: $managerId}) RETURN e",
-            countQuery = "MATCH (e:Employee)-[:REPORTED_BY]->(m:Employee {userId: $managerId}) RETURN COUNT(e)")
+
+    @Query(value = "MATCH (m:Employee {userId: $managerId})<-[:REPORTED_BY*]-(e:Employee) RETURN e",
+            countQuery = "MATCH (m:Employee {userId: $managerId})<-[:REPORTED_BY*]-(e:Employee) RETURN COUNT(e)")
     List<EmployeeEntity> findByManagerId(@Param("managerId") String managerId);
 
     @Query("MATCH (m:Manager {id: $managerId})-[:MANAGES]->(e:Employee) WHERE e.joiningDate STARTS WITH $monthYear RETURN DISTINCT e.username")

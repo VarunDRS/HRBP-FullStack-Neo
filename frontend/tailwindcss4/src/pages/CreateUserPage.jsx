@@ -41,7 +41,6 @@ const CreateUserPage = () => {
   const fileInputRef = useRef(null);
   const canvasRef = useRef(null);
 
-  // Set up Three.js space scene with car and rocket - copied from login page
   useEffect(() => {
     if (!canvasRef.current) return;
 

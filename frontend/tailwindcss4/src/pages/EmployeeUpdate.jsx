@@ -52,7 +52,6 @@ const EmployeeDetails = () => {
       });
   }, [id, token]);
 
-  // Handle input changes
   const handleChange = (e) => {
     setEmployee({ ...employee, [e.target.name]: e.target.value });
   };
@@ -75,9 +74,22 @@ const EmployeeDetails = () => {
       );
       toast.success("Manager updated successfully!");
     } catch (error) {
-      console.error("Error updating manager:", error);
-      toast.error("Failed to update manager");
-    }
+          console.log("Error response:", error.response);
+        
+          if (error.response && error.response.data) {
+            const { statuscode, message, data } = error.response.data;
+        
+            if (statuscode === 400) {
+              toast.error(message);  // Show correct error message
+            } else {
+              toast.error("Unexpected error occurred: " + message);
+            }
+          } else if (error.message) {
+            toast.error("Error: " + error.message);
+          } else {
+            toast.error("An unexpected error occurred. Please try again.");
+          }
+        }   
   };
 
   // Handle role update
@@ -104,9 +116,22 @@ const EmployeeDetails = () => {
 
       toast.success("Role updated successfully!");
     } catch (error) {
-      console.error("Error updating roles:", error);
-      toast.error("Failed to update roles");
-    }
+          console.log("Error response:", error.response);
+        
+          if (error.response && error.response.data) {
+            const { statuscode, message, data } = error.response.data;
+        
+            if (statuscode === 400) {
+              toast.error(message);  // Show correct error message
+            } else {
+              toast.error("Unexpected error occurred: " + message);
+            }
+          } else if (error.message) {
+            toast.error("Error: " + error.message);
+          } else {
+            toast.error("An unexpected error occurred. Please try again.");
+          }
+        }   
   };
 
   // Handle form submission
