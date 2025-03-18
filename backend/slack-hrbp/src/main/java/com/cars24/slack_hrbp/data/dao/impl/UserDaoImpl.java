@@ -50,36 +50,6 @@ public class UserDaoImpl implements UserDao {
         return userDto;
     }
 
-//    @Override
-//    public UserDto updateUser(String id, EmployeeUpdateRequest employeeUpdateRequest) {
-//
-//        log.info("[displayCustomer] UserDaoImpl id, {}, request, {}", id, employeeUpdateRequest);
-//
-//        Optional<EmployeeEntity> employeeEntity = employeeRepository.findByUserId(id);
-//
-////        if(employeeUpdateRequest.getFirstName().length() != 0)
-////            employeeEntity.setFirstName(employeeUpdateRequest.getFirstName());
-////
-////        if(employeeUpdateRequest.getLastName().length() != 0)
-////            employeeEntity.setLastName(employeeUpdateRequest.getLastName());
-////
-////        if(employeeUpdateRequest.getPhone().length() != 0)
-////            employeeEntity.setPhone(employeeUpdateRequest.getPhone());
-////
-////        if(employeeUpdateRequest.getCity().length() != 0)
-////            employeeEntity.setCity(employeeUpdateRequest.getCity());
-//
-//        employeeRepository.save(employeeEntity);
-//        System.out.println(employeeEntity);
-//
-//        UserDto response = new UserDto();
-//        BeanUtils.copyProperties(employeeEntity, response);
-//
-//        log.info(response.getLastName(), " ", response.getFirstName());
-//
-//
-//        return response;
-//    }
 
     @Transactional
     @Override
