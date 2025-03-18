@@ -41,7 +41,6 @@ public class MonthBasedDaoImpl {
                 .collect(Collectors.toList());
     }
 
-    //clean
 
     public Page<String> getPaginatedEmployeesForManager(String managerId, int page, int limit) {
         String query = "MATCH (:Employee {userId: $managerId})<-[:REPORTED_BY*]-(e:Employee) " +
@@ -82,20 +81,12 @@ public class MonthBasedDaoImpl {
         return new PageImpl<>(employeeUserIds, pageable, employeePage.getTotalElements());
     }
 
-//    public List<AttendanceEntity> getAttendanceForEmployees(String monthYear,int page,int limit) {
-//
-//        Pageable pageable = PageRequest.of(page, limit);
-//        return attendanceRepository.findByDateStartingWith(monthYear, pageable);
-//    }
 
     public Page<EmployeeEntity> getEmployees(int page, int limit) {
         Pageable pageable = PageRequest.of(page, limit);
         return employeeRepository.findAll(pageable);
     }
 
-//    public List<AttendanceEntity> getAttendanceForEmployee2(String monthYear,String userId) {
-//        return attendanceRepository.findByDateStartingWithAndUseridIn(monthYear, userId);
-//    }
     private String getRequestTypeCode(String requestType) {
         switch (requestType) {
             case "Planned Leave":

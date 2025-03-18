@@ -43,6 +43,10 @@ public class HrServiceImpl implements HrService {
         EmployeeEntity manager = null;
         String managerName = null;
 
+        Optional<EmployeeEntity> employee = employeeRepository.findByUserId(request.getUserId());
+        if(employee.isPresent())
+            throw new UserServiceException("User already exists");
+
         if (request.getManagerId() != null) {
             Optional<EmployeeEntity> managerOpt = employeeRepository.findByUserId(request.getManagerId());
             if (managerOpt.isPresent()) {
