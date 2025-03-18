@@ -68,28 +68,25 @@ public class HrServiceImpl implements HrService {
 
     @Transactional
     public void updateManager(String userId, String newManagerId) {
-        // Fetch all subordinates of the employee being updated
         List<EmployeeEntity> subordinates = employeeRepository.findByManagerId(userId);
 
-        // Check if the newManagerId is in the list of subordinates
         boolean isNewManagerASubordinate = subordinates.stream()
                 .anyMatch(employee -> employee.getUserId().equals(newManagerId));
 
         if (isNewManagerASubordinate) {
-            throw new IllegalArgumentException("Cannot update manager to a subordinate.");
+            throw new UserServiceException("Cannot update manager to a subordinate. We detected a cycle");
         }
 
-        // Proceed with the update if validation passes
         String query = """
-        MATCH (e:Employee {userId: $userId})-[r:REPORTED_BY]->(oldManager)
-        DELETE r
-        WITH e
-        SET e.managerId = $newManagerId
-        WITH e
-        MATCH (newManager:Employee {userId: $newManagerId})
-        MERGE (e)-[:REPORTED_BY]->(newManager)
-        SET e.managerName = newManager.username
-    """;
+            MATCH (e:Employee {userId: $userId})-[r:REPORTED_BY]->(oldManager)
+            DELETE r
+            WITH e
+            SET e.managerId = $newManagerId
+            WITH e
+            MATCH (newManager:Employee {userId: $newManagerId})
+            MERGE (e)-[:REPORTED_BY]->(newManager)
+            SET e.managerName = newManager.username
+            """;
 
         neo4jClient.query(query)
                 .bind(userId).to("userId")
@@ -97,27 +94,12 @@ public class HrServiceImpl implements HrService {
                 .run();
     }
 
-//    @Override
-//    public String createUser(CreateEmployeeRequest createEmployeeRequest) {
-//        log.info("UserServiceImpl createEmployeeRequest, {}", createEmployeeRequest);
-//
-//        if(employeeRepository.existsByEmail(createEmployeeRequest.getEmail()))
-//            throw new UserServiceException("Email already exists");
-//        if(employeeRepository.existsByUserId(createEmployeeRequest.getUserId()))
-//            throw new UserServiceException("UserId already exists");
-//        return hrDao.createUser(createEmployeeRequest);
-//    }
-
     @Override
     public String updateUser(EmployeeUpdateRequest employeeUpdateRequest) {
         System.out.println("Request reached Service for update user");
         return hrDao.updateUser(employeeUpdateRequest);
     }
 
-//    @Override
-//    public Optional<EmployeeEntity> getUser(String userid) {
-//        return hrDao.getUser(userid);
-//    }
 
     @Override
     public Page<List<String>> getAllUsers(String userId, int page, int limit, String searchtag) {

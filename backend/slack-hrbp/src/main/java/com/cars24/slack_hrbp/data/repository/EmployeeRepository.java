@@ -20,9 +20,9 @@ public interface EmployeeRepository extends Neo4jRepository<EmployeeEntity, Stri
     @Query("""
     CREATE (e:Employee {userId: $userId, username: $username, email: $email,
         encryptedPassword: $encryptedPassword,
-        managerName: $managerName, managerId: $managerId, roles: $roles}) 
+        managerName: $managerName, managerId: $managerId, roles: $roles})
     WITH e
-    OPTIONAL MATCH (m:Employee {userId: $managerId}) 
+    OPTIONAL MATCH (m:Employee {userId: $managerId})
     FOREACH (_ IN CASE WHEN m IS NOT NULL THEN [1] ELSE [] END | CREATE (e)-[:REPORTED_BY]->(m))
     RETURN e
 """)

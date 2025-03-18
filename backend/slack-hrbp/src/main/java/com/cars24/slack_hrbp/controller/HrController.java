@@ -40,13 +40,9 @@ import java.util.concurrent.Executors;
 public class HrController {
 
     private final HrServiceImpl hrService;
-    private final UserServiceImpl userService;
     private final MonthBasedServiceImpl monthBasedService;
     private final UseridAndMonthImpl useridandmonth;
-    private final EmployeeServiceImpl employeeService;
-    private final ListAllEmployeesUnderManagerDaoImpl listAllEmployeesUnderManagerDao;
     private final ConcurrentHashMap<String, SseEmitter> emitters = new ConcurrentHashMap<>();
-    private final ExecutorService executor = Executors.newCachedThreadPool();
 
 
     @PreAuthorize("hasRole('HR')")
@@ -81,22 +77,9 @@ public class HrController {
     }
 
 
-//    @PreAuthorize("hasrole('HR')")
-//    @GetMapping("bymonth")
-//    public ResponseEntity<Map<String, Map<String, String>>> getByMonth(@RequestParam String monthYear) {
-//        try {
-//            Map<String, Map<String, String>> reportData = monthBasedService.generateAttendanceReport(monthYear);
-//            return ResponseEntity.ok().body(reportData);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            throw new RuntimeException("Error generating report: " + e.getMessage());
-//        }
-//    }
-
     @PreAuthorize("hasRole('HR')")
     @GetMapping("/{userid}/{month}")
     public Map<String, Map<String, String>> getUserDetails(@PathVariable String userid, @PathVariable String month){
-
         Map<String, Map<String, String>> resp = useridandmonth.getCustomerDetails(userid,month);
         return resp;
 
@@ -114,7 +97,6 @@ public class HrController {
 
     }
 
-    // SSE Endpoint to listen for events
 
     @GetMapping(value = "/events/{userid}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamEvents(@PathVariable String userid) {
@@ -189,21 +171,18 @@ public class HrController {
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "limit", defaultValue = "2") int limit) {
 
-        // Convert page number to zero-based index
-        if (page > 0) page -= 1;
+        if (page > 0)
+            page -= 1;
 
         Page<List<String>> users = hrService.getAllUsers(userId, page, limit, searchtag);
         List<GetUserResponse> responses = new ArrayList<>();
 
-        // Iterate over users.getContent()
         for (List<String> userDto : users.getContent()) {
-            if (userDto.size() >= 3) { // Ensure list contains required values
                 GetUserResponse res = new GetUserResponse();
                 res.setUserId(userDto.get(0));
                 res.setEmail(userDto.get(1));
                 res.setUsername(userDto.get(2));
                 responses.add(res);
-            }
         }
 
         return ResponseEntity.ok().body(responses);
@@ -260,8 +239,6 @@ public class HrController {
             throw new RuntimeException("Error generating report: " + e.getMessage());
         }
     }
-
-
 
 }
 

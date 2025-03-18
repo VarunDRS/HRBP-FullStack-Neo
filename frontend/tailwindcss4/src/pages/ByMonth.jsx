@@ -51,17 +51,13 @@ const ByMonth = () => {
     return `${monthNames[date.getMonth()]}-${date.getFullYear()}`;
   };
 
-  const [selectedMonth, setSelectedMonth] = useState(formatMonthForUrl(new Date()));
+  // Initialize selectedMonth state from URL params
+  const [selectedMonth, setSelectedMonth] = useState(month || formatMonthForUrl(new Date()));
   const [data, setData] = useState(null); // Store fetched data
-
-
-  useEffect(() => {
-    setData(null);
-    fetchData(); // Fetch data whenever 'month' changes
-  }, [selectedMonth,currentPage]);
 
   const API_BASE_URL = "http://localhost:8080"; // Ensure this matches your backend
 
+  // Main data fetching function
   const fetchData = async () => {
     setLoading(true);
     setError("");
@@ -155,55 +151,63 @@ const ByMonth = () => {
     }
   };
   
-  // Update the useEffect to properly handle dependencies
+  // Main useEffect - fetch data when dependencies change
   useEffect(() => {
     fetchData();
   }, [selectedMonth, currentPage, pageSize]);
 
+  // Update selectedMonth when URL params change
+  useEffect(() => {
+    if (month) {
+      setSelectedMonth(month);
+      setCurrentPage(1); // Reset to first page when month changes
+    }
+  }, [month]);
 
-useEffect(() => {
-  console.log("Updated Data in State:", data);
-}, [data]); // Runs whenever 'data' changes
+  // Debug useEffect - log data changes
+  useEffect(() => {
+    console.log("Updated Data in State:", data);
+  }, [data]);
 
-const navigateToMonth = (direction) => {
-  const [monthName, yearStr] = selectedMonth.split("-");
-  const year = parseInt(yearStr);
-  const monthNum = getMonthNumber(monthName);
-  
-  let newDate;
-  if (direction === "prev") {
-    newDate = new Date(year, monthNum - 1, 1);
-  } else {
-    newDate = new Date(year, monthNum + 1, 1);
-  }
+  const navigateToMonth = (direction) => {
+    const [monthName, yearStr] = selectedMonth.split("-");
+    const year = parseInt(yearStr);
+    const monthNum = getMonthNumber(monthName);
+    
+    let newDate;
+    if (direction === "prev") {
+      newDate = new Date(year, monthNum - 1, 1);
+    } else {
+      newDate = new Date(year, monthNum + 1, 1);
+    }
 
-  const newMonthYear = formatMonthForUrl(newDate);
-  setSelectedMonth(newMonthYear);
-  setCurrentPage(1); // Reset to first page when changing month
-  navigate(generatePath(newMonthYear));
-};
+    const newMonthYear = formatMonthForUrl(newDate);
+    setSelectedMonth(newMonthYear);
+    setCurrentPage(1); // Reset to first page when changing month
+    navigate(generatePath(newMonthYear));
+  };
 
-// Update the jump to month function
-const jumpToMonth = (event) => {
-  const selectedMonthYear = event.target.value; // Format: 2025-03
-  const [year, monthNum] = selectedMonthYear.split("-");
-  const monthNames = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-  ];
-  const monthName = monthNames[parseInt(monthNum) - 1];
-  
-  const newMonthYear = `${monthName}-${year}`;
-  setSelectedMonth(newMonthYear);
-  setCurrentPage(1); // Reset to first page when changing month
-  navigate(generatePath(newMonthYear));
-};
+  // Update the jump to month function
+  const jumpToMonth = (event) => {
+    const selectedMonthYear = event.target.value; // Format: 2025-03
+    const [year, monthNum] = selectedMonthYear.split("-");
+    const monthNames = [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ];
+    const monthName = monthNames[parseInt(monthNum) - 1];
+    
+    const newMonthYear = `${monthName}-${year}`;
+    setSelectedMonth(newMonthYear);
+    setCurrentPage(1); // Reset to first page when changing month
+    navigate(generatePath(newMonthYear));
+  };
 
   const generatePath = (newMonthYear) => {
     const token = localStorage.getItem("Authorization");
     const decodedToken = jwtDecode(token);
     const role = decodedToken.roles?.[0];
-    const userId=decodedToken.userId;
+    const userId = decodedToken.userId;
 
     if (!token) {
       console.error("No token found, redirecting to login.");
@@ -255,7 +259,6 @@ const jumpToMonth = (event) => {
     setCurrentPage(1); // Reset to first page when changing page size
   };
 
-  
   const getAttendanceColor = (code) => {
     switch (code) {
       case "P": return "#4CAF50"; // Planned Leave

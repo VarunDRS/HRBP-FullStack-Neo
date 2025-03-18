@@ -7,6 +7,7 @@ import com.cars24.slack_hrbp.data.request.EmployeeUpdateRequest;
 import com.cars24.slack_hrbp.data.request.CreateEmployeeRequest;
 import com.cars24.slack_hrbp.data.response.EmployeeDisplayResponse;
 import com.cars24.slack_hrbp.data.response.UpdateEmployeeResponse;
+import com.cars24.slack_hrbp.excpetion.UserServiceException;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,7 +51,7 @@ public class HrDaoImpl implements HrDao {
         Optional<EmployeeEntity> employeeOpt = employeeRepository.findByUserId(employeeUpdateRequest.getUserId());
 
         if (employeeOpt.isEmpty()) {
-            throw new RuntimeException("Employee not found");
+            throw new UserServiceException("Employee not found");
         }
 
         employeeRepository.updateEmployeeRoles(
@@ -64,15 +65,13 @@ public class HrDaoImpl implements HrDao {
 
     @Override
     public Page<List<String>> getAllUsers(String userId, int page, int limit, String searchtag) {
+
         String query;
 
         if (searchtag == null || searchtag.trim().isEmpty()) {
-            // Fetch all employees without filtering
             query = "MATCH (e:Employee) RETURN e.userId, e.email, e.username SKIP $skip LIMIT $limit";
-//            query = "MATCH (:Employee {userId: $userId})<-[:REPORTED_BY*]-(e:Employee) " +
-//                    "RETURN e.userId, e.email, e.username SKIP $skip LIMIT $limit";
+
         } else {
-            // Fetch employees matching search criteria
             query = "MATCH (e:Employee) " +
                     "WHERE TOLOWER(e.username) STARTS WITH TOLOWER($searchtag) " +
                     "   OR TOLOWER(e.username) CONTAINS TOLOWER($searchtag) " +

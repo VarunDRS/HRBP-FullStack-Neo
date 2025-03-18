@@ -34,27 +34,12 @@ import java.util.concurrent.Executors;
 public class ManagerController {
 
     private final MonthBasedServiceImpl monthBasedService;
-    private final UserServiceImpl userService;
     private final UseridAndMonthImpl useridandmonth;
     private final ListAllEmployeesUnderManagerServiceImpl listAllEmployeesUnderManager;
-    private final EmployeeServiceImpl employeeService;
     private final ListAllEmployeesUnderManagerDaoImpl listAllEmployeesUnderManagerDao;
-    private final HrServiceImpl hrService;
     private final ConcurrentHashMap<String, SseEmitter> emitters = new ConcurrentHashMap<>();
     private final ExecutorService executor = Executors.newCachedThreadPool();
 
-
-//    @PreAuthorize("hasrole('MANAGER')")
-//    @GetMapping("bymonth")
-//    public ResponseEntity<Map<String, Map<String, String>>> getByMonth(@RequestParam String monthYear) {
-//        try {
-//            Map<String, Map<String, String>> reportData = monthBasedService.generateAttendanceReport(monthYear);
-//            return ResponseEntity.ok().body(reportData);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            throw new RuntimeException("Error generating report: " + e.getMessage());
-//        }
-//    }
 
     @PreAuthorize("hasRole('MANAGER')")
     @GetMapping("/bymonthreport")
@@ -97,12 +82,6 @@ public class ManagerController {
         return resp;
     }
 
-//    @PreAuthorize("hasRole('MANAGER')")
-//    @GetMapping("/getAllEmployees/{userId}")
-//    public Page<List<String>> getAllEmployeesUnderManager(@PathVariable String userId){
-//        Page<List<String>> lis = listAllEmployeesUnderManager.getAllEmployeesUnderManager(userId,  0, 0);
-//        return lis;
-//    }
 
     @PreAuthorize("hasRole('MANAGER')")
     @GetMapping("/displayUsers/{userId}/{searchtag}")
@@ -131,7 +110,6 @@ public class ManagerController {
 
         return ResponseEntity.ok().body(responses);
     }
-
 
 
     @PreAuthorize("hasRole('MANAGER')")

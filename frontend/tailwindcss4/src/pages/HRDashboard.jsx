@@ -113,8 +113,6 @@ const HRDashboard = () => {
           id: employee.userId,
           email: employee.email,
           name: employee.username,
-          position: employee.position || "Employee",
-          department: employee.department || "General",
         }));
   
         setTeamMembers(formattedEmployees);

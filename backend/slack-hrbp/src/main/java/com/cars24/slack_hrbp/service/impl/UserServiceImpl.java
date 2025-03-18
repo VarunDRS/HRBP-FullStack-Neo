@@ -38,13 +38,7 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
 
     @Autowired
-    UserDao userDao;
-
-    @Autowired
     Neo4jClient neo4jClient;
-
-    @Autowired
-    TransactionTemplate transactionTemplate;
 
     @Autowired
     Utils utils;
@@ -144,34 +138,7 @@ public class UserServiceImpl implements UserService {
         return response;
     }
 
-    @Override
-    public UserDto displayCustomer(String userId) {
-        log.info("[display] UserServiceImpl {}", userId);
 
-        return userDao.displayCustomer(userId);
-    }
-
-//    @Override
-//    public UserDto updateUser(String id, EmployeeUpdateRequest employeeUpdateRequest) {
-//        if(!employeeRepository.existsByUserId(id)){
-//            throw new UserServiceException("User not found");
-//        }
-//
-//        return userDao.updateUser(id, employeeUpdateRequest);
-//
-//    }
-
-    @Override
-    public UserDto deleteUser(String id) {
-
-        if(!employeeRepository.existsByUserId(id)){
-            throw new UserServiceException("User not found");
-        }
-
-        return userDao.deleteUser(id);
-    }
-
-    @Override
     public List<UserDto> getAllUsers(int page, int limit) {
 
         Pageable pageable = (Pageable) PageRequest.of(page, limit);
