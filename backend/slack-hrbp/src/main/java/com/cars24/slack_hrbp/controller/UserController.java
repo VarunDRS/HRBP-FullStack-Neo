@@ -48,7 +48,8 @@ public class UserController {
         if (!entity.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
         }
-        return ResponseEntity.ok(entity.get().getUsername());
+        String userName = entity.get().getUsername();
+        return ResponseEntity.ok(userName);
     }
 
     @PostMapping("/updatePassword")
@@ -100,7 +101,7 @@ public class UserController {
         if (isValid) {
             return ResponseEntity.ok(Collections.singletonMap("success", "Password is correct"));
         } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            return ResponseEntity.status(400)
                     .body(Collections.singletonMap("error", "Invalid password"));
         }
     }

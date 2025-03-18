@@ -33,9 +33,9 @@ const Navbar = ({ hrName }) => {
         <div className="flex flex-col items-start space-y-1">
           <div className="flex items-center space-x-3">
             <img className="h-12 w-auto mt-3" src={loginImage} alt="Company logo" />
-            <h1 className="px-125 text-2xl font-bold">{portalName}</h1>
+            <h1 className="px-100 text-2xl font-bold">{portalName}</h1>
           </div>
-          <span className="px-155 text-lg text-gray-300">Welcome, {hrName}</span>
+          <span className="px-145 text-lg text-gray-300">Welcome, {hrName}</span>
         </div>
         <button 
           className="px-4 py-2 bg-red-700 hover:bg-red-900 rounded-lg flex items-center text-white"
