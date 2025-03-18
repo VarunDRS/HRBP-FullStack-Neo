@@ -36,15 +36,6 @@ public class HrDaoImpl implements HrDao {
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final Neo4jClient neo4jClient;
 
-//    @Override
-//    public String createUser(CreateEmployeeRequest createEmployeeRequest) {
-//        EmployeeEntity employeeEntity = new EmployeeEntity();
-//        BeanUtils.copyProperties(createEmployeeRequest, employeeEntity);
-//        employeeEntity.setEncryptedPassword(bCryptPasswordEncoder.encode(createEmployeeRequest.getPassword()));
-//        employeeEntity.setRoles(createEmployeeRequest.getRoles());
-//        employeeRepository.save(employeeEntity);
-//        return "Creation of employee account was successful";
-//    }
 
     @Override
     public String updateUser(EmployeeUpdateRequest employeeUpdateRequest) {
