@@ -22,6 +22,8 @@ com\cars24\slack_hrbp\controller\HrController.class
 com\cars24\slack_hrbp\data\dao\impl\ListAllEmployeesUnderManagerDaoImpl.class
 com\cars24\slack_hrbp\service\UseridAndMonth.class
 com\cars24\slack_hrbp\service\impl\UseridAndMonthImpl.class
+com\cars24\slack_hrbp\data\dao\impl\MonthBasedDaoImpl.class
+com\cars24\slack_hrbp\Neo4jConfig.class
 com\cars24\slack_hrbp\data\response\SignUpResponse.class
 com\cars24\slack_hrbp\data\dao\UserDao.class
 com\cars24\slack_hrbp\data\dao\UseridAndMonthDao.class
