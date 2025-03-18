@@ -21,15 +21,6 @@ public class GraphServicesImpl implements GraphServices {
     private final GraphDaoImpl graphDao;
 
     public GraphResponse getGraph(@RequestParam String userid , String month){
-//        boolean flag = employeeRepository.existsByUserId(userid);
-//
-//        if(flag){
             return graphDao.getGraph(userid,month);
-//        }
-//
-//        else{
-//            return null;
-//        }
-
     }
 }

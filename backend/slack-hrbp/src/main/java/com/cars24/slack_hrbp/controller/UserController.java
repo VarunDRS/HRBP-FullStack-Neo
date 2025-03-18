@@ -60,23 +60,23 @@ public class UserController {
         return ResponseEntity.ok(Collections.singletonMap("success", true));
     }
 
-    @PostMapping("/signup")
-    public ResponseEntity<Map<String, String>> createUser(@RequestBody SignUpRequest signUpRequest) {
-        log.info("[createUser] UserController {}", signUpRequest);
-
-        UserDto userDto = new UserDto();
-        BeanUtils.copyProperties(signUpRequest, userDto);
-
-        UserDto createdUser = userService.createUser(userDto);
-
-        if (createdUser != null) {
-            // Return a success message with HTTP 201 Created status
-            return ResponseEntity.status(201).body(Map.of("message", "Signup successful!"));
-        } else {
-            // Return an error message with HTTP 400 Bad Request status
-            return ResponseEntity.status(400).body(Map.of("message", "Signup failed!"));
-        }
-    }
+//    @PostMapping("/signup")
+//    public ResponseEntity<Map<String, String>> createUser(@RequestBody SignUpRequest signUpRequest) {
+//        log.info("[createUser] UserController {}", signUpRequest);
+//
+//        UserDto userDto = new UserDto();
+//        BeanUtils.copyProperties(signUpRequest, userDto);
+//
+//        UserDto createdUser = userService.createUser(userDto);
+//
+//        if (createdUser != null) {
+//            // Return a success message with HTTP 201 Created status
+//            return ResponseEntity.status(201).body(Map.of("message", "Signup successful!"));
+//        } else {
+//            // Return an error message with HTTP 400 Bad Request status
+//            return ResponseEntity.status(400).body(Map.of("message", "Signup failed!"));
+//        }
+//    }
 
     @PostMapping("/verify-password")
     public ResponseEntity<?> verifyPassword(@RequestBody PasswordVerificationRequest request,
