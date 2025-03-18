@@ -107,8 +107,6 @@ public class UseridAndMonthDaoImpl implements UseridAndMonthDao {
                 String entityMonth = monthFormat.format(parsedDate); // Convert Date to "MMM-yyyy"
 
                 if (entityMonth.equals(targetMonth)) { // Correct month comparison
-                    log.info("Inside If - Date belongs to requested month");
-
                     String formattedDate = outputFormat.format(parsedDate); // Format Date to "MMM-dd"
                     String leaveType = getLeaveAbbreviation(entity.getType());
                     attendanceMap.put(formattedDate, leaveType);
@@ -118,7 +116,7 @@ public class UseridAndMonthDaoImpl implements UseridAndMonthDao {
             }
         }
 
-        // Construct final response map
+        // Construction of final response map
         Map<String, Map<String, String>> result = new LinkedHashMap<>();
         result.put(username, attendanceMap);
         return result;

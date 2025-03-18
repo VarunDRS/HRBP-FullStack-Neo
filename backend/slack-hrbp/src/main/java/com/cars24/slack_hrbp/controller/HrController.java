@@ -76,18 +76,6 @@ public class HrController {
     }
 
 
-//    @PreAuthorize("hasrole('HR')")
-//    @GetMapping("bymonth")
-//    public ResponseEntity<Map<String, Map<String, String>>> getByMonth(@RequestParam String monthYear) {
-//        try {
-//            Map<String, Map<String, String>> reportData = monthBasedService.generateAttendanceReport(monthYear);
-//            return ResponseEntity.ok().body(reportData);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            throw new RuntimeException("Error generating report: " + e.getMessage());
-//        }
-//    }
-
     @PreAuthorize("hasRole('HR')")
     @GetMapping("/{userid}/{month}")
     public Map<String, Map<String, String>> getUserDetails(@PathVariable String userid, @PathVariable String month){
@@ -110,10 +98,9 @@ public class HrController {
     }
 
     // SSE Endpoint to listen for events
-
     @GetMapping(value = "/events/{userid}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamEvents(@PathVariable String userid) {
-        SseEmitter emitter = new SseEmitter(0L); // No timeout
+        SseEmitter emitter = new SseEmitter(0L); // it will remain open indefinitely
         ExecutorService executor = Executors.newSingleThreadExecutor();
 
         executor.execute(() -> {
@@ -152,10 +139,11 @@ public class HrController {
             byte[] excelData = useridandmonth.generateAttendanceExcel(userid, month);
 
             // Set response headers for file download
+            //configures the HTTP response to return the generated Excel file as a downloadable attachment
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             response.setHeader("Content-Disposition", "attachment; filename=Attendance_" + userid + "_" + month + ".xlsx");
-            response.getOutputStream().write(excelData);
-            response.flushBuffer();
+            response.getOutputStream().write(excelData); //response is stored in the response buffer.
+            response.flushBuffer(); //forces the server to send all buffered data immediately
 
             // Notify frontend that download is ready
             if (emitter != null) {

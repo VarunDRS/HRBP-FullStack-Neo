@@ -130,9 +130,6 @@ public class MonthBasedDaoImpl {
         }
 
 
-
-
-
         public Map<String, Map<String, String>> generateAttendanceReport(String monthYear) throws IOException, ParseException
         {
             // Fetch data for the given month and year
@@ -167,7 +164,5 @@ public class MonthBasedDaoImpl {
             // Return the processed data
             return userAttendanceMap;
         }
-
-
 
 }

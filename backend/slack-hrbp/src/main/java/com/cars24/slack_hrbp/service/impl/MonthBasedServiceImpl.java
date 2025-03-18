@@ -369,42 +369,20 @@ public class MonthBasedServiceImpl {
     }
 
 
-//    public Map<String, Object> getAttendanceReportForHR(String monthYear, int page, int limit) {
-//        if (page > 0) page -= 1; // Convert to zero-based index
-//
-//        List<AttendanceEntity> attendanceRecords = monthBasedDao.getAttendanceForEmployees(monthYear,page,limit);
-//
-//        // Convert data to structured format
-//        Map<String, Map<String, String>> paginatedReportData = formatAttendanceData(attendanceRecords);
-//
-//        // Prepare response
-//        Map<String, Object> response = new HashMap<>();
-//        response.put("reportData", paginatedReportData);
-//        response.put("totalPages", attendanceRecords.getTotalPages());
-//        response.put("currentPage", page + 1);
-//        response.put("pageSize", limit);
-//        response.put("totalRecords", attendanceRecords.getTotalElements());
-//
-//        return response;
-//    }
-
     public Map<String, Object> getAttendanceReportForHR(String monthYear,int page, int limit) {
         // Convert to zero-based index for pagination
         if (page > 0) page -= 1;
 
         try {
-            // Fetch all data first
-            Map<String, Map<String, String>> allReportData = monthBasedDao.generateAttendanceReport(monthYear);
 
-            // Convert to a list for pagination
+            Map<String, Map<String, String>> allReportData = monthBasedDao.generateAttendanceReport(monthYear);
             List<Map.Entry<String, Map<String, String>>> allUsersList = new ArrayList<>(allReportData.entrySet());
 
-            // Paginate based on employees, not individual records
             int totalRecords = allUsersList.size();
             int startIndex = page * limit;
             int endIndex = Math.min(startIndex + limit, totalRecords);
 
-            // Extract paginated data
+
             Map<String, Map<String, String>> paginatedReportData = new LinkedHashMap<>();
             for (int i = startIndex; i < endIndex; i++) {
                 Map.Entry<String, Map<String, String>> entry = allUsersList.get(i);
@@ -414,7 +392,6 @@ public class MonthBasedServiceImpl {
             // Calculate total pages based on employees
             int totalPages = (int) Math.ceil((double) totalRecords / limit);
 
-            // Prepare response
             Map<String, Object> response = new HashMap<>();
             response.put("reportData", paginatedReportData);
             response.put("totalPages", totalPages);
