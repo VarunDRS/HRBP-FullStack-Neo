@@ -105,5 +105,4 @@ public interface EmployeeRepository extends Neo4jRepository<EmployeeEntity, Stri
     List<String> findDistinctUsernamesByManager(@Param("monthYear") String monthYear, @Param("managerId") String managerId);
 
 
-
 }

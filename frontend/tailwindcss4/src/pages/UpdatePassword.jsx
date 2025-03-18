@@ -328,7 +328,9 @@ const UpdatePassword = () => {
     setPasswordStrength(strengthScore);
     setPasswordValidations(validations);
   }, [newPassword]);
+  
 
+  // Verify Password
   const handleVerifyPassword = async (e) => {
     e.preventDefault();
     if (!currentPassword) {
@@ -371,6 +373,7 @@ const UpdatePassword = () => {
       setTimeout(() => setPasswordShake(false), 500);
     }
   };
+  
 
   const handleCancelButton = () => {
     const token = localStorage.getItem("Authorization");
@@ -380,7 +383,8 @@ const UpdatePassword = () => {
     const previousRoute = localStorage.getItem("previousRoute") || "/";
     navigate(-1);
   };
-
+  
+  // Update Password
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
     

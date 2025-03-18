@@ -21,7 +21,6 @@ const QuickActions = ({ onCreateUser, onUpdatePassword }) => {
     <div className="mb-6">
       
       <div className={`grid ${isHR ? "grid-cols-1 md:grid-cols-2 gap-4" : "grid-cols-1"}`}>
-        {/* Show both buttons for HR */}
         {isHR && (
           <button
             onClick={onCreateUser}
@@ -34,7 +33,6 @@ const QuickActions = ({ onCreateUser, onUpdatePassword }) => {
           </button>
         )}
 
-        {/* Update Password button for everyone */}
         <button
           onClick={onUpdatePassword}
           className={`flex items-center justify-center bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition duration-150 text-indigo-800 ${
