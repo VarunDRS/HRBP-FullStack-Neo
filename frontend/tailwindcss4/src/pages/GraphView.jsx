@@ -145,19 +145,20 @@ const EmployeeAttendanceChart = () => {
     };
     
     const monthIndex = monthMap[monthName];
-    const date = new Date(year, monthIndex + 1, 0); // Last date of the month
+    const date = new Date(year, monthIndex + 1, 0); // returns last day
     const totalDays = date.getDate();
     let workingDays = 0;
   
     for (let day = 1; day <= totalDays; day++) {
-      const currentDate = new Date(year, monthIndex, day);
+      const currentDate = new Date(year, monthIndex, day); // for each day
       const dayOfWeek = currentDate.getDay();
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Exclude weekends
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) { 
         workingDays++;
       }
     }
     
     return workingDays;
+
   };
 
   const handleBackButton = () => {
@@ -195,7 +196,19 @@ const EmployeeAttendanceChart = () => {
   // Transform data for Pie chart including Regular workdays
   const transformData = (data) => {
     if (!data || !data.typeCounts) return [];
-    
+
+    // Converting 
+    // {
+    //   "typeCounts": {
+    //     "P": 1,
+    //     "U": 1,
+    //     "P*": 1
+    //   }
+    // }
+
+    // To
+    //   { name: 'Planned Leave', value: 1, color: '#10B981' },
+
     const transformedData = Object.entries(data.typeCounts).map(([type, count]) => ({
       name: typeNameMap[type] || type,
       value: count,
@@ -326,7 +339,7 @@ const EmployeeAttendanceChart = () => {
                 <div className="lg:col-span-2 bg-white rounded-lg shadow p-4 flex flex-col">
                     <h2 className="text-base font-semibold text-gray-800 mb-2">Attendance Distribution</h2>
                     <div className="flex-grow">
-                        <ResponsiveContainer width="100%" height="100%" minHeight={300}> {/* Increased minHeight for larger chart */}
+                        <ResponsiveContainer width="100%" height="100%" minHeight={300}> 
                         <PieChart>
                             <Pie
                             data={chartData}
