@@ -13,10 +13,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.time.YearMonth;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -52,38 +50,43 @@ public class UseridAndMonthImpl implements UseridAndMonth {
             headerRow.createCell(0).setCellValue("Date");
             headerRow.createCell(1).setCellValue("Request Type");
             SimpleDateFormat dateFormat = new SimpleDateFormat("MMM-dd");
+            SimpleDateFormat inputFormat = new SimpleDateFormat("MMM-yyyy"); // Input month format
 
-            // List to store and sort dates
-            List<Map.Entry<String, String>> sortedEntries = new ArrayList<>();
-
-            // Retrieve and sort attendance entries
-            for (Map.Entry<String, Map<String, String>> userEntry : attendanceData.entrySet()) {
-                sortedEntries.addAll(userEntry.getValue().entrySet());
+            Date monthDate;
+            try {
+                monthDate = inputFormat.parse(month);
+            } catch (ParseException e) {
+                throw new IllegalArgumentException("Invalid month format, expected MMM-yyyy", e);
             }
 
-            // Sort the list based on date
-            sortedEntries.sort((entry1, entry2) -> {
-                try {
-                    Date date1 = dateFormat.parse(entry1.getKey());
-                    Date date2 = dateFormat.parse(entry2.getKey());
-                    return date1.compareTo(date2);
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                    return 0;
-                }
-            });
-            // Populate Data
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(monthDate);
+            int year = calendar.get(Calendar.YEAR);
+            int monthIndex = calendar.get(Calendar.MONTH) + 1; // Calendar.MONTH is 0-based
+            // Get total days in the month
+            YearMonth yearMonth = YearMonth.of(year, monthIndex);
+            //2025-02
+            int totalDays = yearMonth.lengthOfMonth();
+
+            Map<String, String> userAttendance = attendanceData.values().iterator().next();
+
+            // Populate Data with all dates
             int rowNum = 1;
-            for (Map.Entry<String, String> entry : sortedEntries) {
-                Row row = sheet.createRow(rowNum++);
-                row.createCell(0).setCellValue(entry.getKey()); // Date
-                row.createCell(1).setCellValue(entry.getValue()); // Request Type
-            }
+            for (int day = 1; day <= totalDays; day++) {
+                calendar.set(Calendar.DAY_OF_MONTH, day);
+                String formattedDate = dateFormat.format(calendar.getTime());
 
+                Row row = sheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(formattedDate); // Date
+
+                // Fetch attendance status, default to blank
+                row.createCell(1).setCellValue(userAttendance.getOrDefault(formattedDate, ""));
+            }
             workbook.write(outputStream);
             return outputStream.toByteArray();
         }
     }
+
 
 
 }
