@@ -38,6 +38,7 @@ public class HrServiceImpl implements HrService {
     private final EmployeeRepository employeeRepository;
     private final ListAllEmployeesUnderManagerDaoImpl listAllEmployeesUnderManagerDao;
 
+
     @Transactional
     public EmployeeEntity createEmployee(CreateEmployeeRequest request) {
         EmployeeEntity manager = null;
