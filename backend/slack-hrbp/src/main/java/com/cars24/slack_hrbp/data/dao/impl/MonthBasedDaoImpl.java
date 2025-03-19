@@ -88,41 +88,28 @@ public class MonthBasedDaoImpl {
     }
 
     private String getRequestTypeCode(String requestType) {
+        if (requestType == null) {
+            return "";  // Or some default code
+        }
         switch (requestType) {
-            case "Planned Leave":
-                return "P";
+            case "Planned Leave": return "P";
             case "Unplanned Leave":
-                return "U";
-            case "UnPlanned Leave":
-                return "U";
-            case "Planned Leave (Second Half)":
-                return "P*";
-            case "Sick Leave":
-                return "S";
+            case "UnPlanned Leave": return "U";
+            case "Planned Leave (Second Half)": return "P*";
+            case "Sick Leave": return "S";
             case "Work From Home":
-                return "W";
-            case "WFH":
-                return "W";
-            case "Travelling to HQ":
-                return "T";
-            case "Holiday":
-                return "H";
-            case "Elections":
-                return "E";
-            case "Joined":
-                return "J";
-            case "Planned Leave (First Half)":
-                return "P**";
-            default:
-                return "";
+            case "WFH": return "W";
+            case "Travelling to HQ": return "T";
+            case "Holiday": return "H";
+            case "Elections": return "E";
+            case "Joined": return "J";
+            case "Planned Leave (First Half)": return "P**";
+            default: return "";
         }
-        }
+    }
 
 
-
-
-
-        public Map<String, Map<String, String>> generateAttendanceReport(String monthYear) throws IOException, ParseException
+    public Map<String, Map<String, String>> generateAttendanceReport(String monthYear) throws IOException, ParseException
         {
             // Fetch data for the given month and year
             List<AttendanceEntity> attendanceList = attendanceRepository.findByDateStartingWith(monthYear);
@@ -136,10 +123,16 @@ public class MonthBasedDaoImpl {
             SimpleDateFormat displayFormat = new SimpleDateFormat("MMM-dd");
 
             for (AttendanceEntity attendance : attendanceList) {
-
                 String username = attendance.getUsername();
+
+                // Skip records with null usernames
+                if (username == null || username.isEmpty()) {
+                    System.out.println("Skipping record with null username: " + attendance);
+                    continue;
+                }
+
                 String date = attendance.getDate();
-                String requestType = getRequestTypeCode(attendance.getType());
+                String requestType = attendance.getType() != null ? getRequestTypeCode(attendance.getType()) : "";
 
                 Date parsedDate = null;
                 try {
@@ -150,8 +143,8 @@ public class MonthBasedDaoImpl {
                 String formattedDate = displayFormat.format(parsedDate);
 
                 userAttendanceMap.computeIfAbsent(username, k -> new HashMap<>()).put(formattedDate, requestType);
-
             }
+
 
             // Return the processed data
             return userAttendanceMap;
