@@ -58,33 +58,23 @@ public class MonthBasedServiceImpl {
 
 
     private String getRequestTypeCode(String requestType) {
+        if (requestType == null) {
+            return "";  // Or some default code
+        }
         switch (requestType) {
-            case "Planned Leave":
-                return "P";
+            case "Planned Leave": return "P";
             case "Unplanned Leave":
-                return "U";
-            case "UnPlanned Leave":
-                return "U";
-            case "Planned Leave (Second Half)":
-                return "P*";
-            case "Sick Leave":
-                return "S";
+            case "UnPlanned Leave": return "U";
+            case "Planned Leave (Second Half)": return "P*";
+            case "Sick Leave": return "S";
             case "Work From Home":
-                return "W";
-            case "WFH":
-                return "W";
-            case "Travelling to HQ":
-                return "T";
-            case "Holiday":
-                return "H";
-            case "Elections":
-                return "E";
-            case "Joined":
-                return "J";
-            case "Planned Leave (First Half)":
-                return "P**";
-            default:
-                return "";
+            case "WFH": return "W";
+            case "Travelling to HQ": return "T";
+            case "Holiday": return "H";
+            case "Elections": return "E";
+            case "Joined": return "J";
+            case "Planned Leave (First Half)": return "P**";
+            default: return "";
         }
     }
 
