@@ -103,7 +103,6 @@ public class HrServiceImpl implements HrService {
 
     @Override
     public String updateUser(EmployeeUpdateRequest employeeUpdateRequest) {
-        System.out.println("Request reached Service for update user");
         return hrDao.updateUser(employeeUpdateRequest);
     }
 

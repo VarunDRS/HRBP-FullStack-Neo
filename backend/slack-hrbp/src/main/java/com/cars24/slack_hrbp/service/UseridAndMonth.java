@@ -8,4 +8,6 @@ public interface UseridAndMonth {
 
     Map<String, Map<String, String>> getCustomerDetails(String userid, String month);
     public byte[] generateAttendanceExcel(String userId, String month) throws IOException;
+
+    byte[] generateAttendanceExcel(String userid, String frommonth, String tomonth) throws IOException;
 }
