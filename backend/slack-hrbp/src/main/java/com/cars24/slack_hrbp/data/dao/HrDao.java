@@ -19,4 +19,6 @@ public interface HrDao {
 //    EmployeeEntity getUser(String userid);
 
     public long getTotalEmployeesCount(String searchtag);
+
+    public String deleteEntry(String userId,String date);
 }

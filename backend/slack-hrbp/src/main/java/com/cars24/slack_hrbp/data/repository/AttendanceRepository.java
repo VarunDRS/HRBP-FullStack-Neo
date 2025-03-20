@@ -51,5 +51,7 @@ public interface AttendanceRepository extends MongoRepository<AttendanceEntity, 
 
     List<AttendanceEntity> findByDateStartingWithAndUseridIn(String monthYear, List<String> userids);
 
+    boolean existsByUseridAndDateStartingWith(String userId,String month);
+
 }
 

@@ -82,21 +82,22 @@ public class HrController {
     public Map<String, Map<String, String>> getUserDetails(@PathVariable String userid, @PathVariable String month){
         Map<String, Map<String, String>> resp = useridandmonth.getCustomerDetails(userid,month);
         return resp;
-
     }
 
     @PreAuthorize("hasRole('HR')")
     @GetMapping("/{userId}")
     public Map<String, Map<String, String>> getUserDetails(@PathVariable String userId){
-
-        System.out.println("getUserDetails is called");
-
         Map<String, Map<String, String>> resp = useridandmonth.getCustomerDetails(userId);
         System.out.println(resp);
         return resp;
-
     }
 
+    @PreAuthorize("hasRole('HR')")
+    @DeleteMapping ("/deleteEntry/{userId}/{date}")
+    public ResponseEntity<String> deleteEntry(@PathVariable String userId,@PathVariable String date){
+        String resp = hrService.deleteEntry(userId,date);
+        return ResponseEntity.ok(resp);
+   }
 
     @GetMapping(value = "/events/{userid}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamEvents(@PathVariable String userid) {

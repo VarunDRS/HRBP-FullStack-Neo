@@ -4,6 +4,7 @@ import com.cars24.slack_hrbp.data.dao.impl.HrDaoImpl;
 import com.cars24.slack_hrbp.data.dao.impl.ListAllEmployeesUnderManagerDaoImpl;
 import com.cars24.slack_hrbp.data.dto.UserDto;
 import com.cars24.slack_hrbp.data.entity.EmployeeEntity;
+import com.cars24.slack_hrbp.data.repository.AttendanceRepository;
 import com.cars24.slack_hrbp.data.repository.EmployeeRepository;
 import com.cars24.slack_hrbp.data.request.EmployeeUpdateRequest;
 import com.cars24.slack_hrbp.data.request.CreateEmployeeRequest;
@@ -37,6 +38,7 @@ public class HrServiceImpl implements HrService {
     private final Neo4jClient neo4jClient;
     private final EmployeeRepository employeeRepository;
     private final ListAllEmployeesUnderManagerDaoImpl listAllEmployeesUnderManagerDao;
+    private final AttendanceRepository attendanceRepository;
 
 
     @Transactional
@@ -113,6 +115,14 @@ public class HrServiceImpl implements HrService {
     @Override
     public long getTotalEmployeesCount(String searchtag){
         return hrDao.getTotalEmployeesCount(searchtag);
+    }
+
+    @Override
+    public String deleteEntry(String userId,String date){
+        if(!attendanceRepository.existsByUseridAndDateStartingWith(userId,date)){
+            throw new UserServiceException("Not such entry for the user exists");
+        }
+        return hrDao.deleteEntry(userId,date);
     }
 
 }
