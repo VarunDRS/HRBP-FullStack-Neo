@@ -3,17 +3,18 @@ package com.cars24.slack_hrbp.service.impl;
 import com.cars24.slack_hrbp.data.dao.impl.UseridAndMonthDaoImpl;
 import com.cars24.slack_hrbp.service.UseridAndMonth;
 import lombok.RequiredArgsConstructor;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
@@ -35,6 +36,88 @@ public class UseridAndMonthImpl implements UseridAndMonth {
         Map<String, Map<String, String>> resp = useridAndMonthDao.getUserDetails(userId,month);
         return resp;
     }
+
+    @Override
+    public byte[] generateAttendanceExcel(String userid, String frommonth, String tomonth) throws IOException {
+        Map<String, Map<String, String>> attendanceData = useridAndMonthDao.getUserDetails(userid, frommonth, tomonth);
+
+        try (Workbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+
+            Sheet sheet = workbook.createSheet("Leave Report");
+
+            // 1. Get all months in range
+            List<String> monthYears = getAllMonthsInRange(frommonth, tomonth);
+
+            // 2. Generate all dates for each month
+            Map<String, List<String>> monthDatesMap = new LinkedHashMap<>();
+            for (String monthYear : monthYears) {
+                monthDatesMap.put(monthYear, getAllDatesForMonth(monthYear));
+            }
+
+            // 3. Create Header Row
+            Row headerRow = sheet.createRow(0);
+            int colIndex = 0;
+            for (String monthYear : monthYears) {
+                headerRow.createCell(colIndex).setCellValue(monthYear + " (Leave Date)");
+                headerRow.createCell(colIndex + 1).setCellValue(monthYear + " (Leave Type)");
+                colIndex += 2;
+            }
+
+            // 4. Fill Data Rows
+            int maxRows = monthDatesMap.values().stream().mapToInt(List::size).max().orElse(0);
+            for (int rowIndex = 1; rowIndex <= maxRows; rowIndex++) {
+                Row row = sheet.createRow(rowIndex);
+                int col = 0;
+
+                for (String monthYear : monthYears) {
+                    List<String> allDates = monthDatesMap.get(monthYear);
+                    if (rowIndex <= allDates.size()) {
+                        String date = allDates.get(rowIndex - 1);
+                        row.createCell(col).setCellValue(date); // Leave Date
+                        row.createCell(col + 1).setCellValue(attendanceData.getOrDefault(monthYear, new HashMap<>()).getOrDefault(date, "")); // Leave Type
+                    }
+                    col += 2;
+                }
+            }
+
+            // Auto-size columns
+            for (int i = 0; i < colIndex; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            workbook.write(outputStream);
+            return outputStream.toByteArray();
+        }
+    }
+
+    // Helper: Get all months between frommonth and tomonth
+    private List<String> getAllMonthsInRange(String fromMonth, String toMonth) {
+        List<String> months = new ArrayList<>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM-yyyy");
+
+        YearMonth start = YearMonth.parse(fromMonth, formatter);
+        YearMonth end = YearMonth.parse(toMonth, formatter);
+
+        while (!start.isAfter(end)) {
+            months.add(start.format(formatter));
+            start = start.plusMonths(1);
+        }
+        return months;
+    }
+
+    // Helper: Get all dates in a given month
+    private List<String> getAllDatesForMonth(String monthYear) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM-yyyy");
+        YearMonth yearMonth = YearMonth.parse(monthYear, formatter);
+
+        List<String> dates = new ArrayList<>();
+        for (int day = 1; day <= yearMonth.lengthOfMonth(); day++) {
+            dates.add(LocalDate.of(yearMonth.getYear(), yearMonth.getMonth(), day).toString());
+        }
+        return dates;
+    }
+
 
     @Override
     public byte[] generateAttendanceExcel(String userid, String month) throws IOException {
@@ -86,6 +169,7 @@ public class UseridAndMonthImpl implements UseridAndMonth {
             return outputStream.toByteArray();
         }
     }
+
 
 
 

@@ -13,6 +13,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -24,7 +26,11 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,6 +49,8 @@ public class HrController {
     private final MonthBasedServiceImpl monthBasedService;
     private final UseridAndMonthImpl useridandmonth;
     private final ConcurrentHashMap<String, SseEmitter> emitters = new ConcurrentHashMap<>();
+
+    private String generatedReportPath;
 
 
     @PreAuthorize("hasRole('HR')")
@@ -99,27 +107,48 @@ public class HrController {
         return ResponseEntity.ok(resp);
    }
 
-    @GetMapping(value = "/events/{userid}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter streamEvents(@PathVariable String userid) {
+    @GetMapping(value = "/events/{userid}/{frommonth}/{tomonth}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamEvents(@PathVariable String userid,@PathVariable String frommonth,@PathVariable String tomonth) {
         SseEmitter emitter = new SseEmitter(0L); // No timeout
         ExecutorService executor = Executors.newSingleThreadExecutor();
 
         executor.execute(() -> {
             try {
+                long startTime = System.currentTimeMillis();
                 // Send "Generating Excel" message first
                 emitter.send(SseEmitter.event().data("Generating Excel..."));
 
                 // Simulate report generation delay (replace with actual logic)
-                Thread.sleep(5000); // Simulate processing delay
+//                Thread.sleep(5000); // Simulate processing delay
 
+                byte[] excelData = useridandmonth.generateAttendanceExcel(userid, frommonth ,tomonth);
+
+                String directoryPath = "reports";
+                File reportsDir = new File(directoryPath);
+
+                // Ensure the directory exists
+                if (!reportsDir.exists()) {
+                    reportsDir.mkdirs();  // Create the directory if it doesn't exist
+                }
+
+                long endTime = System.currentTimeMillis(); // Record end time
+                long duration = endTime - startTime; // Calculate latency
+
+
+                System.out.println("Report generation time: " + duration + " ms");
+                String filePath = "reports/Attendance_" + userid + "_" + "from_" + frommonth + "_to_" + tomonth + ".xlsx";
+                Files.write(Paths.get(filePath), excelData);
+                System.out.println(" Report generated at: " + filePath);
                 // Send "Download Ready" message
-                emitter.send(SseEmitter.event().data("Excel Downloaded successfully"));
-
-                emitter.send(SseEmitter.event().data("DONE"));
-
+                emitter.send(SseEmitter.event().data("Report Ready"));
                 emitter.complete(); // Close connection after sending
-            } catch (IOException | InterruptedException e) {
-                emitter.completeWithError(e);
+            } catch (IOException e) {
+                try {
+                    emitter.send(SseEmitter.event().data("Error generating report"));
+                    emitter.completeWithError(e);
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
             }
         });
 
@@ -127,40 +156,22 @@ public class HrController {
     }
 
     // API to trigger Excel generation & notify frontend
-    @GetMapping("/download/{userid}/{month}")
-    public void downloadReport(@PathVariable String userid, @PathVariable String month, HttpServletResponse response) {
-        SseEmitter emitter = emitters.get(userid);
-        try {
-            // Notify frontend that generation has started
-            if (emitter != null) {
-                emitter.send(SseEmitter.event().name("status").data("Excel is being generated..."));
-            }
+    @GetMapping("/download/{userid}/{frommonth}/{tomonth}")
+    public ResponseEntity<Resource> downloadReport(@PathVariable String userid, @PathVariable String frommonth, @PathVariable String tomonth) {
+        String filePath = "reports/Attendance_" + userid + "_" + "from_" + frommonth + "_to_" + tomonth + ".xlsx";
+        File file = new File(filePath);
 
-            // Generate Excel
-            byte[] excelData = useridandmonth.generateAttendanceExcel(userid, month);
-
-            // Set response headers for file download
-            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-            response.setHeader("Content-Disposition", "attachment; filename=Attendance_" + userid + "_" + month + ".xlsx");
-            response.getOutputStream().write(excelData);
-            response.flushBuffer();
-
-            // Notify frontend that download is ready
-            if (emitter != null) {
-                emitter.send(SseEmitter.event().name("status").data("Excel Downloaded Successfully!"));
-                emitter.complete();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            if (emitter != null) {
-                try {
-                    emitter.send(SseEmitter.event().name("status").data("Failed to generate Excel."));
-                    emitter.complete();
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
-            }
+        if (!file.exists()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
+
+        Resource resource = new FileSystemResource(file);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + file.getName())
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(resource);
+
+
     }
 
     
@@ -240,6 +251,8 @@ public class HrController {
             throw new RuntimeException("Error generating report: " + e.getMessage());
         }
     }
+
+
 
 }
 
