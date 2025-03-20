@@ -5,11 +5,8 @@ import { motion } from "framer-motion";
 import * as THREE from "three";
 
 import { 
-  User, 
   Mail, 
-  Lock, 
   Check, 
-  X, 
   ChevronRight, 
   UserPlus, 
   Shield
@@ -18,27 +15,13 @@ import { toast } from 'react-toastify';
 
 const CreateUserPage = () => {
   const [formData, setFormData] = useState({
-    userId: '',
-    username: '',
-    password: '',
-    confirmPassword: '',
     email: '',
-    roles: [],
-    managerName: '',
-    managerId: ''
+    managerEmail: '',
+    roles: []
   });
-  const [passwordStrength, setPasswordStrength] = useState(0);
-  const [passwordValidations, setPasswordValidations] = useState({
-    length: false,
-    uppercase: false,
-    lowercase: false,
-    number: false,
-    specialChar: false
-  });
-  const [activeStep, setActiveStep] = useState(0);
   const [emailError, setEmailError] = useState('');
+  const [managerEmailError, setManagerEmailError] = useState('');
   const navigate = useNavigate();
-  const fileInputRef = useRef(null);
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -63,30 +46,30 @@ const CreateUserPage = () => {
 
     // Create stars background
     const starGeometry = new THREE.BufferGeometry();
-const starCount = 1500;
-const starPositions = new Float32Array(starCount * 3);
+    const starCount = 1500;
+    const starPositions = new Float32Array(starCount * 3);
 
-for (let i = 0; i < starCount * 3; i += 3) {
-  starPositions[i] = (Math.random() - 0.5) * 100;
-  starPositions[i + 1] = (Math.random() - 0.5) * 100;
-  starPositions[i + 2] = (Math.random() - 0.5) * 100;
-}
+    for (let i = 0; i < starCount * 3; i += 3) {
+      starPositions[i] = (Math.random() - 0.5) * 100;
+      starPositions[i + 1] = (Math.random() - 0.5) * 100;
+      starPositions[i + 2] = (Math.random() - 0.5) * 100;
+    }
 
-starGeometry.setAttribute(
-  'position',
-  new THREE.BufferAttribute(starPositions, 3)
-);
+    starGeometry.setAttribute(
+      'position',
+      new THREE.BufferAttribute(starPositions, 3)
+    );
 
-const starMaterial = new THREE.PointsMaterial({
-  color: 0xffffff,
-  size: 0.1,  // Increased size for better visibility
-  transparent: true,
-  opacity: 0.8,  // Increased opacity
-  sizeAttenuation: true  // Make stars smaller when farther away
-});
+    const starMaterial = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 0.1,
+      transparent: true,
+      opacity: 0.8,
+      sizeAttenuation: true
+    });
 
-const stars = new THREE.Points(starGeometry, starMaterial);
-scene.add(stars);
+    const stars = new THREE.Points(starGeometry, starMaterial);
+    scene.add(stars);
 
     // Add ambient light
     const ambientLight = new THREE.AmbientLight(0x404040);
@@ -298,6 +281,21 @@ scene.add(stars);
 
   const handleInputChange = (e) => {
     const { name, value, type, selectedOptions } = e.target;
+    
+    if (type === 'select-multiple') {
+      const values = Array.from(selectedOptions, (option) => option.value);
+      setFormData((prevState) => ({
+        ...prevState,
+        [name]: values,
+      }));
+    } else {
+      setFormData((prevState) => ({
+        ...prevState,
+        [name]: value,
+      }));
+    }
+
+    // Email validation
     if (name === 'email') {
       const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       if (!emailPattern.test(value)) {
@@ -306,47 +304,40 @@ scene.add(stars);
         setEmailError('');
       }
     }
-    if (type === 'select-multiple') {
-      const values = Array.from(selectedOptions, (option) => option.value);
-      setFormData((prevState) => ({
-        ...prevState,
-        [name]: values,
-      }));
-    } else {
-      if (name === 'password') {
-        const validations = {
-          length: value.length >= 8,
-          uppercase: /[A-Z]/.test(value),
-          lowercase: /[a-z]/.test(value),
-          number: /[0-9]/.test(value),
-          specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(value),
-        };
-        const strengthScore = Object.values(validations).filter((v) => v).length;
-        setPasswordStrength(strengthScore);
-        setPasswordValidations(validations);
+
+    // Manager email validation
+    if (name === 'managerEmail') {
+      if (value) {
+        const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailPattern.test(value)) {
+          setManagerEmailError('Invalid email format');
+        } else {
+          setManagerEmailError('');
+        }
+      } else {
+        setManagerEmailError('');
       }
-      setFormData((prevState) => ({
-        ...prevState,
-        [name]: value,
-      }));
     }
-  }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate password match
-    if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match');
+    // Validate emails
+    if (emailError || managerEmailError) {
+      toast.error('Please fix the form errors before submitting');
       return;
     }
 
     try {
       const token = localStorage.getItem('Authorization');
-      
-      // Remove confirmPassword before sending to backend
-      const submitData = { ...formData };
-      delete submitData.confirmPassword;
+
+      // Need to adapt the form data to match the original API
+      const submitData = {
+        email: formData.email,
+        roles: formData.roles,
+        managerEmail: formData.managerEmail
+      };
 
       const response = await axios.post('http://localhost:8080/hr/createUser', submitData, {
         headers: { Authorization: `Bearer ${token}` }
@@ -362,7 +353,7 @@ scene.add(stars);
         const { statuscode, message, data } = error.response.data;
     
         if (statuscode === 400) {
-          toast.error(message);  // Show correct error message
+          toast.error(message);
         } else {
           toast.error("Unexpected error occurred: " + message);
         }
@@ -374,247 +365,17 @@ scene.add(stars);
     }    
   };
 
-  const renderPasswordStrengthBar = () => {
-    const colors = ['bg-red-500', 'bg-yellow-500', 'bg-green-500', 'bg-green-600', 'bg-green-700'];
-    const width = (passwordStrength / 5) * 100;
-    
-    return (
-      <div className="mt-2">
-        <div className="flex justify-between mb-1 text-xs">
-          <span>Password Strength</span>
-          <span>{['Weak', 'Fair', 'Good', 'Strong', 'Excellent'][passwordStrength - 1] || 'None'}</span>
-        </div>
-        <div className="w-full h-2 bg-gray-200 rounded-full">
-          <div 
-            className={`h-full rounded-full ${colors[passwordStrength - 1] || ''}`}
-            style={{ width: `${width}%` }}
-          ></div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderPasswordValidation = () => {
-    return (
-      <div className="mt-3 text-sm">
-        <div className="flex items-center mb-1">
-          {passwordValidations.length ? <Check size={16} className="text-green-500 mr-2" /> : <X size={16} className="text-red-500 mr-2" />}
-          <span>At least 8 characters</span>
-        </div>
-        <div className="flex items-center mb-1">
-          {passwordValidations.uppercase ? <Check size={16} className="text-green-500 mr-2" /> : <X size={16} className="text-red-500 mr-2" />}
-          <span>At least one uppercase letter</span>
-        </div>
-        <div className="flex items-center mb-1">
-          {passwordValidations.lowercase ? <Check size={16} className="text-green-500 mr-2" /> : <X size={16} className="text-red-500 mr-2" />}
-          <span>At least one lowercase letter</span>
-        </div>
-        <div className="flex items-center mb-1">
-          {passwordValidations.number ? <Check size={16} className="text-green-500 mr-2" /> : <X size={16} className="text-red-500 mr-2" />}
-          <span>At least one number</span>
-        </div>
-        <div className="flex items-center mb-1">
-          {passwordValidations.specialChar ? <Check size={16} className="text-green-500 mr-2" /> : <X size={16} className="text-red-500 mr-2" />}
-          <span>At least one special character</span>
-        </div>
-      </div>
-    );
-  };
-
-  const nextStep = () => {
-    setActiveStep(activeStep + 1);
-  };
-
-  const prevStep = () => {
-    setActiveStep(activeStep - 1);
-  };
-
-  const renderStepContent = () => {
-    switch (activeStep) {
-      case 0:
-        return (
-          <div className="space-y-4">
-            <div className="mb-4">
-              <label htmlFor="userId" className="block text-sm font-medium text-gray-700 mb-1">
-                User ID
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-3 text-gray-400">
-                  <User size={18} />
-                </span>
-                <input
-                  type="text"
-                  id="userId"
-                  name="userId"
-                  value={formData.userId}
-                  onChange={handleInputChange}
-                  className="w-full text-white pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter user ID"
-                  required
-                />
-              </div>
-            </div>
-            <div className="mb-4">
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-                Username
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-3 text-gray-400">
-                  <User size={18} />
-                </span>
-                <input
-                  type="text"
-                  id="username"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  className="w-full text-white pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter username"
-                  required
-                />
-              </div>
-            </div>
-            <div className="mb-4">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-3 text-gray-400">
-                  <Mail size={18} />
-                </span>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className={`w-full text-white pl-10 pr-3 py-2 border ${emailError ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  placeholder="Enter email address"
-                  required
-                />
-              </div>
-              {emailError && <p className="text-red-500 text-xs mt-1">{emailError}</p>}
-            </div>
-          </div>
-        );
-      case 1:
-        return (
-          <div className="space-y-4">
-            <div className="mb-4">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-3 text-gray-400">
-                  <Lock size={18} />
-                </span>
-                <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className="w-full text-white pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter password"
-                  required
-                />
-              </div>
-              {renderPasswordStrengthBar()}
-              {renderPasswordValidation()}
-            </div>
-            <div className="mb-4">
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-1">
-                Confirm Password
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-3 text-gray-400">
-                  <Lock size={18} />
-                </span>
-                <input
-                  type="password"
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  className={`w-full text-white pl-10 pr-3 py-2 border ${
-                    formData.confirmPassword && formData.password !== formData.confirmPassword
-                      ? 'border-red-500'
-                      : 'border-gray-300'
-                  } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  placeholder="Confirm password"
-                  required
-                />
-              </div>
-              {formData.confirmPassword && formData.password !== formData.confirmPassword && (
-                <p className="text-red-500 text-xs mt-1">Passwords do not match</p>
-              )}
-            </div>
-          </div>
-        );
-      case 2:
-        return (
-          <div className="space-y-4">
-            <div className="mb-4">
-              <label htmlFor="roles" className="block text-sm font-medium text-gray-300 mb-1">
-                Roles
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-3 text-gray-400">
-                  <Shield size={18} />
-                </span>
-                <select
-                  id="roles"
-                  name="roles"
-                  multiple
-                  value={formData.roles}
-                  onChange={handleInputChange}
-                  className="w-full text-white pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="USER">Employee</option>
-                  <option value="MANAGER">Manager</option>
-                  <option value="HR">HR</option>
-                </select>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">Hold Ctrl (or Cmd) to select multiple roles</p>
-            </div>
-            <div className="mb-4">
-              <label htmlFor="managerId" className="block text-sm font-medium text-gray-300 mb-1">
-                Manager ID
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-3 text-gray-400">
-                  <User size={18} />
-                </span>
-                <input
-                  type="text"
-                  id="managerId"
-                  name="managerId"
-                  value={formData.managerId}
-                  onChange={handleInputChange}
-                  className="w-full text-white pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter manager ID"
-                />
-              </div>
-            </div>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
     <div className="relative min-h-screen w-full bg-gray-900 flex flex-col justify-center items-center overflow-hidden">
       <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full z-0" />
       
       <div className="flex-grow flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="bg-gray-800 bg-opacity-80 backdrop-blur-sm rounded-lg shadow-xl p-8 w-full max-w-lg"
-          >
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="bg-gray-800 bg-opacity-80 backdrop-blur-sm rounded-lg shadow-xl p-8 w-full max-w-lg"
+        >
           <div className="mb-6 text-center">
             <h1 className="text-2xl font-bold text-white flex items-center justify-center">
               <UserPlus className="mr-2" /> Create New User
@@ -625,54 +386,83 @@ scene.add(stars);
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div className="flex justify-between mb-6">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <div key={index} className="flex items-center">
-                  <div
-                    className={`rounded-full h-8 w-8 flex items-center justify-center border-2 ${
-                      activeStep >= index ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-600 text-gray-400'
-                    }`}
-                  >
-                    {index + 1}
-                  </div>
-                  {index < 2 && (
-                    <div 
-                      className={`h-1 w-10 ${activeStep > index ? 'bg-blue-600' : 'bg-gray-600'}`}
-                    />
-                  )}
+            <div className="space-y-4">
+              <div className="mb-4">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
+                  User Email
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-3 text-gray-400">
+                    <Mail size={18} />
+                  </span>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className={`w-full text-white pl-10 pr-3 py-2 border ${emailError ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    placeholder="Enter user email address"
+                    required
+                  />
                 </div>
-              ))}
+                {emailError && <p className="text-red-500 text-xs mt-1">{emailError}</p>}
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="managerEmail" className="block text-sm font-medium text-gray-300 mb-1">
+                  Manager Email
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-3 text-gray-400">
+                    <Mail size={18} />
+                  </span>
+                  <input
+                    type="email"
+                    id="managerEmail"
+                    name="managerEmail"
+                    value={formData.managerEmail}
+                    onChange={handleInputChange}
+                    className={`w-full text-white pl-10 pr-3 py-2 border ${managerEmailError ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    placeholder="Enter manager email address"
+                  />
+                </div>
+                {managerEmailError && <p className="text-red-500 text-xs mt-1">{managerEmailError}</p>}
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="roles" className="block text-sm font-medium text-gray-300 mb-1">
+                  Roles
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-3 text-gray-400">
+                    <Shield size={18} />
+                  </span>
+                  <select
+                    id="roles"
+                    name="roles"
+                    multiple
+                    value={formData.roles}
+                    onChange={handleInputChange}
+                    className="w-full text-white pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="USER">Employee</option>
+                    <option value="MANAGER">Manager</option>
+                    <option value="HR">HR</option>
+                  </select>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Hold Ctrl (or Cmd) to select multiple roles</p>
+              </div>
             </div>
 
-            {renderStepContent()}
-
-            <div className="flex justify-between mt-6">
-              {activeStep > 0 && (
-                <button
-                type="button"
-                onClick={prevStep}
-                className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition flex items-center"
+            <div className="flex justify-end mt-6">
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center"
               >
-                Back
+                Create User <Check size={16} className="ml-1" />
               </button>
-              )}
-              
-              {activeStep < 2 ? (
-                <button
-                type="button"
-                onClick={nextStep}
-                className="ml-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center"
-              >
-                Next <ChevronRight size={16} className="ml-1" />
-              </button>
-              ) : (
-                <button
-                  type="submit"
-                  className="ml-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center"
-                >
-                  Create User <Check size={16} className="ml-1" />
-                </button>
-              )}
             </div>
           </form>
         </motion.div>
