@@ -20,5 +20,7 @@ public interface HrService {
 
     public long getTotalEmployeesCount(String searchtag);
 
+    public String deleteEntry(String userId,String date);
+
 //    List<UserDto> paginatedUsers(int page, int limit);
 }

@@ -12,9 +12,56 @@ const EnhancedCalendarView = () => {
   const [currentMonth, setCurrentMonth] = useState(routeMonth || "Mar-2025"); // Default value if no route param
   const [isLoading, setIsLoading] = useState(true);
   const [employeeName, setEmployeeName] = useState("");
-  
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteDate, setDeleteDate] = useState("");
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
 
+  const token = localStorage.getItem("Authorization");
+  const decodedToken = jwtDecode(token);
+  const userRole = decodedToken.roles?.[0];
+
+  // Function to handle the delete operation
+  const handleDeleteEntry = async () => {
+    try {
+      const response = await fetch(
+        `http://localhost:8080/hr/deleteEntry/${userId}/${deleteDate}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+      toast.success("Entry deleted successfully");
+      fetchAttendanceData(currentMonth); // Assuming you have a function to fetch attendance data
+      } else {
+        toast.error("No such entry exists for the user");
+      }
+
+    } catch (error) {
+      console.log("Error response:", error.response);
+
+      if (error.response && error.response.data) {
+        const { statuscode, message, data } = error.response.data;
+
+        if (statuscode === 400) {
+          toast.error(message);
+        } else {
+          toast.error("Unexpected error occurred: " + message);
+        }
+      } else if (error.message) {
+        toast.error("Error: " + error.message);
+      } else {
+        toast.error("An unexpected error occurred. Please try again.");
+      }
+    }
+
+    setShowDeleteModal(false);
+    setDeleteDate("");
+  };
 
   // Function to fetch attendance data
   const fetchAttendanceData = (month) => {
@@ -22,47 +69,46 @@ const EnhancedCalendarView = () => {
     const token = localStorage.getItem("Authorization");
 
     if (!token) {
-        console.error("No token found, redirecting to login.");
-        navigate("/login");
-        return;
+      console.error("No token found, redirecting to login.");
+      navigate("/login");
+      return;
     }
 
     try {
-        const decodedToken = jwtDecode(token);
-        const role = decodedToken.roles?.[0];
-        const roleEndpoints = {
-            ROLE_HR: "hr",
-            ROLE_MANAGER: "manager",
-            ROLE_EMPLOYEE: "employee",
-        };
+      const decodedToken = jwtDecode(token);
+      const role = decodedToken.roles?.[0];
+      const roleEndpoints = {
+        ROLE_HR: "hr",
+        ROLE_MANAGER: "manager",
+        ROLE_EMPLOYEE: "employee",
+      };
 
-        // Determine API path based on role
-        const rolePath = roleEndpoints[role] || "employee"; // Default to "employee" if role is undefined
-        const apiUrl = `http://localhost:8080/${rolePath}/${userId}/${month}`;
+      // Determine API path based on role
+      const rolePath = roleEndpoints[role] || "employee"; // Default to "employee" if role is undefined
+      const apiUrl = `http://localhost:8080/${rolePath}/${userId}/${month}`;
 
-        fetch(apiUrl, {
-            method: "GET",
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        })
+      fetch(apiUrl, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
         .then((response) => response.json())
         .then((data) => {
-            setAttendanceData(data);
-            if (data && Object.keys(data).length > 0) {
-                setEmployeeName(Object.keys(data)[0]);
-            }
-            setIsLoading(false);
+          setAttendanceData(data);
+          if (data && Object.keys(data).length > 0) {
+            setEmployeeName(Object.keys(data)[0]);
+          }
+          setIsLoading(false);
         })
         .catch((error) => {
-            console.error("Error fetching attendance data:", error);
-            setError("Failed to load attendance data.");
-            setIsLoading(false);
+          console.error("Error fetching attendance data:", error);
+          setError("Failed to load attendance data.");
+          setIsLoading(false);
         });
-
     } catch (error) {
-        console.error("Error decoding token:", error);
-        navigate("/login");
+      console.error("Error decoding token:", error);
+      navigate("/login");
     }
   };
 
@@ -70,13 +116,13 @@ const EnhancedCalendarView = () => {
     const token = localStorage.getItem("Authorization");
     const decodedToken = jwtDecode(token);
     const role = decodedToken.roles?.[0];
-    
+
     console.log("hiiiiii" + userId);
 
     if (role === "ROLE_HR") navigate(`/hr/graph/${userId}/${currentMonth}`);
-    else if (role === "ROLE_MANAGER") navigate(`/manager/graph/${userId}/${currentMonth}`);
+    else if (role === "ROLE_MANAGER")
+      navigate(`/manager/graph/${userId}/${currentMonth}`);
     else navigate(`/employee/graph/${userId}/${currentMonth}`);
-
   };
 
   useEffect(() => {
@@ -183,12 +229,32 @@ const EnhancedCalendarView = () => {
   const changeMonth = (increment) => {
     const [month, year] = currentMonth.split("-");
     const monthMap = {
-        Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
-        Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
+      Jan: 0,
+      Feb: 1,
+      Mar: 2,
+      Apr: 3,
+      May: 4,
+      Jun: 5,
+      Jul: 6,
+      Aug: 7,
+      Sep: 8,
+      Oct: 9,
+      Nov: 10,
+      Dec: 11,
     };
     const reverseMonthMap = [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
     ];
 
     let monthIndex = monthMap[month];
@@ -197,11 +263,11 @@ const EnhancedCalendarView = () => {
     monthIndex += increment;
 
     if (monthIndex > 11) {
-        monthIndex = 0;
-        yearNum += 1;
+      monthIndex = 0;
+      yearNum += 1;
     } else if (monthIndex < 0) {
-        monthIndex = 11;
-        yearNum -= 1;
+      monthIndex = 11;
+      yearNum -= 1;
     }
 
     const newMonth = `${reverseMonthMap[monthIndex]}-${yearNum}`;
@@ -210,74 +276,80 @@ const EnhancedCalendarView = () => {
     // Get user role from token
     const token = localStorage.getItem("Authorization");
     if (!token) {
-        console.error("No token found, redirecting to login.");
-        navigate("/login");
-        return;
+      console.error("No token found, redirecting to login.");
+      navigate("/login");
+      return;
     }
 
     try {
-        const decodedToken = jwtDecode(token);
-        const role = decodedToken.roles?.[0];
+      const decodedToken = jwtDecode(token);
+      const role = decodedToken.roles?.[0];
 
-        const rolePaths = {
-            ROLE_HR: "hr",
-            ROLE_MANAGER: "manager",
-            ROLE_EMPLOYEE: "employee",
-        };
+      const rolePaths = {
+        ROLE_HR: "hr",
+        ROLE_MANAGER: "manager",
+        ROLE_EMPLOYEE: "employee",
+      };
 
-        const rolePath = rolePaths[role] || "employee"; // Default to employee if role is unknown
-        navigate(`/${rolePath}/${userId}/${newMonth}`);
-
+      const rolePath = rolePaths[role] || "employee"; // Default to employee if role is unknown
+      navigate(`/${rolePath}/${userId}/${newMonth}`);
     } catch (error) {
-        console.error("Error decoding token:", error);
-        navigate("/login");
+      console.error("Error decoding token:", error);
+      navigate("/login");
     }
   };
 
   const handleMonthSelection = (monthStr) => {
-      setCurrentMonth(monthStr);
+    setCurrentMonth(monthStr);
 
-      const token = localStorage.getItem("Authorization");
-      if (!token) {
-          console.error("No token found, redirecting to login.");
-          navigate("/login");
-          return;
-      }
+    const token = localStorage.getItem("Authorization");
+    if (!token) {
+      console.error("No token found, redirecting to login.");
+      navigate("/login");
+      return;
+    }
 
-      try {
-          const decodedToken = jwtDecode(token);
-          const role = decodedToken.roles?.[0];
+    try {
+      const decodedToken = jwtDecode(token);
+      const role = decodedToken.roles?.[0];
 
-          const rolePaths = {
-              ROLE_HR: "hr",
-              ROLE_MANAGER: "manager",
-              ROLE_EMPLOYEE: "employee",
-          };
+      const rolePaths = {
+        ROLE_HR: "hr",
+        ROLE_MANAGER: "manager",
+        ROLE_EMPLOYEE: "employee",
+      };
 
-          const rolePath = rolePaths[role] || "employee"; // Default to employee if role is unknown
-          navigate(`/${rolePath}/${userId}/${monthStr}`);
-          setShowMonthDropdown(false);
-          
-      } catch (error) {
-          console.error("Error decoding token:", error);
-          navigate("/login");
-      }
+      const rolePath = rolePaths[role] || "employee"; // Default to employee if role is unknown
+      navigate(`/${rolePath}/${userId}/${monthStr}`);
+      setShowMonthDropdown(false);
+    } catch (error) {
+      console.error("Error decoding token:", error);
+      navigate("/login");
+    }
   };
-
 
   const generateMonthOptions = () => {
     const monthNames = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
     ];
     const currentYear = new Date().getFullYear();
     const years = [currentYear - 1, currentYear, currentYear + 1];
-    
-    return years.map(year => (
-      monthNames.map(month => `${month}-${year}`)
-    )).flat();
-  };
 
+    return years
+      .map((year) => monthNames.map((month) => `${month}-${year}`))
+      .flat();
+  };
 
   // Sync state when URL changes
   useEffect(() => {
@@ -581,116 +653,117 @@ const EnhancedCalendarView = () => {
 
   // Generate the calendar
   const generateCalendar = () => {
-  if (!attendanceData) return null;
+    if (!attendanceData) return null;
 
-  const daysInMonth = getDaysInMonth(currentMonth);
-  const firstDay = getFirstDayOfMonth(currentMonth);
-  const records = attendanceData[employeeName] || {};
+    const daysInMonth = getDaysInMonth(currentMonth);
+    const firstDay = getFirstDayOfMonth(currentMonth);
+    const records = attendanceData[employeeName] || {};
 
-  let cells = [];
+    let cells = [];
 
-  // Add empty cells for days before the first day of the month
-  for (let i = 0; i < firstDay; i++) {
-    cells.push(<div key={`empty-${i}`} className="h-20 bg-gray-50"></div>);
-  }
-
-  // Add cells for each day of the month
-  for (let day = 1; day <= daysInMonth; day++) {
-    const dateStr = formatDateForApi(day);
-    const status = records[dateStr] || "";
-    const weekend = isWeekend(day, currentMonth);
-    const today = isToday(day, currentMonth);
-
-    // Determine cell styles based on status and day type
-    let cellClass = "relative h-20 p-0.5 border transition-all duration-200 ";
-    let dayClass = "absolute top-1 right-2 text-xs ";
-    let contentClass = "mt-3 text-center text-xs ";
-
-    if (today) {
-      cellClass += "ring-2 ring-blue-500 ";
-      dayClass +=
-        "font-bold bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center ";
-    } else {
-      dayClass += "font-medium text-black ";
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < firstDay; i++) {
+      cells.push(<div key={`empty-${i}`} className="h-20 bg-gray-50"></div>);
     }
 
-    if (weekend) {
-      cellClass += "bg-gray-50 ";
-      if (!today) dayClass += "text-gray-500 ";
-    } else {
-      cellClass += "bg-white ";
-    }
+    // Add cells for each day of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = formatDateForApi(day);
+      const status = records[dateStr] || "";
+      const weekend = isWeekend(day, currentMonth);
+      const today = isToday(day, currentMonth);
 
-    // Status-specific styling
-    if (status === "WFH") {
-      contentClass += "text-blue-800 ";
-      if (!weekend) cellClass += "bg-blue-50 hover:bg-blue-100 ";
-    } else if (
-      status === "Planned Leave" ||
-      status === "Planned Leave (First Half)" ||
-      status === "Planned Leave (Second Half)"
-    ) {
-      contentClass += "text-amber-800 ";
-      if (!weekend) cellClass += "bg-amber-50 hover:bg-amber-100 ";
-    } else if (status === "Unplanned Leave") {
-      contentClass += "text-orange-800 ";
-      if (!weekend) cellClass += "bg-orange-50 hover:bg-orange-100 ";
-    } else if (status === "Sick Leave") {
-      contentClass += "text-purple-800 ";
-      if (!weekend) cellClass += "bg-purple-50 hover:bg-purple-100 ";
-    } else if (status === "Travelling to HQ") {
-      contentClass += "text-indigo-800 ";
-      if (!weekend) cellClass += "bg-indigo-50 hover:bg-indigo-100 ";
-    } else if (status === "Holiday") {
-      contentClass += "text-teal-800 ";
-      if (!weekend) cellClass += "bg-teal-50 hover:bg-teal-100 ";
-    } else if (status === "Elections") {
-      contentClass += "text-cyan-800 ";
-      if (!weekend) cellClass += "bg-cyan-50 hover:bg-cyan-100 ";
-    } else if (status === "Joined") {
-      contentClass += "text-lime-800 ";
-      if (!weekend) cellClass += "bg-lime-50 hover:bg-lime-100 ";
-    } else if (status === "Present") {
-      contentClass += "text-green-800 ";
-      if (!weekend) cellClass += "bg-green-50 hover:bg-green-100 ";
-    } else if (status === "Absent") {
-      contentClass += "text-red-800 ";
-      if (!weekend) cellClass += "bg-red-50 hover:bg-red-100 ";
-    } else {
-      if (!weekend) cellClass += "hover:bg-gray-100 ";
-      contentClass += "text-gray-400 ";
-    }
+      // Determine cell styles based on status and day type
+      let cellClass = "relative h-20 p-0.5 border transition-all duration-200 ";
+      let dayClass = "absolute top-1 right-2 text-xs ";
+      let contentClass = "mt-3 text-center text-xs ";
 
-    cellClass += "hover:shadow-sm ";
+      if (today) {
+        cellClass += "ring-2 ring-blue-500 ";
+        dayClass +=
+          "font-bold bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center ";
+      } else {
+        dayClass += "font-medium text-black ";
+      }
 
-    cells.push(
-      <div key={day} className={cellClass}>
-        <div className={dayClass}>{day}</div>
+      if (weekend) {
+        cellClass += "bg-gray-50 ";
+        if (!today) dayClass += "text-gray-500 ";
+      } else {
+        cellClass += "bg-white ";
+      }
 
-        <div className={contentClass}>
-          {status ? (
-            <>
-              {getStatusIcon(status)}
-              <div className="text-[10px] font-medium mt-1">{status}</div>
-            </>
-          ) : weekend ? (
-            <div className="mt-3 text-[10px] text-gray-400">Weekend</div>
-          ) : (
-            <div className="text-[10px] text-gray-400 mt-3">Regular Workday</div>
-          )}
+      // Status-specific styling
+      if (status === "WFH") {
+        contentClass += "text-blue-800 ";
+        if (!weekend) cellClass += "bg-blue-50 hover:bg-blue-100 ";
+      } else if (
+        status === "Planned Leave" ||
+        status === "Planned Leave (First Half)" ||
+        status === "Planned Leave (Second Half)"
+      ) {
+        contentClass += "text-amber-800 ";
+        if (!weekend) cellClass += "bg-amber-50 hover:bg-amber-100 ";
+      } else if (status === "Unplanned Leave") {
+        contentClass += "text-orange-800 ";
+        if (!weekend) cellClass += "bg-orange-50 hover:bg-orange-100 ";
+      } else if (status === "Sick Leave") {
+        contentClass += "text-purple-800 ";
+        if (!weekend) cellClass += "bg-purple-50 hover:bg-purple-100 ";
+      } else if (status === "Travelling to HQ") {
+        contentClass += "text-indigo-800 ";
+        if (!weekend) cellClass += "bg-indigo-50 hover:bg-indigo-100 ";
+      } else if (status === "Holiday") {
+        contentClass += "text-teal-800 ";
+        if (!weekend) cellClass += "bg-teal-50 hover:bg-teal-100 ";
+      } else if (status === "Elections") {
+        contentClass += "text-cyan-800 ";
+        if (!weekend) cellClass += "bg-cyan-50 hover:bg-cyan-100 ";
+      } else if (status === "Joined") {
+        contentClass += "text-lime-800 ";
+        if (!weekend) cellClass += "bg-lime-50 hover:bg-lime-100 ";
+      } else if (status === "Present") {
+        contentClass += "text-green-800 ";
+        if (!weekend) cellClass += "bg-green-50 hover:bg-green-100 ";
+      } else if (status === "Absent") {
+        contentClass += "text-red-800 ";
+        if (!weekend) cellClass += "bg-red-50 hover:bg-red-100 ";
+      } else {
+        if (!weekend) cellClass += "hover:bg-gray-100 ";
+        contentClass += "text-gray-400 ";
+      }
+
+      cellClass += "hover:shadow-sm ";
+
+      cells.push(
+        <div key={day} className={cellClass}>
+          <div className={dayClass}>{day}</div>
+
+          <div className={contentClass}>
+            {status ? (
+              <>
+                {getStatusIcon(status)}
+                <div className="text-[10px] font-medium mt-1">{status}</div>
+              </>
+            ) : weekend ? (
+              <div className="mt-3 text-[10px] text-gray-400">Weekend</div>
+            ) : (
+              <div className="text-[10px] text-gray-400 mt-3">
+                Regular Workday
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  return cells;
-};
-
+    return cells;
+  };
 
   // Function to download attendance report
   const downloadReport = () => {
     const token = localStorage.getItem("Authorization");
-  
+
     if (!token) {
       console.error("No token found, redirecting to login.");
       navigate("/login");
@@ -698,36 +771,40 @@ const EnhancedCalendarView = () => {
     }
 
     const decodedToken = jwtDecode(token);
-        const role = decodedToken.roles?.[0];
-        const roleEndpoints = {
-            ROLE_HR: "hr",
-            ROLE_MANAGER: "manager",
-            ROLE_EMPLOYEE: "employee",
-        };
+    const role = decodedToken.roles?.[0];
+    const roleEndpoints = {
+      ROLE_HR: "hr",
+      ROLE_MANAGER: "manager",
+      ROLE_EMPLOYEE: "employee",
+    };
 
-        const rolePath = roleEndpoints[role] || "employee";
-  
+    const rolePath = roleEndpoints[role] || "employee";
+
     // Establish SSE connection
-    const eventSource = new EventSource(`http://localhost:8080/${rolePath}/events/${userId}`);
-  
+    const eventSource = new EventSource(
+      `http://localhost:8080/${rolePath}/events/${userId}`
+    );
+
     eventSource.onmessage = (event) => {
       console.log("SSE Message:", event.data);
-      
+
       toast.info(event.data, {
         position: "top-right",
         autoClose: 3000, // Auto close after 3 seconds
       });
-    
+
       // If message is "DONE", close the SSE connection
       if (event.data === "DONE") {
         console.log("SSE process completed. Closing connection.");
         eventSource.close();
       }
     };
-    
-  
+
     eventSource.onerror = (error) => {
-      if (eventSource.readyState === EventSource.CLOSED || eventSource.readyState === EventSource.CONNECTING) {
+      if (
+        eventSource.readyState === EventSource.CLOSED ||
+        eventSource.readyState === EventSource.CONNECTING
+      ) {
         console.log("SSE connection closed or reconnecting.");
         return; // Ignore normal closure or reconnection attempts
       } else {
@@ -735,15 +812,17 @@ const EnhancedCalendarView = () => {
       }
       eventSource.close();
     };
-    
-  
+
     // Call backend to generate & download Excel
-    fetch(`http://localhost:8080/${rolePath}/download/${userId}/${currentMonth}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
+    fetch(
+      `http://localhost:8080/${rolePath}/download/${userId}/${currentMonth}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
       .then((response) => response.blob())
       .then((blob) => {
         const url = window.URL.createObjectURL(blob);
@@ -758,25 +837,25 @@ const EnhancedCalendarView = () => {
         console.error("Error downloading report:", error);
         setStatusMessage("Failed to download report.");
       });
-  
+
     // Close SSE connection after some time
     setTimeout(() => {
       eventSource.close();
     }, 10000);
   };
-  
+
   const handleBackButton = () => {
-      const token = localStorage.getItem("Authorization");
-      const decodedToken = jwtDecode(token); 
-      const roles = decodedToken.roles; 
-  
-      if (roles.includes("ROLE_HR")) {
-        navigate("/hr");
-      } else if (roles.includes("ROLE_EMPLOYEE")) {
-          navigate("/employee");
-      } else {
-          navigate("/manager");
-      }
+    const token = localStorage.getItem("Authorization");
+    const decodedToken = jwtDecode(token);
+    const roles = decodedToken.roles;
+
+    if (roles.includes("ROLE_HR")) {
+      navigate("/hr");
+    } else if (roles.includes("ROLE_EMPLOYEE")) {
+      navigate("/employee");
+    } else {
+      navigate("/manager");
+    }
   };
 
   return (
@@ -790,13 +869,24 @@ const EnhancedCalendarView = () => {
             <span className="text-blue-100 text-sm">Employee ID: {userId}</span>
           </div>
           <button
-              onClick={handleBackButton}
-              className="py-2 px-4 bg-blue-300 text-white rounded-lg text-sm font-medium cursor-pointer transition-colors hover:bg-blue-600 flex items-center gap-2"
+            onClick={handleBackButton}
+            className="py-2 px-4 bg-blue-300 text-white rounded-lg text-sm font-medium cursor-pointer transition-colors hover:bg-blue-600 flex items-center gap-2"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Back
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+              />
+            </svg>
+            Back
           </button>
         </div>
       </div>
@@ -842,7 +932,7 @@ const EnhancedCalendarView = () => {
                     viewBox="0 0 24 24"
                     xmlns="http://www.w3.org/2000/svg"
                   >
-                <path
+                    <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth="2"
@@ -850,7 +940,6 @@ const EnhancedCalendarView = () => {
                     ></path>
                   </svg>
                 </button>
-                
                 {showMonthDropdown && (
                   <div className="absolute right-0 mt-2 py-2 w-40 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
                     {generateMonthOptions().map((month) => (
@@ -858,7 +947,9 @@ const EnhancedCalendarView = () => {
                         key={month}
                         onClick={() => handleMonthSelection(month)}
                         className={`block px-4 py-2 text-left w-full hover:bg-gray-100 ${
-                          currentMonth === month ? "bg-blue-100 font-medium" : ""
+                          currentMonth === month
+                            ? "bg-blue-100 font-medium"
+                            : ""
                         }`}
                       >
                         {month}
@@ -866,8 +957,8 @@ const EnhancedCalendarView = () => {
                     ))}
                   </div>
                 )}
-              </div>
-
+                      
+              </div>
 
               <button
                 onClick={() => changeMonth(1)}
@@ -892,6 +983,28 @@ const EnhancedCalendarView = () => {
             </div>
 
             <div className="flex items-center space-x-3">
+              {userRole === "ROLE_HR" && (
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-700 transition-colors flex items-center shadow-sm mr-3"
+                >
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    ></path>
+                  </svg>
+                  Delete Entry
+                </button>
+              )}
               <button
                 onClick={handleGraphClick}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center shadow-sm"
@@ -1163,6 +1276,44 @@ const EnhancedCalendarView = () => {
           </div>
         </div>
       </div>
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 backdrop-blur-md flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 max-w-md shadow-lg">
+            <h3 className="text-lg font-semibold mb-4">
+              Delete Attendance Entry
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Please select the date of the entry you want to delete:
+            </p>
+
+            <div className="mb-4">
+              <input
+                type="date"
+                className="w-full p-2 border border-gray-300 rounded"
+                value={deleteDate}
+                onChange={(e) => setDeleteDate(e.target.value)}
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteEntry}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                disabled={!deleteDate}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
