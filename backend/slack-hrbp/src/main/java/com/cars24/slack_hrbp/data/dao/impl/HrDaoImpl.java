@@ -1,7 +1,9 @@
 package com.cars24.slack_hrbp.data.dao.impl;
 
 import com.cars24.slack_hrbp.data.dao.HrDao;
+import com.cars24.slack_hrbp.data.entity.AttendanceEntity;
 import com.cars24.slack_hrbp.data.entity.EmployeeEntity;
+import com.cars24.slack_hrbp.data.repository.AttendanceRepository;
 import com.cars24.slack_hrbp.data.repository.EmployeeRepository;
 import com.cars24.slack_hrbp.data.request.EmployeeUpdateRequest;
 import com.cars24.slack_hrbp.data.request.CreateEmployeeRequest;
@@ -35,6 +37,7 @@ public class HrDaoImpl implements HrDao {
     private final EmployeeRepository employeeRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final Neo4jClient neo4jClient;
+    private final AttendanceRepository attendanceRepository;
 
 
     @Override
@@ -96,5 +99,16 @@ public class HrDaoImpl implements HrDao {
         else{
             return employeeRepository.countBySearchtag(searchtag);
         }
+    }
+
+    @Override
+    public String deleteEntry(String userId,String date){
+        List<AttendanceEntity> attendanceEntity = attendanceRepository.findByUseridAndDateStartingWith(userId,date);
+
+        for(AttendanceEntity entity : attendanceEntity){
+            attendanceRepository.deleteById(entity.getId());
+        }
+
+        return "Delete of attendance successfull";
     }
 }
