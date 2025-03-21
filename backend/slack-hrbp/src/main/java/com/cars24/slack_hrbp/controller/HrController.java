@@ -252,7 +252,79 @@ public class HrController {
         }
     }
 
+    @PreAuthorize("hasRole('HR')")
+    @GetMapping(value = "/events/bymonthreport", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamEventsForMonth(@RequestParam String frommonth,@RequestParam String tomonth) {
+        SseEmitter emitter = new SseEmitter(0L); // No timeout
+        ExecutorService executor = Executors.newSingleThreadExecutor();
 
+        executor.execute(() -> {
+            try {
+                long startTime = System.currentTimeMillis();
+                // Send "Generating Excel" message first
+                emitter.send(SseEmitter.event().data("Generating Excel..."));
+
+                // Simulate report generation delay (replace with actual logic)
+//                Thread.sleep(5000); // Simulate processing delay
+
+                byte[] excelData = null;
+                try {
+                    excelData = monthBasedService.generateAttendanceReports(frommonth,tomonth);
+                } catch (ParseException e) {
+                    throw new RuntimeException(e);
+                }
+
+                String directoryPath = "monthreports";
+                File reportsDir = new File(directoryPath);
+
+                // Ensure the directory exists
+                if (!reportsDir.exists()) {
+                    reportsDir.mkdirs();  // Create the directory if it doesn't exist
+                }
+
+                long endTime = System.currentTimeMillis(); // Record end time
+                long duration = endTime - startTime; // Calculate latency
+
+
+                System.out.println("Report generation time: " + duration + " ms");
+                String filePath = "monthreports/Attendance_" + "_" + "from_" + frommonth + "_to_" + tomonth + ".xlsx";
+                Files.write(Paths.get(filePath), excelData);
+                System.out.println(" Report generated at: " + filePath);
+                // Send "Download Ready" message
+                emitter.send(SseEmitter.event().data("Report Ready"));
+                emitter.complete(); // Close connection after sending
+            } catch (IOException e) {
+                try {
+                    emitter.send(SseEmitter.event().data("Error generating report"));
+                    emitter.completeWithError(e);
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+
+        return emitter;
+    }
+
+    // API to trigger Excel generation & notify frontend
+    @PreAuthorize("hasRole('HR')")
+    @GetMapping("/download/bymonthreport")
+    public ResponseEntity<Resource> downloadMonthReport(@RequestParam String frommonth, @RequestParam String tomonth) {
+        String filePath = "monthreports/Attendance_" + "_" + "from_" + frommonth + "_to_" + tomonth + ".xlsx";
+        File file = new File(filePath);
+
+        if (!file.exists()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+
+        Resource resource = new FileSystemResource(file);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + file.getName())
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(resource);
+
+
+    }
 
 }
 

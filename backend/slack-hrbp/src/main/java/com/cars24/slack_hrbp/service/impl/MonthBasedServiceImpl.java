@@ -122,6 +122,158 @@ public class MonthBasedServiceImpl {
         return outputStream.toByteArray();
     }
 
+    public byte[] generateAttendanceReports(String fromMonthYear, String toMonthYear) throws IOException, ParseException {
+        // Create a new workbook
+        Workbook workbook = new XSSFWorkbook();
+
+        // Parse the from and to monthYear strings into dates
+        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM");
+        Date fromDate = inputFormat.parse(fromMonthYear);
+        Date toDate = inputFormat.parse(toMonthYear);
+
+        // Create a calendar to iterate through the months
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(fromDate);
+
+        // Iterate through each month in the range
+        while (!calendar.getTime().after(toDate)) {
+            String currentMonthYear = inputFormat.format(calendar.getTime());
+
+            // Generate attendance report for the current month
+            List<AttendanceEntity> attendanceList = attendanceRepository.findByDateStartingWith(currentMonthYear);
+            Map<String, Map<String, String>> userAttendanceMap = processAttendanceData(attendanceList);
+
+            // Create a new sheet for the current month
+            Sheet sheet = workbook.createSheet(currentMonthYear);
+            populateSheet(sheet, userAttendanceMap);
+
+            // Move to the next month
+            calendar.add(Calendar.MONTH, 1);
+        }
+
+        // Write the workbook to a ByteArrayOutputStream
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        workbook.write(outputStream);
+        workbook.close();
+
+        // Return the byte array
+        return outputStream.toByteArray();
+    }
+
+    public byte[] generateAttendanceReportsForManager(String fromMonthYear, String toMonthYear, String managerId) throws IOException, ParseException {
+        // Fetch all employees under the given manager
+        List<String> employeeIds = monthBasedDao.getAllEmployeesUnderManager(managerId);
+        System.out.println("In Service Layer from Dao: " + employeeIds);
+
+        // Optimize lookup by using a HashSet
+        Set<String> employeeIdSet = new HashSet<>(employeeIds);
+
+        // Create a new workbook
+        Workbook workbook = new XSSFWorkbook();
+
+        // Parse the from and to monthYear strings into dates
+        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM");
+        Date fromDate = inputFormat.parse(fromMonthYear);
+        Date toDate = inputFormat.parse(toMonthYear);
+
+        // Create a calendar to iterate through the months
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(fromDate);
+
+        // Iterate through each month in the range
+        while (!calendar.getTime().after(toDate)) {
+            String currentMonthYear = inputFormat.format(calendar.getTime());
+
+            // Fetch all attendance data for the current month
+            List<AttendanceEntity> attendanceList = attendanceRepository.findByDateStartingWith(currentMonthYear);
+            System.out.println("In Service layer from Repository for " + currentMonthYear + ": " + attendanceList);
+
+            // Filter attendance records for employees under the manager
+            List<AttendanceEntity> filteredAttendance = attendanceList.stream()
+                    .filter(attendance -> employeeIdSet.contains(attendance.getUserid()))
+                    .collect(Collectors.toList());
+
+            // Prepare the user-wise attendance map
+            Map<String, Map<String, String>> userAttendanceMap = new HashMap<>();
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            SimpleDateFormat displayFormat = new SimpleDateFormat("MMM-dd");
+
+            for (AttendanceEntity attendance : filteredAttendance) {
+                String username = attendance.getUsername();
+                String formattedDate = displayFormat.format(dateFormat.parse(attendance.getDate()));
+                String requestType = getRequestTypeCode(attendance.getType()); // Use the existing method to get the request type code
+
+                // Ensure user entry exists and store request type
+                userAttendanceMap.computeIfAbsent(username, k -> new HashMap<>()).put(formattedDate, requestType);
+            }
+
+            // Create a new sheet for the current month
+            Sheet sheet = workbook.createSheet(currentMonthYear);
+            populateSheet(sheet, userAttendanceMap);
+
+            // Move to the next month
+            calendar.add(Calendar.MONTH, 1);
+        }
+
+        // Write the workbook to a ByteArrayOutputStream
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        workbook.write(outputStream);
+        workbook.close();
+
+        // Return the byte array
+        return outputStream.toByteArray();
+    }
+    private Map<String, Map<String, String>> processAttendanceData(List<AttendanceEntity> attendanceList) throws ParseException {
+        Map<String, Map<String, String>> userAttendanceMap = new HashMap<>();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        SimpleDateFormat displayFormat = new SimpleDateFormat("MMM-dd");
+
+        for (AttendanceEntity attendance : attendanceList) {
+            String username = attendance.getUsername();
+            String date = attendance.getDate();
+            String requestType = getRequestTypeCode(attendance.getType());
+
+            Date parsedDate = dateFormat.parse(date);
+            String formattedDate = displayFormat.format(parsedDate);
+
+            userAttendanceMap.computeIfAbsent(username, k -> new HashMap<>()).put(formattedDate, requestType);
+        }
+
+        return userAttendanceMap;
+    }
+
+    private void populateSheet(Sheet sheet, Map<String, Map<String, String>> userAttendanceMap) {
+        // Create header row
+        Row headerRow = sheet.createRow(0);
+        headerRow.createCell(0).setCellValue("User Name");
+
+        // Get all unique dates
+        Set<String> allDates = new TreeSet<>();
+        for (Map<String, String> dateMap : userAttendanceMap.values()) {
+            allDates.addAll(dateMap.keySet());
+        }
+
+        // Add dates to the header row
+        int colNum = 1;
+        for (String date : allDates) {
+            headerRow.createCell(colNum++).setCellValue(date);
+        }
+
+        // Populate user data
+        int rowNum = 1;
+        for (Map.Entry<String, Map<String, String>> entry : userAttendanceMap.entrySet()) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(entry.getKey());
+
+            colNum = 1;
+            for (String date : allDates) {
+                String requestType = entry.getValue().getOrDefault(date, "");
+                row.createCell(colNum++).setCellValue(requestType);
+            }
+        }
+    }
+
+
 
 
     public byte[] generateAttendanceReportForManager(String monthYear, String managerId) throws IOException, ParseException {
