@@ -424,6 +424,13 @@ const ByMonth = () => {
                 <th className="sticky top-0 left-0 bg-blue-500 text-white z-30 text-left py-4 px-4 font-semibold border border-blue-700">
                   User Name
                 </th>
+    <th className="sticky top-0 left-[180px] bg-blue-500 text-white z-30 text-center py-3 px-2 font-semibold border border-blue-700 min-w-[80px] max-w-[80px]">
+      Total WFH
+    </th>
+    {/* Total Leaves Column */}
+    <th className="sticky top-0 left-[260px] bg-blue-500 text-white z-30 text-center py-3 px-2 font-semibold border border-blue-700 min-w-[80px] max-w-[80px]">
+      Total Leaves
+    </th>
                 {dates.map((date, index) => (
                   <th
                     key={date}
@@ -439,6 +446,12 @@ const ByMonth = () => {
                     </div>
                   </th>
                 ))}
+                {/* <th className="sticky top-0 bg-blue-500 text-white z-20 text-center py-3 px-2 font-semibold border border-blue-700">
+                  Total WFH
+                </th>
+                <th className="sticky top-0 bg-blue-500 text-white z-20 text-center py-3 px-2 font-semibold border border-blue-700">
+                  Total Leaves
+                </th> */}
               </tr>
             </thead>
             <tbody>
@@ -447,6 +460,13 @@ const ByMonth = () => {
                   <td className="sticky left-0 bg-white z-10 text-left py-4 px-4 font-medium min-w-[180px] max-w-[250px] whitespace-nowrap overflow-hidden text-ellipsis border border-gray-300 shadow-sm">
                     {username}
                   </td>
+      <td className="sticky left-[180px] bg-white z-10 text-center py-4 px-2 font-semibold border border-gray-300 min-w-[80px] max-w-[80px]">
+        {attendance["Total WFH"] || 0}
+      </td>
+      {/* Total Leaves Column */}
+      <td className="sticky left-[260px] bg-white z-10 text-center py-4 px-2 font-semibold border border-gray-300 min-w-[80px] max-w-[80px]">
+        {attendance["Total Leaves"] || 0}
+      </td>
                   {dates.map((date, index) => {
                     const attendanceCode = attendance[date] || "";
                     return (
@@ -468,6 +488,12 @@ const ByMonth = () => {
                       </td>
                     );
                   })}
+                  {/* <td className="text-center py-4 px-2 font-semibold border border-gray-300">
+                    {attendance["Total WFH"] || 0}
+                  </td>
+                  <td className="text-center py-4 px-2 font-semibold border border-gray-300">
+                    {attendance["Total Leaves"] || 0}
+                  </td> */}
                 </tr>
               ))}
             </tbody>
