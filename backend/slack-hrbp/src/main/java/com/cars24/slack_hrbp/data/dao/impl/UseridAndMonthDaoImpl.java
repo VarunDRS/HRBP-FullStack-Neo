@@ -9,7 +9,11 @@ import org.springframework.stereotype.Service;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
@@ -74,6 +78,48 @@ public class UseridAndMonthDaoImpl implements UseridAndMonthDao {
     }
 
     @Override
+    public Map<String, Map<String, String>> getUserDetails(String userid, String frommonth, String tomonth) {
+        log.info("Fetching attendance details for userid: {}", userid);
+
+        List<AttendanceEntity> resp = attendanceRepository.findByUserid(userid);
+        if (resp.isEmpty()) {
+            return Collections.emptyMap(); // Return an empty map if no data found
+        }
+
+        String username = resp.get(0).getUsername();
+        // Define formatters
+        DateTimeFormatter dbDateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd"); // DB date format
+        DateTimeFormatter monthYearFormatter = DateTimeFormatter.ofPattern("MMM-yyyy"); // Input month format
+
+        // Convert frommonth and tomonth to YearMonth
+        YearMonth fromMonth = YearMonth.parse(frommonth, monthYearFormatter);
+        YearMonth toMonth = YearMonth.parse(tomonth, monthYearFormatter);
+
+        // Filter attendance records based on the leave date range
+        List<AttendanceEntity> filteredLeaves = resp.stream()
+                .filter(attendance -> {
+                    LocalDate leaveDate = LocalDate.parse(attendance.getDate(), dbDateFormatter);
+                    YearMonth leaveYearMonth = YearMonth.from(leaveDate);
+                    return (leaveYearMonth.equals(fromMonth) || leaveYearMonth.equals(toMonth) ||
+                            (leaveYearMonth.isAfter(fromMonth) && leaveYearMonth.isBefore(toMonth)));
+                })
+                .collect(Collectors.toList());
+
+        // Prepare the report data
+        Map<String, Map<String, String>> reportData = new LinkedHashMap<>();
+
+        for (AttendanceEntity leave : filteredLeaves) {
+            LocalDate leaveDate = LocalDate.parse(leave.getDate(), dbDateFormatter);
+            String monthYearKey = leaveDate.format(monthYearFormatter); // "MMM-yyyy" format for grouping
+
+            reportData.putIfAbsent(monthYearKey, new LinkedHashMap<>()); // Initialize inner map
+            reportData.get(monthYearKey).put(leave.getDate(), leave.getType()); // Store leave date & type
+        }
+
+        return reportData;
+    }
+
+    @Override
     public Map<String, Map<String, String>> getUserDetails(String userid, String month) {
         log.info("Fetching attendance details for userid: {}", userid);
 
@@ -107,8 +153,6 @@ public class UseridAndMonthDaoImpl implements UseridAndMonthDao {
                 String entityMonth = monthFormat.format(parsedDate); // Convert Date to "MMM-yyyy"
 
                 if (entityMonth.equals(targetMonth)) { // Correct month comparison
-                    log.info("Inside If - Date belongs to requested month");
-
                     String formattedDate = outputFormat.format(parsedDate); // Format Date to "MMM-dd"
                     String leaveType = getLeaveAbbreviation(entity.getType());
                     attendanceMap.put(formattedDate, leaveType);
@@ -118,10 +162,11 @@ public class UseridAndMonthDaoImpl implements UseridAndMonthDao {
             }
         }
 
-        // Construct final response map
+        // Construction of final response map
         Map<String, Map<String, String>> result = new LinkedHashMap<>();
         result.put(username, attendanceMap);
         return result;
     }
+
 
 }

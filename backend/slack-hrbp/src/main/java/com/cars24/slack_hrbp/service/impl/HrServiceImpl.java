@@ -2,29 +2,24 @@ package com.cars24.slack_hrbp.service.impl;
 
 import com.cars24.slack_hrbp.data.dao.impl.HrDaoImpl;
 import com.cars24.slack_hrbp.data.dao.impl.ListAllEmployeesUnderManagerDaoImpl;
-import com.cars24.slack_hrbp.data.dto.UserDto;
 import com.cars24.slack_hrbp.data.entity.EmployeeEntity;
+import com.cars24.slack_hrbp.data.entity.ProfileEntity;
+import com.cars24.slack_hrbp.data.repository.AttendanceRepository;
 import com.cars24.slack_hrbp.data.repository.EmployeeRepository;
+import com.cars24.slack_hrbp.data.repository.ProfileRepository;
 import com.cars24.slack_hrbp.data.request.EmployeeUpdateRequest;
 import com.cars24.slack_hrbp.data.request.CreateEmployeeRequest;
-import com.cars24.slack_hrbp.data.response.EmployeeDisplayResponse;
-import com.cars24.slack_hrbp.data.response.UpdateEmployeeResponse;
 import com.cars24.slack_hrbp.excpetion.UserServiceException;
 import com.cars24.slack_hrbp.service.HrService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -37,36 +32,45 @@ public class HrServiceImpl implements HrService {
     private final Neo4jClient neo4jClient;
     private final EmployeeRepository employeeRepository;
     private final ListAllEmployeesUnderManagerDaoImpl listAllEmployeesUnderManagerDao;
+    private final AttendanceRepository attendanceRepository;
+    private final ProfileRepository profileRepository;
 
 
     @Transactional
     public EmployeeEntity createEmployee(CreateEmployeeRequest request) {
-        EmployeeEntity manager = null;
+        String managerid = null;
         String managerName = null;
 
-        Optional<EmployeeEntity> employee = employeeRepository.findByUserId(request.getUserId());
-        if(employee.isPresent())
-            throw new UserServiceException("User already exists");
+        if(employeeRepository.existsByEmail(request.getEmail()))
+            throw new UserServiceException("User already there");
 
-        if (request.getManagerId() != null) {
-            Optional<EmployeeEntity> managerOpt = employeeRepository.findByUserId(request.getManagerId());
-            if (managerOpt.isPresent()) {
-                manager = managerOpt.get();
-                managerName = manager.getUsername();
-            } else {
-                throw new UserServiceException("Manager not found");
-            }
+        if(!employeeRepository.existsByEmail(request.getManagerEmail()))
+            throw new UserServiceException("Manager not found");
+
+        if(!profileRepository.existsByEmail(request.getEmail()))
+            throw new UserServiceException("User doesnt exist in slack");
+
+        if (request.getManagerEmail() != null) {
+            EmployeeEntity managerOpt = employeeRepository.findByEmail(request.getManagerEmail());
+            managerid = managerOpt.getUserId();
+            managerName = managerOpt.getUsername();
         }
 
-        String encoded = bCryptPasswordEncoder.encode(request.getPassword());
+        String password = "Temp#555";
+        ProfileEntity entity = profileRepository.findByEmail(request.getEmail());
+
+        String userId = entity.getSlackid();
+        String userName = entity.getName();
+
+        String encoded = bCryptPasswordEncoder.encode(password);
 
         return employeeRepository.createEmployeeWithManager(
-                request.getUserId(),
-                request.getUsername(),
+                userId,
+                userName,
                 request.getEmail(),
                 encoded,
                 managerName,
-                request.getManagerId(),
+                managerid,
                 request.getRoles()
         );
     }
@@ -101,7 +105,6 @@ public class HrServiceImpl implements HrService {
 
     @Override
     public String updateUser(EmployeeUpdateRequest employeeUpdateRequest) {
-        System.out.println("Request reached Service for update user");
         return hrDao.updateUser(employeeUpdateRequest);
     }
 
@@ -114,6 +117,14 @@ public class HrServiceImpl implements HrService {
     @Override
     public long getTotalEmployeesCount(String searchtag){
         return hrDao.getTotalEmployeesCount(searchtag);
+    }
+
+    @Override
+    public String deleteEntry(String userId,String date){
+        if(!attendanceRepository.existsByUseridAndDateStartingWith(userId,date)){
+            throw new UserServiceException("Not such entry for the user exists");
+        }
+        return hrDao.deleteEntry(userId,date);
     }
 
 }
