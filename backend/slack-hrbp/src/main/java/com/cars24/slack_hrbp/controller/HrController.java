@@ -233,10 +233,12 @@ public class HrController {
 
     @PreAuthorize("hasRole('HR')")
     @GetMapping("bymonthreport")
-    public ResponseEntity<byte[]> getByMonth(@RequestParam String monthYear) {
+    public ResponseEntity<byte[]> getByMonth(
+            @RequestParam String monthYear,
+            @RequestParam String managerId) { // Added managerId parameter
         try {
             // Generate the report and Excel file
-            byte[] excelFile = monthBasedService.generateAttendanceReport(monthYear);
+            byte[] excelFile = monthBasedService.generateAttendanceReport(monthYear, managerId);
 
             // Set headers for file download
             HttpHeaders headers = new HttpHeaders();
@@ -254,7 +256,10 @@ public class HrController {
 
     @PreAuthorize("hasRole('HR')")
     @GetMapping(value = "/events/bymonthreport", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter streamEventsForMonth(@RequestParam String frommonth,@RequestParam String tomonth) {
+    public SseEmitter streamEventsForMonth(
+            @RequestParam String frommonth,
+            @RequestParam String tomonth,
+            @RequestParam String managerId) { // Added managerId parameter
         SseEmitter emitter = new SseEmitter(0L); // No timeout
         ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -264,15 +269,8 @@ public class HrController {
                 // Send "Generating Excel" message first
                 emitter.send(SseEmitter.event().data("Generating Excel..."));
 
-                // Simulate report generation delay (replace with actual logic)
-//                Thread.sleep(5000); // Simulate processing delay
-
-                byte[] excelData = null;
-                try {
-                    excelData = monthBasedService.generateAttendanceReports(frommonth,tomonth);
-                } catch (ParseException e) {
-                    throw new RuntimeException(e);
-                }
+                // Generate the report
+                byte[] excelData = monthBasedService.generateAttendanceReports(frommonth, tomonth, managerId);
 
                 String directoryPath = "monthreports";
                 File reportsDir = new File(directoryPath);
@@ -285,15 +283,15 @@ public class HrController {
                 long endTime = System.currentTimeMillis(); // Record end time
                 long duration = endTime - startTime; // Calculate latency
 
-
                 System.out.println("Report generation time: " + duration + " ms");
                 String filePath = "monthreports/Attendance_" + "_" + "from_" + frommonth + "_to_" + tomonth + ".xlsx";
                 Files.write(Paths.get(filePath), excelData);
                 System.out.println(" Report generated at: " + filePath);
+
                 // Send "Download Ready" message
                 emitter.send(SseEmitter.event().data("Report Ready"));
                 emitter.complete(); // Close connection after sending
-            } catch (IOException e) {
+            } catch (IOException | ParseException e) {
                 try {
                     emitter.send(SseEmitter.event().data("Error generating report"));
                     emitter.completeWithError(e);
@@ -309,7 +307,10 @@ public class HrController {
     // API to trigger Excel generation & notify frontend
     @PreAuthorize("hasRole('HR')")
     @GetMapping("/download/bymonthreport")
-    public ResponseEntity<Resource> downloadMonthReport(@RequestParam String frommonth, @RequestParam String tomonth) {
+    public ResponseEntity<Resource> downloadMonthReport(
+            @RequestParam String frommonth,
+            @RequestParam String tomonth,
+            @RequestParam String managerId) {
         String filePath = "monthreports/Attendance_" + "_" + "from_" + frommonth + "_to_" + tomonth + ".xlsx";
         File file = new File(filePath);
 
@@ -322,8 +323,6 @@ public class HrController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + file.getName())
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(resource);
-
-
     }
 
 }

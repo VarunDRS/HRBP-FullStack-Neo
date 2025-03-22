@@ -3,6 +3,9 @@ import axios from "axios";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 const ByMonth = () => {
   const [reportData, setReportData] = useState(null);
   const [error, setError] = useState("");
@@ -13,6 +16,8 @@ const ByMonth = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5); 
   const [totalPages, setTotalPages] = useState(1);
+  const [fromMonth, setFromMonth] = useState("");
+  const [toMonth, setToMonth] = useState("");
 
   // Convert the month-year format from the URL (Mar-2025) to the format needed by the API (YYYY-MM)
   const getFormattedMonthYear = () => {
@@ -315,9 +320,9 @@ const ByMonth = () => {
       // Dynamically generate the URL based on the role
       let url;
       if (role === "ROLE_HR") {
-        url = `http://localhost:8080/hr/bymonthreport?monthYear=${formattedMonthYear}`;
+        url = `http://localhost:8080/hr/bymonthreport?monthYear=${formattedMonthYear}&managerId=${userId}`;
       } else if (role === "ROLE_MANAGER") {
-        url = `http://localhost:8080/manager/bymonthreport?monthYear=${formattedMonthYear}&userId=${userId}`;
+        url = `http://localhost:8080/manager/bymonthreport?monthYear=${formattedMonthYear}&managerId=${userId}`;
       } else {
         setError("Unauthorized role. You do not have permission to generate reports.");
         return;
@@ -350,6 +355,86 @@ const ByMonth = () => {
       setError("Failed to generate report. Please try again.");
     }
   };
+
+  const handleGenerateMultiMonthReport = async (fromMonth, toMonth, managerId) => {
+    try {
+      const token = localStorage.getItem("Authorization");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+  
+      // Decode the token to get role
+      const decodedToken = jwtDecode(token);
+      const role = decodedToken.roles?.[0];
+  
+      // SSE URL to start report generation
+      let url;
+      if (role === "ROLE_HR") {
+        url = `http://localhost:8080/hr/events/bymonthreport?frommonth=${fromMonth}&tomonth=${toMonth}&managerId=${managerId}`;
+      } else if (role === "ROLE_MANAGER") {
+        url = `http://localhost:8080/manager/events/bymonthreportformanager?frommonth=${fromMonth}&tomonth=${toMonth}`;
+      } else {
+        toast.error("Unauthorized role. You do not have permission to generate reports.");
+        return;
+      }
+  
+      // Create an EventSource to listen for updates
+      const eventSource = new EventSource(url);
+  
+      eventSource.onmessage = async (event) => {
+        const message = event.data;
+  
+        if (message === "Generating Excel...") {
+          toast.info("Generating Excel report...", { autoClose: false });
+        } else if (message === "Report Ready") {
+          toast.success("Report is ready for download!", { autoClose: 5000 });
+          eventSource.close(); // Close the SSE connection
+  
+          try {
+            // Construct the download URL
+            const downloadUrl = role === "ROLE_HR"
+              ? `http://localhost:8080/hr/download/bymonthreport?frommonth=${fromMonth}&tomonth=${toMonth}&managerId=${managerId}`
+              : `http://localhost:8080/manager/download/bymonthreportformanager?frommonth=${fromMonth}&tomonth=${toMonth}`;
+  
+            // Fetch the file securely with Authorization header
+            const response = await axios.get(downloadUrl, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+              responseType: "blob", // Ensures correct file download
+            });
+  
+            // Create Blob and Trigger Download
+            const blob = new Blob([response.data], { type: response.headers["content-type"] });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "report.xlsx";
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+          } catch (downloadError) {
+            console.error("Error downloading report:", downloadError);
+            toast.error("Failed to download report.");
+          }
+        }
+      };
+  
+      eventSource.onerror = (error) => {
+        console.error("SSE Error:", error);
+        toast.error("Error generating report. Please try again.");
+        eventSource.close();
+      };
+    } catch (error) {
+      console.error("Error generating report:", error);
+      toast.error("Failed to generate report. Please try again.");
+    }
+  };
+  
+  
+
 
   const generateCalendar = () => {
     if (!reportData) return null;
@@ -513,12 +598,15 @@ const ByMonth = () => {
     for (let year = currentYear; year >= currentYear - 1; year--) {
       for (let month = 12; month >= 1; month--) {
         const monthStr = month < 10 ? `0${month}` : `${month}`;
+        const value = `${year}-${monthStr}`;
+        const label = new Date(year, month - 1, 1).toLocaleString("default", {
+          month: "long",
+          year: "numeric",
+        });
+  
         options.push(
-          <option key={`${year}-${monthStr}`} value={`${year}-${monthStr}`}>
-            {new Date(year, month - 1, 1).toLocaleString("default", {
-              month: "long",
-              year: "numeric",
-            })}
+          <option key={value} value={value}>
+            {label}
           </option>
         );
       }
@@ -556,8 +644,9 @@ const ByMonth = () => {
               <div className="text-lg text-gray-700 font-semibold">
                 Monthly Attendance View
               </div>
-  
+
               <div className="flex items-center gap-3">
+                {/* Previous Month Button */}
                 <button
                   onClick={() => navigateToMonth("prev")}
                   className="py-2 px-4 bg-blue-50 border border-blue-200 text-blue-500 rounded-lg text-sm font-medium cursor-pointer transition-colors hover:bg-blue-100 flex items-center"
@@ -578,7 +667,8 @@ const ByMonth = () => {
                   </svg>
                   Previous
                 </button>
-  
+
+                {/* Current Month Dropdown */}
                 <select
                   className="py-2 px-4 bg-white border border-blue-300 text-blue-700 rounded-lg text-sm font-medium cursor-pointer focus:ring-2 focus:ring-blue-300 focus:border-blue-500 focus:outline-none"
                   value={getFormattedMonthYear()}
@@ -586,7 +676,8 @@ const ByMonth = () => {
                 >
                   {generateMonthOptions()}
                 </select>
-  
+
+                {/* Next Month Button */}
                 <button
                   onClick={() => navigateToMonth("next")}
                   className="py-2 px-4 bg-blue-50 border border-blue-200 text-blue-500 rounded-lg text-sm font-medium cursor-pointer transition-colors hover:bg-blue-100 flex items-center"
@@ -607,26 +698,78 @@ const ByMonth = () => {
                     />
                   </svg>
                 </button>
-                <button
-                onClick={handleGenerateReport}
-                className="py-2 px-4 bg-green-500 text-white rounded-lg text-sm font-medium cursor-pointer transition-colors hover:bg-green-600 flex items-center gap-2"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+
+                {/* From Month Dropdown */}
+                <select
+                  value={fromMonth}
+                  onChange={(e) => setFromMonth(e.target.value)}
+                  className="py-2 px-4 bg-white border border-blue-300 text-blue-700 rounded-lg text-sm font-medium cursor-pointer focus:ring-2 focus:ring-blue-300 focus:border-blue-500 focus:outline-none"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                  />
-                </svg>
-                Generate Report
-              </button>
+                  <option value="" disabled>From Month</option>
+                  {generateMonthOptions()}
+                </select>
+
+                {/* To Month Dropdown */}
+                <select
+                  value={toMonth}
+                  onChange={(e) => setToMonth(e.target.value)}
+                  className="py-2 px-4 bg-white border border-blue-300 text-blue-700 rounded-lg text-sm font-medium cursor-pointer focus:ring-2 focus:ring-blue-300 focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="" disabled>To Month</option>
+                  {generateMonthOptions()}
+                </select>
+
+                {/* Generate Single-Month Report Button */}
+                <button
+                  onClick={handleGenerateReport}
+                  className="py-2 px-4 bg-green-500 text-white rounded-lg text-sm font-medium cursor-pointer transition-colors hover:bg-green-600 flex items-center gap-2"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
+                  </svg>
+                  Generate Report
+                </button>
+
+                {/* Generate Multi-Month Report Button */}
+                <button
+                  onClick={() => {
+                    if (!fromMonth || !toMonth) {
+                      toast.error("Please select both 'From Month' and 'To Month'.");
+                      return;
+                    }
+
+                    const managerId = jwtDecode(localStorage.getItem("Authorization")).userId;
+                    handleGenerateMultiMonthReport(fromMonth, toMonth, managerId);
+                  }}
+                  className="py-2 px-4 bg-purple-500 text-white rounded-lg text-sm font-medium cursor-pointer transition-colors hover:bg-purple-600 flex items-center gap-2"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
+                  </svg>
+                  Generate Multi-Month Report
+                </button>
               </div>
             </div>
           </div>
@@ -729,6 +872,18 @@ const ByMonth = () => {
           </div>
         </div>
       )}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+      
     </>
   );
 };

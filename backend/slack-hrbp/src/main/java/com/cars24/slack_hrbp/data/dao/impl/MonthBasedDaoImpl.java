@@ -144,6 +144,24 @@ public class MonthBasedDaoImpl {
 
                 userAttendanceMap.computeIfAbsent(username, k -> new HashMap<>()).put(formattedDate, requestType);
             }
+            for (Map.Entry<String, Map<String, String>> entry : userAttendanceMap.entrySet()) {
+                Map<String, String> userData = entry.getValue();
+                int totalWFH = 0;
+                int totalLeaves = 0;
+
+                for (Map.Entry<String, String> dateEntry : userData.entrySet()) {
+                    String type = dateEntry.getValue();
+                    if (type.equals("W")) {
+                        totalWFH++;
+                    } else if (type.equals("P") || type.equals("U") || type.equals("S") || type.equals("P*") || type.equals("P**")) {
+                        totalLeaves++;
+                    }
+                }
+
+                // Add Total WFH and Total Leaves to the user's map
+                userData.put("Total WFH", String.valueOf(totalWFH));
+                userData.put("Total Leaves", String.valueOf(totalLeaves));
+            }
 
 
             // Return the processed data
