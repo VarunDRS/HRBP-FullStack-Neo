@@ -51,7 +51,8 @@ public interface EmployeeRepository extends Neo4jRepository<EmployeeEntity, Stri
             @Param("roles") List<String> roles
     );
 
-
+    @Query("MATCH (e:Employee {userId: $userId}) RETURN e")
+    List<EmployeeEntity> findAllByUserId(@Param("userId") String userId);
 
     @Query("MATCH (e:Employee {userId: $userId}) RETURN e")
     Optional<EmployeeEntity> findByUserId(@Param("userId") String userId);
