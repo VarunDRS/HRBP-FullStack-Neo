@@ -60,6 +60,20 @@ public class MonthBasedDaoImpl {
         return new PageImpl<>(userIds, pageable, totalEmployees);
     }
 
+    public Page<String> getPaginatedEmployeesForHr(int page, int limit) {
+        String query = "MATCH (e:Employee) RETURN e.userId SKIP $skip LIMIT $limit";
+
+        var queryBuilder = neo4jClient.query(query)
+                .bind(page * limit).to("skip")
+                .bind(limit).to("limit");
+
+        List<String> userIds = (List<String>) queryBuilder.fetchAs(String.class).all();
+
+        long totalEmployees = employeeRepository.count(); // Fetch total count separately for pagination
+
+        Pageable pageable = PageRequest.of(page, limit);
+        return new PageImpl<>(userIds, pageable, totalEmployees);
+    }
 
 
     public List<AttendanceEntity> getAttendanceForEmployees(String monthYear, List<String> userIds) {

@@ -14,16 +14,16 @@ import java.util.List;
 public interface AttendanceRepository extends MongoRepository<AttendanceEntity, String> {
     List<AttendanceEntity> findByDateStartingWith(String monthYear);
     List<AttendanceEntity> findByUseridAndDateStartingWith(String userid, String month);
-    // List<AttendanceEntity> findByUserid(String userid);
+    List<AttendanceEntity> findByUserid(String userid);
 
     @Query("{'date': { $regex: ?0, $options: 'i' }}")
     Page<AttendanceEntity> findByDateStartingWith(String monthYear, Pageable pageable);
 
-    @Query(value = "{ 'userid': ?0 }", fields = "{ 'username': 1 }")
-    AttendanceEntity findUsernameByUserid(String userid);
-
-    @Query(value = "{ 'userid': ?0 }", fields = "{ 'username': 1 }")
-    List<AttendanceEntity> findByUserid(String userid);
+//    @Query(value = "{ 'userid': ?0 }", fields = "{ 'username': 1 }")
+//    AttendanceEntity findUsernameByUserid(String userid);
+//
+//    @Query(value = "{ 'userid': ?0 }", fields = "{ 'username': 1 }")
+//    List<AttendanceEntity> findByUserid(String userid);
 
     // Fetch distinct usernames (MongoDB way)
     @Query(value = "{ 'date': { $regex: ?0 } }", fields = "{ 'username': 1 }")
@@ -31,7 +31,6 @@ public interface AttendanceRepository extends MongoRepository<AttendanceEntity, 
 
     // Fetch attendance records for a list of usernames
     List<AttendanceEntity> findByDateStartingWithAndUsernameIn(String monthYear, List<String> usernames);
-
 
 
     // Fetch distinct usernames (MongoDB way)

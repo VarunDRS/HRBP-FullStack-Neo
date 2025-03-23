@@ -12,12 +12,9 @@ public class AttendanceEntity {
     @Id
     private String id;
     private String userid;
-
     private String username;
-
     private String date;
     private String reason;
-
     private String type;
 
 }

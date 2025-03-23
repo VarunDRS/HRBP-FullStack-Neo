@@ -40,19 +40,27 @@ public class UseridAndMonthDaoImpl implements UseridAndMonthDao {
 
         for (AttendanceEntity entity : resp) {
             String formattedDate = "";
+            String dateStr = entity.getDate();
+
+            // System.out.println(entity);
+
+            if (dateStr == null || dateStr.trim().isEmpty()) {
+                log.error("Date is null or empty for entity: {}", entity);
+                continue; // Skip this entry
+            }
 
             try {
-                Date parsedDate = inputFormat.parse(entity.getDate()); // Convert String to Date
-                formattedDate = outputFormat.format(parsedDate); // Format Date to "MMM-dd"
-//                System.out.println(entity);
+                Date parsedDate = inputFormat.parse(dateStr);
+                formattedDate = outputFormat.format(parsedDate);
             } catch (ParseException e) {
-                log.error("Error parsing date: {}", entity.getDate(), e);
-                continue; // Skip this entry if date parsing fails
+                log.error("Error parsing date: {}", dateStr, e);
+                continue;
             }
 
             String leaveType = getLeaveAbbreviation(entity.getType());
             attendanceMap.put(formattedDate, leaveType);
         }
+
 
         Map<String, Map<String, String>> result = new LinkedHashMap<>();
         result.put(username, attendanceMap);

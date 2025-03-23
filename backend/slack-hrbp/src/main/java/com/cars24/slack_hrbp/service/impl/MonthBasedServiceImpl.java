@@ -419,51 +419,50 @@ public class MonthBasedServiceImpl {
     }
 
 
-
-
-
-
-
     public Map<String, Object> getAttendanceReportForHR(String monthYear,int page, int limit) {
-        // Convert to zero-based index for pagination
-        if (page > 0) page -= 1;
+        if (page > 0) page -= 1; // Convert to zero-based index
 
-        try {
-            // Fetch all data first
-            Map<String, Map<String, String>> allReportData = monthBasedDao.generateAttendanceReport(monthYear);
+        // Get paginated employees under the manager
+        Page<String> employeePage = monthBasedDao.getPaginatedEmployeesForHr(page, limit);
+        // System.out.println(employeePage);
+        List<String> employeeUserIds = employeePage.getContent(); // Use userId instead of username
 
-            // Convert to a list for pagination
-            List<Map.Entry<String, Map<String, String>>> allUsersList = new ArrayList<>(allReportData.entrySet());
+        System.out.println(employeeUserIds);
 
-            // Paginate based on employees, not individual records
-            int totalRecords = allUsersList.size();
-            int startIndex = page * limit;
-            int endIndex = Math.min(startIndex + limit, totalRecords);
+        // Fetch attendance records for these employees
+        List<AttendanceEntity> attendanceRecords = monthBasedDao.getAttendanceForEmployees(monthYear, employeeUserIds);
+        System.out.println("getAttendanceForEmployees in service layer: " + attendanceRecords);
 
-            // Extract paginated data
-            Map<String, Map<String, String>> paginatedReportData = new LinkedHashMap<>();
-            for (int i = startIndex; i < endIndex; i++) {
-                Map.Entry<String, Map<String, String>> entry = allUsersList.get(i);
-                paginatedReportData.put(entry.getKey(), entry.getValue());
+        // Transform attendance records into structured data
+        Map<String, Map<String, String>> paginatedReportData = formatAttendanceData(attendanceRecords,employeeUserIds);
+        for (Map.Entry<String, Map<String, String>> entry : paginatedReportData.entrySet()) {
+            Map<String, String> userData = entry.getValue();
+            int totalWFH = 0;
+            int totalLeaves = 0;
+
+            for (Map.Entry<String, String> dateEntry : userData.entrySet()) {
+                String type = dateEntry.getValue();
+                if (type.equals("W")) {
+                    totalWFH++;
+                } else if (type.equals("P") || type.equals("U") || type.equals("S") || type.equals("P*") || type.equals("P**")) {
+                    totalLeaves++;
+                }
             }
 
-            // Calculate total pages based on employees
-            int totalPages = (int) Math.ceil((double) totalRecords / limit);
-
-            // Prepare response
-            Map<String, Object> response = new HashMap<>();
-            response.put("reportData", paginatedReportData);
-            response.put("totalPages", totalPages);
-            response.put("currentPage", page + 1);
-            response.put("pageSize", limit);
-            response.put("totalRecords", totalRecords);
-            System.out.println("The Response in controller is : "+response);
-
-            return response;
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Error generating report: " + e.getMessage());
+            // Add Total WFH and Total Leaves to the user's map
+            userData.put("Total WFH", String.valueOf(totalWFH));
+            userData.put("Total Leaves", String.valueOf(totalLeaves));
         }
+
+        // Prepare response
+        Map<String, Object> response = new HashMap<>();
+        response.put("reportData", paginatedReportData);
+        response.put("totalPages", employeePage.getTotalPages());
+        response.put("currentPage", page + 1);
+        response.put("pageSize", limit);
+        response.put("totalRecords", employeePage.getTotalElements());
+
+        return response;
     }
 
     public Map<String, Object> getAttendanceReportForManager(String monthYear, String managerId, int page, int limit) {

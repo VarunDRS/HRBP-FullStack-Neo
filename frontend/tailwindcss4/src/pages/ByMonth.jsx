@@ -14,7 +14,7 @@ const ByMonth = () => {
   const location = useLocation();
   const { userid, month } = useParams();
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5); 
+  const [pageSize, setPageSize] = useState(5);
   const [totalPages, setTotalPages] = useState(1);
   const [fromMonth, setFromMonth] = useState("");
   const [toMonth, setToMonth] = useState("");
@@ -27,8 +27,18 @@ const ByMonth = () => {
 
     // Get month number from name (Mar -> 03)
     const monthMap = {
-      Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06",
-      Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12",
+      Jan: "01",
+      Feb: "02",
+      Mar: "03",
+      Apr: "04",
+      May: "05",
+      Jun: "06",
+      Jul: "07",
+      Aug: "08",
+      Sep: "09",
+      Oct: "10",
+      Nov: "11",
+      Dec: "12",
     };
 
     const monthNum = monthMap[monthName];
@@ -41,8 +51,18 @@ const ByMonth = () => {
   // Get month number from month name
   const getMonthNumber = (monthName) => {
     const monthMap = {
-      Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
-      Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
+      Jan: 0,
+      Feb: 1,
+      Mar: 2,
+      Apr: 3,
+      May: 4,
+      Jun: 5,
+      Jul: 6,
+      Aug: 7,
+      Sep: 8,
+      Oct: 9,
+      Nov: 10,
+      Dec: 11,
     };
     return monthMap[monthName];
   };
@@ -50,14 +70,26 @@ const ByMonth = () => {
   // Format date to the format we need for URL (Mon-YYYY)
   const formatMonthForUrl = (date) => {
     const monthNames = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
     ];
     return `${monthNames[date.getMonth()]}-${date.getFullYear()}`;
   };
 
   // Initialize selectedMonth state from URL params
-  const [selectedMonth, setSelectedMonth] = useState(month || formatMonthForUrl(new Date()));
+  const [selectedMonth, setSelectedMonth] = useState(
+    month || formatMonthForUrl(new Date())
+  );
   const [data, setData] = useState(null); // Store fetched data
 
   const API_BASE_URL = "http://localhost:8080"; // Ensure this matches your backend
@@ -66,7 +98,7 @@ const ByMonth = () => {
   const fetchData = async () => {
     setLoading(true);
     setError("");
-    
+
     try {
       const token = localStorage.getItem("Authorization");
       if (!token) {
@@ -74,29 +106,39 @@ const ByMonth = () => {
         navigate("/login");
         return;
       }
-  
+
       const decodedToken = jwtDecode(token);
       const role = decodedToken.roles?.[0];
       const userId = decodedToken.userId;
-  
+
       if (!role) {
         console.error("No role found, redirecting to login.");
         navigate("/login");
         return;
       }
-  
+
       // Convert selectedMonth format (e.g., Feb-2025 ➝ 2025-02)
       const [monthStr, year] = selectedMonth.split("-");
       const monthMap = {
-        Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06",
-        Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12"
+        Jan: "01",
+        Feb: "02",
+        Mar: "03",
+        Apr: "04",
+        May: "05",
+        Jun: "06",
+        Jul: "07",
+        Aug: "08",
+        Sep: "09",
+        Oct: "10",
+        Nov: "11",
+        Dec: "12",
       };
       const formattedMonthYear = `${year}-${monthMap[monthStr]}`;
-      
+
       console.log("Fetching data for:", formattedMonthYear);
       console.log("Current page:", currentPage);
       console.log("Page size:", pageSize);
-  
+
       // Build the URL with proper pagination parameters
       let url = "";
       if (role === "ROLE_HR") {
@@ -104,42 +146,42 @@ const ByMonth = () => {
       } else if (role === "ROLE_MANAGER") {
         url = `${API_BASE_URL}/manager/bymonth?monthYear=${formattedMonthYear}&userId=${userId}&page=${currentPage}&limit=${pageSize}`;
       }
-  
+
       console.log("Fetching data from:", url);
-  
+
       const response = await fetch(url, {
-        headers: { 
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
-  
+
       if (response.status === 401 || response.status === 403) {
         console.error("Unauthorized or Forbidden - Redirecting to login.");
         navigate("/login");
         return;
       }
-  
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error("API Error:", errorText);
         throw new Error("Failed to fetch data");
       }
-  
+
       const result = await response.json();
       console.log("Fetched Data:", result);
-  
+
       if (result && Object.keys(result).length > 0) {
         setReportData(result.reportData);
         setData(result);
-        
+
         // Set pagination information
         if (result.totalPages) {
           setTotalPages(result.totalPages);
         } else {
           setTotalPages(Math.ceil(result.totalRecords / pageSize) || 1);
         }
-        
+
         // Update current page if it's provided in the response
         if (result.currentPage) {
           setCurrentPage(result.currentPage);
@@ -155,7 +197,7 @@ const ByMonth = () => {
       setLoading(false);
     }
   };
-  
+
   // Main useEffect - fetch data when dependencies change
   useEffect(() => {
     fetchData();
@@ -178,7 +220,7 @@ const ByMonth = () => {
     const [monthName, yearStr] = selectedMonth.split("-");
     const year = parseInt(yearStr);
     const monthNum = getMonthNumber(monthName);
-    
+
     let newDate;
     if (direction === "prev") {
       newDate = new Date(year, monthNum - 1, 1);
@@ -197,11 +239,21 @@ const ByMonth = () => {
     const selectedMonthYear = event.target.value; // Format: 2025-03
     const [year, monthNum] = selectedMonthYear.split("-");
     const monthNames = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
     ];
     const monthName = monthNames[parseInt(monthNum) - 1];
-    
+
     const newMonthYear = `${monthName}-${year}`;
     setSelectedMonth(newMonthYear);
     setCurrentPage(1); // Reset to first page when changing month
@@ -219,13 +271,13 @@ const ByMonth = () => {
       navigate("/login");
       return;
     }
-  
+
     if (!role) {
       console.error("No role found, redirecting to login.");
       navigate("/login");
       return;
     }
-    
+
     return role === "ROLE_HR"
       ? `/hr/monthly/${userId}/${newMonthYear}`
       : `/manager/monthly/${userId}/${newMonthYear}`;
@@ -234,8 +286,8 @@ const ByMonth = () => {
   const handleBackButton = () => {
     const token = localStorage.getItem("Authorization");
     const decodedToken = jwtDecode(token);
-    const userId = decodedToken.userId;  
-    const roles = decodedToken.roles; 
+    const userId = decodedToken.userId;
+    const roles = decodedToken.roles;
 
     if (roles.includes("ROLE_HR")) {
       navigate("/hr");
@@ -249,16 +301,16 @@ const ByMonth = () => {
   // Pagination handlers
   const handlePrevPage = () => {
     if (currentPage > 1) {
-      setCurrentPage(prevPage => prevPage - 1);
+      setCurrentPage((prevPage) => prevPage - 1);
     }
   };
-  
+
   const handleNextPage = () => {
     if (currentPage < totalPages) {
-      setCurrentPage(prevPage => prevPage + 1);
+      setCurrentPage((prevPage) => prevPage + 1);
     }
   };
-  
+
   const handlePageSizeChange = (e) => {
     setPageSize(parseInt(e.target.value));
     setCurrentPage(1); // Reset to first page when changing page size
@@ -266,33 +318,55 @@ const ByMonth = () => {
 
   const getAttendanceColor = (code) => {
     switch (code) {
-      case "P": return "#4CAF50"; // Planned Leave
-      case "U": return "#F44336"; // Unplanned Leave
-      case "P*": return "#8BC34A"; // Planned Leave (Second Half)
-      case "S": return "#FF9800"; // Sick Leave
-      case "W": return "#2196F3"; // Work From Home
-      case "T": return "#9C27B0"; // Travelling to HQ
-      case "H": return "#E91E63"; // Holiday
-      case "E": return "#607D8B"; // Elections
-      case "J": return "#00BCD4"; // Joined
-      case "P**": return "#CDDC39"; // Planned Leave (First Half)
-      default: return "#EEEEEE"; // Default/Empty
+      case "P":
+        return "#4CAF50"; // Planned Leave
+      case "U":
+        return "#F44336"; // Unplanned Leave
+      case "P*":
+        return "#8BC34A"; // Planned Leave (Second Half)
+      case "S":
+        return "#FF9800"; // Sick Leave
+      case "W":
+        return "#2196F3"; // Work From Home
+      case "T":
+        return "#9C27B0"; // Travelling to HQ
+      case "H":
+        return "#E91E63"; // Holiday
+      case "E":
+        return "#607D8B"; // Elections
+      case "J":
+        return "#00BCD4"; // Joined
+      case "P**":
+        return "#CDDC39"; // Planned Leave (First Half)
+      default:
+        return "#EEEEEE"; // Default/Empty
     }
   };
 
   const getAttendanceTooltip = (code) => {
     switch (code) {
-      case "P": return "Planned Leave";
-      case "U": return "Unplanned Leave";
-      case "P*": return "Planned Leave (Second Half)";
-      case "S": return "Sick Leave";
-      case "W": return "Work From Home";
-      case "T": return "Travelling to HQ";
-      case "H": return "Holiday";
-      case "E": return "Elections";
-      case "J": return "Joined";
-      case "P**": return "Planned Leave (First Half)";
-      default: return "";
+      case "P":
+        return "Planned Leave";
+      case "U":
+        return "Unplanned Leave";
+      case "P*":
+        return "Planned Leave (Second Half)";
+      case "S":
+        return "Sick Leave";
+      case "W":
+        return "Work From Home";
+      case "T":
+        return "Travelling to HQ";
+      case "H":
+        return "Holiday";
+      case "E":
+        return "Elections";
+      case "J":
+        return "Joined";
+      case "P**":
+        return "Planned Leave (First Half)";
+      default:
+        return "";
     }
   };
 
@@ -304,19 +378,19 @@ const ByMonth = () => {
         navigate("/login");
         return;
       }
-  
+
       // Decode the token to get role and userId
       const decodedToken = jwtDecode(token);
       const role = decodedToken.roles?.[0]; // Get the user's role (ROLE_HR or ROLE_MANAGER)
       const userId = decodedToken.userId; // Get the user's ID
-  
+
       // Get the formatted month-year
       const formattedMonthYear = getFormattedMonthYear();
       if (!formattedMonthYear) {
         setError("Invalid month format. Please select a valid month.");
         return;
       }
-  
+
       // Dynamically generate the URL based on the role
       let url;
       if (role === "ROLE_HR") {
@@ -324,10 +398,12 @@ const ByMonth = () => {
       } else if (role === "ROLE_MANAGER") {
         url = `http://localhost:8080/manager/bymonthreport?monthYear=${formattedMonthYear}&managerId=${userId}`;
       } else {
-        setError("Unauthorized role. You do not have permission to generate reports.");
+        setError(
+          "Unauthorized role. You do not have permission to generate reports."
+        );
         return;
       }
-  
+
       // Make the API request
       const response = await axios.get(url, {
         headers: {
@@ -336,17 +412,20 @@ const ByMonth = () => {
         },
         responseType: "blob", // Ensure this is set to "blob"
       });
-  
+
       // Create a URL for the blob
       const urlObject = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = urlObject;
-      link.setAttribute("download", `Attendance_Report_${formattedMonthYear}.xlsx`);
+      link.setAttribute(
+        "download",
+        `Attendance_Report_${formattedMonthYear}.xlsx`
+      );
       document.body.appendChild(link);
-  
+
       // Trigger the download
       link.click();
-  
+
       // Clean up
       link.remove();
       window.URL.revokeObjectURL(urlObject);
@@ -356,47 +435,54 @@ const ByMonth = () => {
     }
   };
 
-  const handleGenerateMultiMonthReport = async (fromMonth, toMonth, managerId) => {
+  const handleGenerateMultiMonthReport = async (
+    fromMonth,
+    toMonth,
+    managerId
+  ) => {
     try {
       const token = localStorage.getItem("Authorization");
       if (!token) {
         navigate("/login");
         return;
       }
-  
+
       // Decode the token to get role
       const decodedToken = jwtDecode(token);
       const role = decodedToken.roles?.[0];
-  
+
       // SSE URL to start report generation
       let url;
       if (role === "ROLE_HR") {
         url = `http://localhost:8080/hr/events/bymonthreport?frommonth=${fromMonth}&tomonth=${toMonth}&managerId=${managerId}`;
       } else if (role === "ROLE_MANAGER") {
-        url = `http://localhost:8080/manager/events/bymonthreportformanager?frommonth=${fromMonth}&tomonth=${toMonth}`;
+        url = `http://localhost:8080/manager/events/bymonthreportformanager?frommonth=${fromMonth}&tomonth=${toMonth}&managerId=${managerId}`;
       } else {
-        toast.error("Unauthorized role. You do not have permission to generate reports.");
+        toast.error(
+          "Unauthorized role. You do not have permission to generate reports."
+        );
         return;
       }
-  
+
       // Create an EventSource to listen for updates
       const eventSource = new EventSource(url);
-  
+
       eventSource.onmessage = async (event) => {
         const message = event.data;
-  
+
         if (message === "Generating Excel...") {
           toast.info("Generating Excel report...", { autoClose: false });
         } else if (message === "Report Ready") {
           toast.success("Report is ready for download!", { autoClose: 5000 });
           eventSource.close(); // Close the SSE connection
-  
+
           try {
             // Construct the download URL
-            const downloadUrl = role === "ROLE_HR"
-              ? `http://localhost:8080/hr/download/bymonthreport?frommonth=${fromMonth}&tomonth=${toMonth}&managerId=${managerId}`
-              : `http://localhost:8080/manager/download/bymonthreportformanager?frommonth=${fromMonth}&tomonth=${toMonth}`;
-  
+            const downloadUrl =
+              role === "ROLE_HR"
+                ? `http://localhost:8080/hr/download/bymonthreport?frommonth=${fromMonth}&tomonth=${toMonth}&managerId=${managerId}`
+                : `http://localhost:8080/manager/download/bymonthreportformanager?frommonth=${fromMonth}&tomonth=${toMonth}`;
+
             // Fetch the file securely with Authorization header
             const response = await axios.get(downloadUrl, {
               headers: {
@@ -404,9 +490,11 @@ const ByMonth = () => {
               },
               responseType: "blob", // Ensures correct file download
             });
-  
+
             // Create Blob and Trigger Download
-            const blob = new Blob([response.data], { type: response.headers["content-type"] });
+            const blob = new Blob([response.data], {
+              type: response.headers["content-type"],
+            });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
@@ -421,7 +509,7 @@ const ByMonth = () => {
           }
         }
       };
-  
+
       eventSource.onerror = (error) => {
         console.error("SSE Error:", error);
         toast.error("Error generating report. Please try again.");
@@ -432,9 +520,6 @@ const ByMonth = () => {
       toast.error("Failed to generate report. Please try again.");
     }
   };
-  
-  
-
 
   const generateCalendar = () => {
     if (!reportData) return null;
@@ -470,9 +555,11 @@ const ByMonth = () => {
           <h2 className="text-2xl font-bold text-blue-700 mb-3">
             {monthName} {year} Attendance
           </h2>
-          
+
           <div className="mt-3">
-            <h4 className="text-sm font-semibold text-blue-500 mb-2">Legend:</h4>
+            <h4 className="text-sm font-semibold text-blue-500 mb-2">
+              Legend:
+            </h4>
             <div className="flex flex-wrap gap-3">
               {[
                 { code: "P", label: "Planned Leave" },
@@ -509,13 +596,13 @@ const ByMonth = () => {
                 <th className="sticky top-0 left-0 bg-blue-500 text-white z-30 text-left py-4 px-4 font-semibold border border-blue-700">
                   User Name
                 </th>
-    <th className="sticky top-0 left-[180px] bg-blue-500 text-white z-30 text-center py-3 px-2 font-semibold border border-blue-700 min-w-[80px] max-w-[80px]">
-      Total WFH
-    </th>
-    {/* Total Leaves Column */}
-    <th className="sticky top-0 left-[260px] bg-blue-500 text-white z-30 text-center py-3 px-2 font-semibold border border-blue-700 min-w-[80px] max-w-[80px]">
-      Total Leaves
-    </th>
+                <th className="sticky top-0 left-[180px] bg-blue-500 text-white z-30 text-center py-3 px-2 font-semibold border border-blue-700 min-w-[80px] max-w-[80px]">
+                  Total WFH
+                </th>
+                {/* Total Leaves Column */}
+                <th className="sticky top-0 left-[260px] bg-blue-500 text-white z-30 text-center py-3 px-2 font-semibold border border-blue-700 min-w-[80px] max-w-[80px]">
+                  Total Leaves
+                </th>
                 {dates.map((date, index) => (
                   <th
                     key={date}
@@ -540,60 +627,65 @@ const ByMonth = () => {
               </tr>
             </thead>
             <tbody>
-              {Object.entries(reportData).map(([username, attendance], rowIndex) => (
-                <tr key={username} className="hover:bg-blue-50 transition-colors duration-150">
-                  <td className="sticky left-0 bg-white z-10 text-left py-4 px-4 font-medium min-w-[180px] max-w-[250px] whitespace-nowrap overflow-hidden text-ellipsis border border-gray-300 shadow-sm">
-                    {username}
-                  </td>
-      <td className="sticky left-[180px] bg-white z-10 text-center py-4 px-2 font-semibold border border-gray-300 min-w-[80px] max-w-[80px]">
-        {attendance["Total WFH"] || 0}
-      </td>
-      {/* Total Leaves Column */}
-      <td className="sticky left-[260px] bg-white z-10 text-center py-4 px-2 font-semibold border border-gray-300 min-w-[80px] max-w-[80px]">
-        {attendance["Total Leaves"] || 0}
-      </td>
-                  {dates.map((date, index) => {
-                    const attendanceCode = attendance[date] || "";
-                    return (
-                      <td
-                        key={date}
-                        className={`text-center py-4 px-2 font-semibold cursor-default transition-all duration-150 hover:scale-105 hover:z-20 hover:shadow-lg border border-gray-300 ${
-                          [0, 6].includes(dayOfWeeks[index])
-                            ? "bg-gray-50"
-                            : ""
-                        }`}
-                        style={{
-                          backgroundColor: attendanceCode
-                            ? getAttendanceColor(attendanceCode)
-                            : "",
-                        }}
-                        title={getAttendanceTooltip(attendanceCode)}
-                      >
-                        {attendanceCode}
-                      </td>
-                    );
-                  })}
-                  {/* <td className="text-center py-4 px-2 font-semibold border border-gray-300">
+              {Object.entries(reportData).map(
+                ([username, attendance], rowIndex) => (
+                  <tr
+                    key={username}
+                    className="hover:bg-blue-50 transition-colors duration-150"
+                  >
+                    <td className="sticky left-0 bg-white z-10 text-left py-4 px-4 font-medium min-w-[180px] max-w-[250px] whitespace-nowrap overflow-hidden text-ellipsis border border-gray-300 shadow-sm">
+                      {username}
+                    </td>
+                    <td className="sticky left-[180px] bg-white z-10 text-center py-4 px-2 font-semibold border border-gray-300 min-w-[80px] max-w-[80px]">
+                      {attendance["Total WFH"] || 0}
+                    </td>
+                    {/* Total Leaves Column */}
+                    <td className="sticky left-[260px] bg-white z-10 text-center py-4 px-2 font-semibold border border-gray-300 min-w-[80px] max-w-[80px]">
+                      {attendance["Total Leaves"] || 0}
+                    </td>
+                    {dates.map((date, index) => {
+                      const attendanceCode = attendance[date] || "";
+                      return (
+                        <td
+                          key={date}
+                          className={`text-center py-4 px-2 font-semibold cursor-default transition-all duration-150 hover:scale-105 hover:z-20 hover:shadow-lg border border-gray-300 ${
+                            [0, 6].includes(dayOfWeeks[index])
+                              ? "bg-gray-50"
+                              : ""
+                          }`}
+                          style={{
+                            backgroundColor: attendanceCode
+                              ? getAttendanceColor(attendanceCode)
+                              : "",
+                          }}
+                          title={getAttendanceTooltip(attendanceCode)}
+                        >
+                          {attendanceCode}
+                        </td>
+                      );
+                    })}
+                    {/* <td className="text-center py-4 px-2 font-semibold border border-gray-300">
                     {attendance["Total WFH"] || 0}
                   </td>
                   <td className="text-center py-4 px-2 font-semibold border border-gray-300">
                     {attendance["Total Leaves"] || 0}
                   </td> */}
-                </tr>
-              ))}
+                  </tr>
+                )
+              )}
             </tbody>
           </table>
         </div>
       </div>
     );
   };
-  
+
   // Generate a list of months for the dropdown (current year and previous year)
   const generateMonthOptions = () => {
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
     const options = [];
-  
+
     // Add months for current year and previous year
     for (let year = currentYear; year >= currentYear - 1; year--) {
       for (let month = 12; month >= 1; month--) {
@@ -603,7 +695,7 @@ const ByMonth = () => {
           month: "long",
           year: "numeric",
         });
-  
+
         options.push(
           <option key={value} value={value}>
             {label}
@@ -611,10 +703,10 @@ const ByMonth = () => {
         );
       }
     }
-  
+
     return options;
   };
-  
+
   return (
     <>
       <div className="font-sans text-gray-800 w-full h-screen flex flex-col bg-gray-50 overflow-hidden">
@@ -625,19 +717,30 @@ const ByMonth = () => {
               <div className="flex items-center space-x-4">
                 <h1 className="text-xl font-bold">Attendance Report System</h1>
               </div>
-              
+
               <button
                 onClick={handleBackButton}
                 className="py-2 px-4 bg-blue-300 text-white rounded-lg text-sm font-medium cursor-pointer transition-colors hover:bg-blue-600 flex items-center gap-2"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                  />
                 </svg>
                 Back
               </button>
             </div>
           </header>
-  
+
           {/* Month navigation */}
           <div className="bg-white border-b border-gray-200 py-3 px-4 shadow-sm z-30">
             <div className="flex justify-between items-center max-w-screen-2xl mx-auto">
@@ -705,7 +808,9 @@ const ByMonth = () => {
                   onChange={(e) => setFromMonth(e.target.value)}
                   className="py-2 px-4 bg-white border border-blue-300 text-blue-700 rounded-lg text-sm font-medium cursor-pointer focus:ring-2 focus:ring-blue-300 focus:border-blue-500 focus:outline-none"
                 >
-                  <option value="" disabled>From Month</option>
+                  <option value="" disabled>
+                    From Month
+                  </option>
                   {generateMonthOptions()}
                 </select>
 
@@ -715,7 +820,9 @@ const ByMonth = () => {
                   onChange={(e) => setToMonth(e.target.value)}
                   className="py-2 px-4 bg-white border border-blue-300 text-blue-700 rounded-lg text-sm font-medium cursor-pointer focus:ring-2 focus:ring-blue-300 focus:border-blue-500 focus:outline-none"
                 >
-                  <option value="" disabled>To Month</option>
+                  <option value="" disabled>
+                    To Month
+                  </option>
                   {generateMonthOptions()}
                 </select>
 
@@ -745,12 +852,20 @@ const ByMonth = () => {
                 <button
                   onClick={() => {
                     if (!fromMonth || !toMonth) {
-                      toast.error("Please select both 'From Month' and 'To Month'.");
+                      toast.error(
+                        "Please select both 'From Month' and 'To Month'."
+                      );
                       return;
                     }
 
-                    const managerId = jwtDecode(localStorage.getItem("Authorization")).userId;
-                    handleGenerateMultiMonthReport(fromMonth, toMonth, managerId);
+                    const managerId = jwtDecode(
+                      localStorage.getItem("Authorization")
+                    ).userId;
+                    handleGenerateMultiMonthReport(
+                      fromMonth,
+                      toMonth,
+                      managerId
+                    );
                   }}
                   className="py-2 px-4 bg-purple-500 text-white rounded-lg text-sm font-medium cursor-pointer transition-colors hover:bg-purple-600 flex items-center gap-2"
                 >
@@ -773,39 +888,85 @@ const ByMonth = () => {
               </div>
             </div>
           </div>
-  
+
           {/* Main content */}
           <div className="flex-1 p-4 overflow-hidden">
             <div className="h-full max-w-screen-2xl mx-auto">
               {error && (
                 <div className="text-red-500 bg-red-50 border border-red-200 py-3 px-4 rounded-lg text-sm mb-4 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
                   </svg>
                   {error}
                 </div>
               )}
-  
+
               {loading ? (
                 <div className="h-full flex items-center justify-center">
                   <div className="text-center py-16 text-gray-500 flex flex-col items-center">
-                    <svg className="animate-spin h-10 w-10 text-blue-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      className="animate-spin h-10 w-10 text-blue-500 mb-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
-                    <span className="text-lg font-medium">Loading attendance data...</span>
+                    <span className="text-lg font-medium">
+                      Loading attendance data...
+                    </span>
                   </div>
                 </div>
               ) : reportData ? (
-                <div className="h-full overflow-hidden border border-gray-300 rounded-lg">{generateCalendar()}</div>
+                <div className="h-full overflow-hidden border border-gray-300 rounded-lg">
+                  {generateCalendar()}
+                </div>
               ) : (
                 <div className="h-full flex items-center justify-center">
                   <div className="text-center py-16 text-gray-500 flex flex-col items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-16 w-16 text-gray-300 mb-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
                     </svg>
-                    <span className="text-lg font-medium">No attendance data found.</span>
-                    <p className="mt-2 text-gray-400">Try selecting a different month or check user ID.</p>
+                    <span className="text-lg font-medium">
+                      No attendance data found.
+                    </span>
+                    <p className="mt-2 text-gray-400">
+                      Try selecting a different month or check user ID.
+                    </p>
                   </div>
                 </div>
               )}
@@ -813,15 +974,17 @@ const ByMonth = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Pagination controls - styled to match HRDashboard */}
       {!loading && reportData && (
         <div className="max-w-screen-2xl mx-auto mb-6 px-4">
           <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
               <div className="flex items-center">
-                <span className="text-sm text-gray-600 mr-2">Records per page:</span>
-                <select 
+                <span className="text-sm text-gray-600 mr-2">
+                  Records per page:
+                </span>
+                <select
                   className="border border-gray-300 rounded py-1 px-2 text-sm"
                   value={pageSize}
                   onChange={handlePageSizeChange}
@@ -832,39 +995,62 @@ const ByMonth = () => {
                   <option value="20">20</option>
                 </select>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <button
                   onClick={handlePrevPage}
                   disabled={currentPage === 1}
                   className={`px-3 py-1 rounded-md flex items-center ${
-                    currentPage === 1 
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                      : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                    currentPage === 1
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-blue-50 text-blue-600 hover:bg-blue-100"
                   }`}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 mr-1"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
                   </svg>
                   Previous
                 </button>
-                
+
                 <div className="px-3 py-1 text-sm bg-gray-50 rounded-md border border-gray-200">
-                  Page <span className="font-medium">{currentPage}</span> of <span className="font-medium">{totalPages}</span>
+                  Page <span className="font-medium">{currentPage}</span> of{" "}
+                  <span className="font-medium">{totalPages}</span>
                 </div>
-                
+
                 <button
                   onClick={handleNextPage}
                   disabled={currentPage >= totalPages}
                   className={`px-3 py-1 rounded-md flex items-center ${
-                    currentPage >= totalPages 
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                      : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                    currentPage >= totalPages
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-blue-50 text-blue-600 hover:bg-blue-100"
                   }`}
                 >
                   Next
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 ml-1"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
                   </svg>
                 </button>
               </div>
@@ -883,7 +1069,6 @@ const ByMonth = () => {
         draggable
         pauseOnHover
       />
-      
     </>
   );
 };
