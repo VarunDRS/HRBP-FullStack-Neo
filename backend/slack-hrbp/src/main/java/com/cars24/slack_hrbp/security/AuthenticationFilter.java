@@ -12,6 +12,7 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -25,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+@Slf4j
 public class AuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
     public AuthenticationFilter(AuthenticationManager authenticationManager) {
@@ -70,8 +72,8 @@ public class AuthenticationFilter extends UsernamePasswordAuthenticationFilter {
         String userId = userDto.getUserId(); // Get the userId
 
         // Debug logs
-        System.out.println("Roles assigned to user: " + roles);
-        System.out.println("UserId assigned to token: " + userId);
+        log.info("Roles assigned to user: {}" + roles);
+        log.info("UserId assigned to token: {}" + userId);
 
         // Generate JWT with roles and userId
         String token = Jwts.builder()

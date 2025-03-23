@@ -19,11 +19,6 @@ public interface AttendanceRepository extends MongoRepository<AttendanceEntity, 
     @Query("{'date': { $regex: ?0, $options: 'i' }}")
     Page<AttendanceEntity> findByDateStartingWith(String monthYear, Pageable pageable);
 
-//    @Query(value = "{ 'userid': ?0 }", fields = "{ 'username': 1 }")
-//    AttendanceEntity findUsernameByUserid(String userid);
-//
-//    @Query(value = "{ 'userid': ?0 }", fields = "{ 'username': 1 }")
-//    List<AttendanceEntity> findByUserid(String userid);
 
     // Fetch distinct usernames (MongoDB way)
     @Query(value = "{ 'date': { $regex: ?0 } }", fields = "{ 'username': 1 }")
@@ -45,7 +40,6 @@ public interface AttendanceRepository extends MongoRepository<AttendanceEntity, 
     })
     List<String> findDistinctUsernamesByMonth(String monthYear);
 
-    //trying for manager
     // Fetch distinct usernames for employees under a manager
     @Aggregation(pipeline = {
             "{ $match: { 'date': { $regex: ?0 }, 'managerId': ?1 } }",

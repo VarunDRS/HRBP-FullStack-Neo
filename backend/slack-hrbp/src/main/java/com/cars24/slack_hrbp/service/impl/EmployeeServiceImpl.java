@@ -18,7 +18,6 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public String updatePassword(PasswordUpdateRequest passwordUpdateRequest) {
-        System.out.println(passwordUpdateRequest);
         if(!employeeRepository.existsByUserId(passwordUpdateRequest.getUserId()))
             throw new UserServiceException("User not valid");
         return employeeDao.updatePassword(passwordUpdateRequest);

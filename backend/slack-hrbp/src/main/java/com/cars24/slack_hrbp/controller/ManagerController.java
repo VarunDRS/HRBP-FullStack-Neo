@@ -2,15 +2,10 @@ package com.cars24.slack_hrbp.controller;
 
 
 import com.cars24.slack_hrbp.data.dao.impl.ListAllEmployeesUnderManagerDaoImpl;
-import com.cars24.slack_hrbp.data.dto.UserDto;
-import com.cars24.slack_hrbp.data.entity.AttendanceEntity;
-import com.cars24.slack_hrbp.data.request.PasswordUpdateRequest;
 import com.cars24.slack_hrbp.data.response.GetUserResponse;
 import com.cars24.slack_hrbp.service.impl.*;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
@@ -27,7 +22,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -49,44 +43,17 @@ public class ManagerController {
 
 
     @PreAuthorize("hasRole('MANAGER')")
-    @GetMapping("/bymonthreport")
-    public ResponseEntity<byte[]> getByMonthandManagerid(
-            @RequestParam String monthYear,
-            @RequestParam String managerId) { // Changed parameter name to managerId for consistency
-        try {
-            // Generate the report and Excel file
-            byte[] excelFile = monthBasedService.generateAttendanceReport(monthYear, managerId);
-
-            // Set headers for file download
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-            headers.setContentDispositionFormData("attachment", "Manager_Attendance_Report_" + monthYear + ".xlsx");
-
-            return ResponseEntity.ok()
-                    .headers(headers)
-                    .body(excelFile);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Error generating report: " + e.getMessage());
-        }
-    }
-
-
-
-    @PreAuthorize("hasRole('MANAGER')")
     @GetMapping("/{userid}/{month}")
     public Map<String, Map<String, String>> getUserDetails(@PathVariable String userid, @PathVariable String month){
 
-        Map<String, Map<String, String>> resp = useridandmonth.getCustomerDetails(userid,month);
-        return resp;
+        return useridandmonth.getCustomerDetails(userid,month);
 
     }
 
     @PreAuthorize("hasRole('MANAGER')")
     @GetMapping("/{userId}")
     public Map<String, Map<String, String>> getUserDetails(@PathVariable String userId){
-        Map<String, Map<String, String>> resp = useridandmonth.getCustomerDetails(userId);
-        return resp;
+        return useridandmonth.getCustomerDetails(userId);
     }
 
 
@@ -138,16 +105,8 @@ public class ManagerController {
     }
 
 
-    @PreAuthorize("hasRole('MANAGER')")
-    @GetMapping("/bymonth")
-    public ResponseEntity<Map<String, Object>> getByMonthForManager(
-            @RequestParam String monthYear,
-            @RequestParam String userId,
-            @RequestParam(value = "page", defaultValue = "1") int page,
-            @RequestParam(value = "limit", defaultValue = "5") int limit) {
-
-        return ResponseEntity.ok(monthBasedService.getAttendanceReportForManager(monthYear, userId, page, limit));
-    }
+    // Individual calender view
+    // Generate report call
 
     @GetMapping(value = "/events/{userid}/{frommonth}/{tomonth}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamEvents(@PathVariable String userid,@PathVariable String frommonth,@PathVariable String tomonth) {
@@ -176,11 +135,10 @@ public class ManagerController {
                 long endTime = System.currentTimeMillis(); // Record end time
                 long duration = endTime - startTime; // Calculate latency
 
-
-                System.out.println("Report generation time: " + duration + " ms");
+                log.info("Report generation time: {} ms", duration);
                 String filePath = "reports/Attendance_" + userid + "_" + "from_" + frommonth + "_to_" + tomonth + ".xlsx";
                 Files.write(Paths.get(filePath), excelData);
-                System.out.println(" Report generated at: " + filePath);
+                log.info("Report generated at: {}",filePath);
                 // Send "Download Ready" message
                 emitter.send(SseEmitter.event().data("Report Ready"));
                 emitter.complete(); // Close connection after sending
@@ -197,7 +155,7 @@ public class ManagerController {
         return emitter;
     }
 
-    // API to trigger Excel generation & notify frontend
+    // Notify frontend for download report for specific time period (from and to)
     @GetMapping("/download/{userid}/{frommonth}/{tomonth}")
     public ResponseEntity<Resource> downloadReport(@PathVariable String userid, @PathVariable String frommonth, @PathVariable String tomonth) {
         String filePath = "reports/Attendance_" + userid + "_" + "from_" + frommonth + "_to_" + tomonth + ".xlsx";
@@ -216,6 +174,46 @@ public class ManagerController {
 
     }
 
+
+    // By Month For All Users
+    // For one particular month view
+    @PreAuthorize("hasRole('MANAGER')")
+    @GetMapping("/bymonth")
+    public ResponseEntity<Map<String, Object>> getByMonthForManager(
+            @RequestParam String monthYear,
+            @RequestParam String userId,
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "limit", defaultValue = "5") int limit) {
+
+        return ResponseEntity.ok(monthBasedService.getAttendanceReportForManager(monthYear, userId, page, limit));
+    }
+
+    // For one particular month report
+    @PreAuthorize("hasRole('MANAGER')")
+    @GetMapping("/bymonthreport")
+    public ResponseEntity<byte[]> getByMonthandManagerid(
+            @RequestParam String monthYear,
+            @RequestParam String managerId) { // Changed parameter name to managerId for consistency
+        try {
+            // Generate the report and Excel file
+            byte[] excelFile = monthBasedService.generateAttendanceReport(monthYear, managerId);
+
+            // Set headers for file download
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", "Manager_Attendance_Report_" + monthYear + ".xlsx");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelFile);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error generating report: " + e.getMessage());
+        }
+    }
+
+
+    // Generate report for specific time period (from and to)
     @PreAuthorize("hasRole('MANAGER')")
     @GetMapping(value = "/events/bymonthreportformanager", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamEventsForMonth(
@@ -245,10 +243,11 @@ public class ManagerController {
                 long endTime = System.currentTimeMillis(); // Record end time
                 long duration = endTime - startTime; // Calculate latency
 
-                System.out.println("Report generation time: " + duration + " ms");
+                log.info("Report generation time: {} ms", duration);
                 String filePath = "monthreports/Attendance_" + "_" + "from_" + frommonth + "_to_" + tomonth + ".xlsx";
                 Files.write(Paths.get(filePath), excelData);
-                System.out.println(" Report generated at: " + filePath);
+
+                log.info("Report generated at: {}",filePath);
 
                 // Send "Download Ready" message
                 emitter.send(SseEmitter.event().data("Report Ready"));
@@ -266,7 +265,7 @@ public class ManagerController {
         return emitter;
     }
 
-    // API to trigger Excel generation & notify frontend
+    // Notify frontend for download report for specific time period (from and to)
     @PreAuthorize("hasRole('MANAGER')")
     @GetMapping("/download/bymonthreportformanager")
     public ResponseEntity<Resource> downloadMonthReportForManager(

@@ -52,7 +52,6 @@ public class HrController {
 
     private String generatedReportPath;
 
-
     @PreAuthorize("hasRole('HR')")
     @PostMapping("/createUser")
     public ResponseEntity<String> createUser(@Valid @RequestBody CreateEmployeeRequest createEmployeeRequest){
@@ -60,7 +59,6 @@ public class HrController {
         EmployeeEntity employee = hrService.createEmployee(createEmployeeRequest);
         return ResponseEntity.ok("Creation was successful");
     }
-
 
     @PreAuthorize("hasRole('HR')")
     @PutMapping("/updateManager/{userId}/{newManagerId}")
@@ -75,11 +73,9 @@ public class HrController {
         }
     }
 
-
     @PreAuthorize("hasRole('HR')")
     @PutMapping("/updaterole")
     public ResponseEntity<String> updateRole(@RequestBody EmployeeUpdateRequest employeeUpdateRequest) {
-        System.out.println(employeeUpdateRequest);
         String response = hrService.updateUser(employeeUpdateRequest);
         return ResponseEntity.ok().body(response);
     }
@@ -88,16 +84,13 @@ public class HrController {
     @PreAuthorize("hasRole('HR')")
     @GetMapping("/{userid}/{month}")
     public Map<String, Map<String, String>> getUserDetails(@PathVariable String userid, @PathVariable String month){
-        Map<String, Map<String, String>> resp = useridandmonth.getCustomerDetails(userid,month);
-        return resp;
+        return useridandmonth.getCustomerDetails(userid,month);
     }
 
     @PreAuthorize("hasRole('HR')")
     @GetMapping("/{userId}")
     public Map<String, Map<String, String>> getUserDetails(@PathVariable String userId){
-        Map<String, Map<String, String>> resp = useridandmonth.getCustomerDetails(userId);
-        System.out.println(resp);
-        return resp;
+        return useridandmonth.getCustomerDetails(userId);
     }
 
     @PreAuthorize("hasRole('HR')")
@@ -107,6 +100,55 @@ public class HrController {
         return ResponseEntity.ok(resp);
    }
 
+
+
+    @PreAuthorize("hasRole('HR')")
+    @GetMapping("/displayUsers/{userId}/{searchtag}")
+    public ResponseEntity<List<GetUserResponse>> getAllUsers(
+            @PathVariable String userId,
+            @PathVariable String searchtag,
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "limit", defaultValue = "2") int limit) {
+
+        if (page > 0)
+            page -= 1;
+
+        Page<List<String>> users = hrService.getAllUsers(userId, page, limit, searchtag);
+        List<GetUserResponse> responses = new ArrayList<>();
+
+        for (List<String> userDto : users.getContent()) {
+            GetUserResponse res = new GetUserResponse();
+            res.setUserId(userDto.get(0));
+            res.setEmail(userDto.get(1));
+            res.setUsername(userDto.get(2));
+            responses.add(res);
+        }
+
+        return ResponseEntity.ok().body(responses);
+    }
+
+    @PreAuthorize("hasRole('HR')")
+    @GetMapping("/displayUsers/count/{userId}/{searchtag}")
+    public ResponseEntity<Map<String, Object>> getTotalUserCount(@PathVariable String userId,
+                                                                 @PathVariable String searchtag,
+                                                                 @RequestParam(value = "limit", defaultValue = "2") int limit) {
+
+        long totalEmployees = hrService.getTotalEmployeesCount(searchtag);
+
+        // Calculate total pages
+        int totalPages = (int) Math.ceil((double) totalEmployees / limit);
+
+        // Create response map
+        Map<String, Object> response = new HashMap<>();
+        response.put("totalEmployees", totalEmployees);
+        response.put("totalPages", totalPages);
+
+        return ResponseEntity.ok(response);
+    }
+
+
+    // Individual calender view
+    // Generate report call
     @GetMapping(value = "/events/{userid}/{frommonth}/{tomonth}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamEvents(@PathVariable String userid,@PathVariable String frommonth,@PathVariable String tomonth) {
         SseEmitter emitter = new SseEmitter(0L); // No timeout
@@ -135,11 +177,11 @@ public class HrController {
                 long duration = endTime - startTime; // Calculate latency
 
 
-                System.out.println("Report generation time: " + duration + " ms");
+                log.info("Report generation time: {} ms", duration);
+
                 String filePath = "reports/Attendance_" + userid + "_" + "from_" + frommonth + "_to_" + tomonth + ".xlsx";
                 Files.write(Paths.get(filePath), excelData);
-                System.out.println(" Report generated at: " + filePath);
-                // Send "Download Ready" message
+                log.info("Report generated at: {}",filePath);
                 emitter.send(SseEmitter.event().data("Report Ready"));
                 emitter.complete(); // Close connection after sending
             } catch (IOException e) {
@@ -155,7 +197,7 @@ public class HrController {
         return emitter;
     }
 
-    // API to trigger Excel generation & notify frontend
+    // Notify frontend for download report for specific time period (from and to)
     @GetMapping("/download/{userid}/{frommonth}/{tomonth}")
     public ResponseEntity<Resource> downloadReport(@PathVariable String userid, @PathVariable String frommonth, @PathVariable String tomonth) {
         String filePath = "reports/Attendance_" + userid + "_" + "from_" + frommonth + "_to_" + tomonth + ".xlsx";
@@ -174,52 +216,9 @@ public class HrController {
 
     }
 
-    
-    @PreAuthorize("hasRole('HR')")
-    @GetMapping("/displayUsers/{userId}/{searchtag}")
-    public ResponseEntity<List<GetUserResponse>> getAllUsers(
-            @PathVariable String userId,
-            @PathVariable String searchtag,
-            @RequestParam(value = "page", defaultValue = "1") int page,
-            @RequestParam(value = "limit", defaultValue = "2") int limit) {
 
-        if (page > 0)
-            page -= 1;
-
-        Page<List<String>> users = hrService.getAllUsers(userId, page, limit, searchtag);
-        List<GetUserResponse> responses = new ArrayList<>();
-
-        for (List<String> userDto : users.getContent()) {
-                GetUserResponse res = new GetUserResponse();
-                res.setUserId(userDto.get(0));
-                res.setEmail(userDto.get(1));
-                res.setUsername(userDto.get(2));
-                responses.add(res);
-        }
-
-        return ResponseEntity.ok().body(responses);
-    }
-
-    @PreAuthorize("hasRole('HR')")
-    @GetMapping("/displayUsers/count/{userId}/{searchtag}")
-    public ResponseEntity<Map<String, Object>> getTotalUserCount(@PathVariable String userId,
-                                                                 @PathVariable String searchtag,
-                                                                 @RequestParam(value = "limit", defaultValue = "2") int limit) {
-
-        long totalEmployees = hrService.getTotalEmployeesCount(searchtag);
-
-        // Calculate total pages
-        int totalPages = (int) Math.ceil((double) totalEmployees / limit);
-
-        // Create response map
-        Map<String, Object> response = new HashMap<>();
-        response.put("totalEmployees", totalEmployees);
-        response.put("totalPages", totalPages);
-
-        return ResponseEntity.ok(response);
-    }
-
-
+    // By Month For All Users
+    // For one particular month view
     @PreAuthorize("hasRole('HR')")
     @GetMapping("/bymonth")
     public ResponseEntity<Map<String, Object>> getByMonth(
@@ -230,7 +229,7 @@ public class HrController {
         return ResponseEntity.ok(monthBasedService.getAttendanceReportForHR(monthYear, page, limit));
     }
 
-
+    // For one particular month report
     @PreAuthorize("hasRole('HR')")
     @GetMapping("bymonthreport")
     public ResponseEntity<byte[]> getByMonth(
@@ -254,6 +253,7 @@ public class HrController {
         }
     }
 
+    // Generate report for specific time period (from and to)
     @PreAuthorize("hasRole('HR')")
     @GetMapping(value = "/events/bymonthreport", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamEventsForMonth(
@@ -283,10 +283,10 @@ public class HrController {
                 long endTime = System.currentTimeMillis(); // Record end time
                 long duration = endTime - startTime; // Calculate latency
 
-                System.out.println("Report generation time: " + duration + " ms");
+                log.info("Report generation time: {} ms", duration);
                 String filePath = "monthreports/Attendance_" + "_" + "from_" + frommonth + "_to_" + tomonth + ".xlsx";
                 Files.write(Paths.get(filePath), excelData);
-                System.out.println(" Report generated at: " + filePath);
+                log.info(" Report generated at: {}",filePath);
 
                 // Send "Download Ready" message
                 emitter.send(SseEmitter.event().data("Report Ready"));
@@ -304,7 +304,7 @@ public class HrController {
         return emitter;
     }
 
-    // API to trigger Excel generation & notify frontend
+    // Notify frontend for download report for specific time period (from and to)
     @PreAuthorize("hasRole('HR')")
     @GetMapping("/download/bymonthreport")
     public ResponseEntity<Resource> downloadMonthReport(

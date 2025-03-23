@@ -8,6 +8,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -20,6 +21,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class AuthorizationFilter extends BasicAuthenticationFilter {
 
     public AuthorizationFilter(AuthenticationManager authManager) {
@@ -77,8 +79,8 @@ public class AuthorizationFilter extends BasicAuthenticationFilter {
         }
 
         // Log extracted details for debugging
-        System.out.println("Extracted userId from JWT: " + userId);
-        System.out.println("Roles extracted from JWT: " + roles);
+        log.info("Extracted userId from JWT: {}" + userId);
+        log.info("Roles extracted from JWT: {}" + roles);
 
         List<GrantedAuthority> authorities = roles != null
                 ? roles.stream()
@@ -86,7 +88,7 @@ public class AuthorizationFilter extends BasicAuthenticationFilter {
                 .collect(Collectors.toList())
                 : List.of();
 
-        System.out.println("Authorities assigned: " + authorities);
+        log.info("Authorities assigned: {}" + authorities);
 
         return new UsernamePasswordAuthenticationToken(username, null, authorities);
 

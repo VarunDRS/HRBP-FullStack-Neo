@@ -8,7 +8,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -26,15 +25,14 @@ public class UseridAndMonthImpl implements UseridAndMonth {
     @Override
     public Map<String, Map<String, String>> getCustomerDetails(String userId) {
 
-        Map<String, Map<String, String>> resp = useridAndMonthDao.getUserDetails(userId);
-        return resp;
+        return useridAndMonthDao.getUserDetails(userId);
 
     }
 
     @Override
     public Map<String, Map<String, String>> getCustomerDetails(String userId, String month) {
-        Map<String, Map<String, String>> resp = useridAndMonthDao.getUserDetails(userId,month);
-        return resp;
+        return useridAndMonthDao.getUserDetails(userId,month);
+
     }
 
     @Override
