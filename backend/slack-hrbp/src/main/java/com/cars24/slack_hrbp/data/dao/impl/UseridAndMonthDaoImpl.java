@@ -42,8 +42,6 @@ public class UseridAndMonthDaoImpl implements UseridAndMonthDao {
             String formattedDate = "";
             String dateStr = entity.getDate();
 
-            // System.out.println(entity);
-
             if (dateStr == null || dateStr.trim().isEmpty()) {
                 log.error("Date is null or empty for entity: {}", entity);
                 continue; // Skip this entry

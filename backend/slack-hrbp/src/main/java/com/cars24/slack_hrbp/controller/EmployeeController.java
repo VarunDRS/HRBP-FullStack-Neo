@@ -1,6 +1,5 @@
 package com.cars24.slack_hrbp.controller;
 
-import com.cars24.slack_hrbp.data.request.PasswordUpdateRequest;
 import com.cars24.slack_hrbp.service.impl.EmployeeServiceImpl;
 import com.cars24.slack_hrbp.service.impl.UseridAndMonthImpl;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +18,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,8 +36,7 @@ public class EmployeeController {
     @PreAuthorize("hasRole('EMPLOYEE')")
     @GetMapping("/{userid}/{month}")
     public Map<String, Map<String, String>> getUserDetails(@PathVariable String userid, @PathVariable String month){
-        Map<String, Map<String, String>> resp = useridandmonth.getCustomerDetails(userid,month);
-        return resp;
+        return useridandmonth.getCustomerDetails(userid,month);
     }
 
 
@@ -47,9 +44,8 @@ public class EmployeeController {
     @GetMapping("/{userId}")
     public Map<String, Map<String, String>> getUserDetails(@PathVariable String userId){
 
-        System.out.println("GetUserDetails Manager called");
+        log.info("GetUserDetails Manager called");
         Map<String, Map<String, String>> resp = useridandmonth.getCustomerDetails(userId);
-        System.out.println(resp);
         return resp;
 
     }
@@ -78,7 +74,7 @@ public class EmployeeController {
                 }
                 String filePath = "reports/Attendance_" + userid + "_" + "from_" + frommonth + "_to_" + tomonth + ".xlsx";
                 Files.write(Paths.get(filePath), excelData);
-                System.out.println(" Report generated at: " + filePath);
+                log.info("Report generated at: {}", filePath);
                 // Send "Download Ready" message
                 emitter.send(SseEmitter.event().data("Report Ready"));
                 emitter.complete(); // Close connection after sending

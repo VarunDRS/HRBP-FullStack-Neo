@@ -6,7 +6,6 @@ import com.cars24.slack_hrbp.data.repository.AttendanceRepository;
 import com.cars24.slack_hrbp.data.repository.EmployeeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -141,7 +140,6 @@ public class MonthBasedDaoImpl {
 
                 // Skip records with null usernames
                 if (username == null || username.isEmpty()) {
-                    System.out.println("Skipping record with null username: " + attendance);
                     continue;
                 }
 

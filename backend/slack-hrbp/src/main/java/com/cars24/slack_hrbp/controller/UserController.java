@@ -43,7 +43,6 @@ public class UserController {
 
     @GetMapping("/{userId}")
     public ResponseEntity<String> getUserName(@PathVariable String userId) {
-        System.out.println("Called username service");
         Optional<EmployeeEntity> entity = employeeRepository.findByUserId(userId);
         if (!entity.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
@@ -54,29 +53,10 @@ public class UserController {
 
     @PostMapping("/updatePassword")
     public ResponseEntity<?> updatePassword(@RequestBody PasswordUpdateRequest passwordUpdateRequest){
-        System.out.println("Update Password called");
         String response = employeeService.updatePassword(passwordUpdateRequest);
-        System.out.println(response);
         return ResponseEntity.ok(Collections.singletonMap("success", true));
     }
 
-//    @PostMapping("/signup")
-//    public ResponseEntity<Map<String, String>> createUser(@RequestBody SignUpRequest signUpRequest) {
-//        log.info("[createUser] UserController {}", signUpRequest);
-//
-//        UserDto userDto = new UserDto();
-//        BeanUtils.copyProperties(signUpRequest, userDto);
-//
-//        UserDto createdUser = userService.createUser(userDto);
-//
-//        if (createdUser != null) {
-//            // Return a success message with HTTP 201 Created status
-//            return ResponseEntity.status(201).body(Map.of("message", "Signup successful!"));
-//        } else {
-//            // Return an error message with HTTP 400 Bad Request status
-//            return ResponseEntity.status(400).body(Map.of("message", "Signup failed!"));
-//        }
-//    }
 
     @PostMapping("/verify-password")
     public ResponseEntity<?> verifyPassword(@RequestBody PasswordVerificationRequest request,
@@ -96,7 +76,6 @@ public class UserController {
 
         // Compare passwords using BCrypt
         boolean isValid = bCryptPasswordEncoder.matches(request.getPassword(), entity.getEncryptedPassword());
-        System.out.println(isValid);
 
         if (isValid) {
             return ResponseEntity.ok(Collections.singletonMap("success", "Password is correct"));

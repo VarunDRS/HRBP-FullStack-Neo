@@ -6,26 +6,19 @@ import com.cars24.slack_hrbp.data.entity.EmployeeEntity;
 import com.cars24.slack_hrbp.data.repository.AttendanceRepository;
 import com.cars24.slack_hrbp.data.repository.EmployeeRepository;
 import com.cars24.slack_hrbp.data.request.EmployeeUpdateRequest;
-import com.cars24.slack_hrbp.data.request.CreateEmployeeRequest;
-import com.cars24.slack_hrbp.data.response.EmployeeDisplayResponse;
-import com.cars24.slack_hrbp.data.response.UpdateEmployeeResponse;
 import com.cars24.slack_hrbp.excpetion.UserServiceException;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
+
 
 @RequiredArgsConstructor
 @Service

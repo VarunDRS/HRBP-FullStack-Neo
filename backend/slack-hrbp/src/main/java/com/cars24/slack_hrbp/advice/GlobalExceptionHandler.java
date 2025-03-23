@@ -25,9 +25,9 @@ public class GlobalExceptionHandler {
 
         // Create an error map to capture validation errors
         Map<String, String> errorMap = new HashMap<>();
-        exception.getBindingResult().getFieldErrors().forEach(error -> {
-            errorMap.put(error.getField(), error.getDefaultMessage());
-        });
+        exception.getBindingResult().getFieldErrors()
+                .forEach(error -> errorMap.put(error.getField(), error.getDefaultMessage()));
+
 
         // Create a response for validation errors
         ApiResponse apiResponse = new ApiResponse();

@@ -17,39 +17,41 @@ const EnhancedCalendarView = () => {
   const [deleteDate, setDeleteDate] = useState("");
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
   const [message, setMessage] = useState("");
-  const [reportReady, setReportReady] = useState(localStorage.getItem("reportReady") === "true");
+  const [reportReady, setReportReady] = useState(
+    localStorage.getItem("reportReady") === "true"
+  );
   const [fromMonth, setFromMonth] = useState("");
   const [toMonth, setToMonth] = useState("");
   const [months, setMonths] = useState([]);
 
-
   const token = localStorage.getItem("Authorization");
   const decodedToken = jwtDecode(token);
   const userRole = decodedToken.roles?.[0];
+  const [showFromMonthDropdown, setShowFromMonthDropdown] = useState(false);
+  const [showToMonthDropdown, setShowToMonthDropdown] = useState(false);
 
   useEffect(() => {
     const now = new Date();
     const generatedMonths = [];
-  
+
     for (let i = 0; i < 24; i++) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const formattedMonth = date.toISOString().slice(0, 7); // "YYYY-MM"
       generatedMonths.push(formattedMonth);
     }
-  
+
     generatedMonths.reverse(); // Ensure months are in ascending order
-  
+
     setMonths(generatedMonths);
-  
+
     // Ensure current month is in the list
     const currentMonth = now.toISOString().slice(0, 7);
     if (!generatedMonths.includes(currentMonth)) {
       generatedMonths.push(currentMonth);
     }
-  
+
     setFromMonth(currentMonth);
     setToMonth(currentMonth);
-  
   }, []);
 
   // Function to handle the delete operation
@@ -67,12 +69,11 @@ const EnhancedCalendarView = () => {
       );
 
       if (response.ok) {
-      toast.success("Entry deleted successfully");
-      fetchAttendanceData(currentMonth); // Assuming you have a function to fetch attendance data
+        toast.success("Entry deleted successfully");
+        fetchAttendanceData(currentMonth); // Assuming you have a function to fetch attendance data
       } else {
         toast.error("No such entry exists for the user");
       }
-
     } catch (error) {
       console.log("Error response:", error.response);
 
@@ -794,7 +795,7 @@ const EnhancedCalendarView = () => {
 
   const generateReport = () => {
     const token = localStorage.getItem("Authorization");
-  
+
     if (!token) {
       console.error("No token found, redirecting to login.");
       navigate("/login");
@@ -802,45 +803,43 @@ const EnhancedCalendarView = () => {
     }
 
     const decodedToken = jwtDecode(token);
-        const role = decodedToken.roles?.[0];
-        const roleEndpoints = {
-            ROLE_HR: "hr",
-            ROLE_MANAGER: "manager",
-            ROLE_EMPLOYEE: "employee",
-        };
+    const role = decodedToken.roles?.[0];
+    const roleEndpoints = {
+      ROLE_HR: "hr",
+      ROLE_MANAGER: "manager",
+      ROLE_EMPLOYEE: "employee",
+    };
 
-        const rolePath = roleEndpoints[role] || "employee";
-    
+    const rolePath = roleEndpoints[role] || "employee";
+
     const formattedFromMonth = format(new Date(fromMonth), "MMM-yyyy");
     const formattedToMonth = format(new Date(toMonth), "MMM-yyyy");
     // Establish SSE connection
-    console.info("current month before sse")
-    console.info(currentMonth)
-    const eventSource = new EventSource(`http://localhost:8080/${rolePath}/events/${userId}/${formattedFromMonth}/${formattedToMonth}`);
+    console.info("current month before sse");
+    console.info(currentMonth);
+    const eventSource = new EventSource(
+      `http://localhost:8080/${rolePath}/events/${userId}/${formattedFromMonth}/${formattedToMonth}`
+    );
 
-    
-  
     eventSource.onmessage = (event) => {
       console.log("SSE Message:", event.data);
-      
+
       if (event.data === "Generating Excel...") {
         toast.dismiss(); // Dismiss any previous toasts
         // toast.info("Generating Excel...", { duration: 1000 }); // Show toast for 5 seconds
-        
+
         const toastId = toast.info("Generating Excel...");
 
         setTimeout(() => {
           toast.dismiss(toastId);
         }, 1000);
+      }
 
+      if (event.data === "Error generating report") {
+        toast.dismiss(); // Dismiss any previous toasts
+        toast.error("Error generating report", { duration: 3000 }); // Show toast for 5 seconds
+      }
 
-    }
-
-    if (event.data === "Error generating report") {
-      toast.dismiss(); // Dismiss any previous toasts
-      toast.error("Error generating report", { duration: 3000 }); // Show toast for 5 seconds
-  }
-      
       setMessage(event.data);
       if (event.data === "Report Ready") {
         setReportReady(true);
@@ -848,31 +847,30 @@ const EnhancedCalendarView = () => {
         toast.dismiss();
         toast(
           (t) => (
-              <div className="flex items-center justify-between gap-4">
-                  <span className="text-black">Report is ready!</span>
-                  <button
-                      onClick={() => {
-                          toast.dismiss(t.id); // Dismiss the toast
-                          downloadReport(); // Trigger download function
-                      }}
-                      className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                      Download
-                  </button>
-              </div>
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-black">Report is ready!</span>
+              <button
+                onClick={() => {
+                  toast.dismiss(t.id); // Dismiss the toast
+                  downloadReport(); // Trigger download function
+                }}
+                className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Download
+              </button>
+            </div>
           ),
           { duration: 6000 }
-      );
+        );
         eventSource.close();
       }
     };
-    
-  
+
     eventSource.onerror = (error) => {
       console.error("SSE Error:", error);
       eventSource.close();
     };
-  
+
     // Close SSE connection after some time
     setTimeout(() => {
       eventSource.close();
@@ -892,17 +890,20 @@ const EnhancedCalendarView = () => {
 
     const rolePath = roleEndpoints[role] || "employee";
 
-    console.info("current month before down;pad")
-    console.info(currentMonth)
+    console.info("current month before down;pad");
+    console.info(currentMonth);
 
     const formattedFromMonth = format(new Date(fromMonth), "MMM-yyyy");
     const formattedToMonth = format(new Date(toMonth), "MMM-yyyy");
-    fetch(`http://localhost:8080/${rolePath}/download/${userId}/${formattedFromMonth}/${formattedToMonth}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
+    fetch(
+      `http://localhost:8080/${rolePath}/download/${userId}/${formattedFromMonth}/${formattedToMonth}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
       .then((response) => response.blob())
       .then((blob) => {
         const url = window.URL.createObjectURL(blob);
@@ -1105,90 +1106,165 @@ const EnhancedCalendarView = () => {
               </button>
 
               {/* Ensure Consistent Height by Wrapping in a Fixed Container */}
-    <div className="flex items-center space-x-4 min-h-[48px]">
-      {!reportReady ? (
-        <div className="flex items-center space-x-2">
-          {/* From Month Dropdown */}
-          <div>
-            <label className="block text-sm font-medium">From Month</label>
-            <select
-              value={fromMonth}
-              onChange={(e) => {
-                const selectedMonth = e.target.value;
-                if (months.indexOf(selectedMonth) > months.indexOf(toMonth)) {
-                  alert("From Month cannot be greater than To Month!");
-                } else {
-                  setFromMonth(selectedMonth);
-                }
-              }}
-              className="mt-1 block w-40 px-3 bg-white border rounded-md shadow-sm focus:outline-none"
-            >
-              {months.map((month) => (
-                <option key={month} value={month}>
-                  {month}
-                </option>
-              ))}
-            </select>
-          </div>
+              {/* Ensure Consistent Height by Wrapping in a Fixed Container */}
+              <div className="flex items-center space-x-4 min-h-[48px]">
+                {!reportReady ? (
+                  <div className="flex items-center space-x-2">
+                    {/* From Month Dropdown */}
+                    <div className="relative">
+                      <button
+                        onClick={() =>
+                          setShowFromMonthDropdown(!showFromMonthDropdown)
+                        }
+                        className="py-2 px-4 bg-white border border-blue-300 text-blue-700 rounded-lg text-sm font-medium cursor-pointer focus:ring-2 focus:ring-blue-300 focus:border-blue-500 focus:outline-none flex items-center"
+                      >
+                        From Month: {fromMonth}
+                        <svg
+                          className="w-4 h-4 ml-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M19 9l-7 7-7-7"
+                          ></path>
+                        </svg>
+                      </button>
+                      {showFromMonthDropdown && (
+                        <div className="absolute left-0 mt-2 py-2 w-40 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+                          {months.map((month) => (
+                            <button
+                              key={month}
+                              onClick={() => {
+                                if (
+                                  months.indexOf(month) >
+                                  months.indexOf(toMonth)
+                                ) {
+                                  alert(
+                                    "From Month cannot be greater than To Month!"
+                                  );
+                                } else {
+                                  setFromMonth(month);
+                                  setShowFromMonthDropdown(false);
+                                }
+                              }}
+                              className={`block px-4 py-2 text-left w-full hover:bg-blue-50 ${
+                                fromMonth === month
+                                  ? "bg-blue-100 font-medium text-blue-700"
+                                  : ""
+                              }`}
+                            >
+                              {month}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
-          {/* To Month Dropdown */}
-          <div>
-            <label className="block text-sm font-medium">To Month</label>
-            <select
-              value={toMonth}
-              onChange={(e) => {
-                const selectedMonth = e.target.value;
-                if (months.indexOf(fromMonth) > months.indexOf(selectedMonth)) {
-                  alert("To Month cannot be less than From Month!");
-                } else {
-                  setToMonth(selectedMonth);
-                }
-              }}
-              className="mt-1 block w-40 px-3 bg-white border rounded-md shadow-sm focus:outline-none"
-            >
-              {months.map((month) => (
-                <option key={month} value={month}>
-                  {month}
-                </option>
-              ))}
-            </select>
-          </div>
+                    {/* To Month Dropdown */}
+                    <div className="relative">
+                      <button
+                        onClick={() =>
+                          setShowToMonthDropdown(!showToMonthDropdown)
+                        }
+                        className="py-2 px-4 bg-white border border-blue-300 text-blue-700 rounded-lg text-sm font-medium cursor-pointer focus:ring-2 focus:ring-blue-300 focus:border-blue-500 focus:outline-none flex items-center"
+                      >
+                        To Month: {toMonth}
+                        <svg
+                          className="w-4 h-4 ml-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M19 9l-7 7-7-7"
+                          ></path>
+                        </svg>
+                      </button>
+                      {showToMonthDropdown && (
+                        <div className="absolute left-0 mt-2 py-2 w-40 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+                          {months.map((month) => (
+                            <button
+                              key={month}
+                              onClick={() => {
+                                if (
+                                  months.indexOf(fromMonth) >
+                                  months.indexOf(month)
+                                ) {
+                                  alert(
+                                    "To Month cannot be less than From Month!"
+                                  );
+                                } else {
+                                  setToMonth(month);
+                                  setShowToMonthDropdown(false);
+                                }
+                              }}
+                              className={`block px-4 py-2 text-left w-full hover:bg-blue-50 ${
+                                toMonth === month
+                                  ? "bg-blue-100 font-medium text-blue-700"
+                                  : ""
+                              }`}
+                            >
+                              {month}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
-          {/* Generate Report Button */}
-          <button
-            onClick={generateReport}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center shadow-sm"
-          >
-            <svg
-              className="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-            </svg>
-            Generate Report
-          </button>
-        </div>
-      ) : (
-        <button
-          onClick={downloadReport}
-          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center shadow-sm"
-        >
-          <svg
-            className="w-5 h-5 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-          </svg>
-          Download Report
-        </button>
-      )}
-    </div>
+                    {/* Generate Report Button */}
+                    <button
+                      onClick={generateReport}
+                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center shadow-sm"
+                    >
+                      <svg
+                        className="w-5 h-5 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                        ></path>
+                      </svg>
+                      Generate Report
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={downloadReport}
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center shadow-sm"
+                  >
+                    <svg
+                      className="w-5 h-5 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                      ></path>
+                    </svg>
+                    Download Report
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 

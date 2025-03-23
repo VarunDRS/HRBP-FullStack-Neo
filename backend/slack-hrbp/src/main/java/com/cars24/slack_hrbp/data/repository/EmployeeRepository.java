@@ -1,10 +1,8 @@
 package com.cars24.slack_hrbp.data.repository;
 
 import com.cars24.slack_hrbp.data.entity.EmployeeEntity;
-import com.cars24.slack_hrbp.data.response.UpdateEmployeeResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.neo4j.repository.Neo4jRepository;
 import org.springframework.data.neo4j.repository.query.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
