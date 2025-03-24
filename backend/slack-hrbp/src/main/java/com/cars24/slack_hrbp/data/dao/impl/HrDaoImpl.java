@@ -104,4 +104,21 @@ public class HrDaoImpl implements HrDao {
 
         return "Delete of attendance successfull";
     }
+
+
+    @Override
+    public String addEntry(String userId,String date,String leaveType,String reason){
+
+        Optional<EmployeeEntity> employeeEntity = employeeRepository.findByUserId(userId);
+        String username = employeeEntity.map(EmployeeEntity::getUsername).orElse("Not Found Username");
+        AttendanceEntity attendanceEntity = new AttendanceEntity();
+        attendanceEntity.setType(leaveType);
+        attendanceEntity.setDate(date);
+        attendanceEntity.setReason(reason);
+        attendanceEntity.setUserid(userId);
+        attendanceEntity.setUsername(username);
+        attendanceRepository.save(attendanceEntity);
+
+        return "Adding of attendance successfull";
+    }
 }

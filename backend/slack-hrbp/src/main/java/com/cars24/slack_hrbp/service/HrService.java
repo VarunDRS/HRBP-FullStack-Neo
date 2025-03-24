@@ -16,4 +16,6 @@ public interface HrService {
 
     public String deleteEntry(String userId,String date);
 
+    public String addEntry(String userId,String date,String leaveType,String reason);
+
 }

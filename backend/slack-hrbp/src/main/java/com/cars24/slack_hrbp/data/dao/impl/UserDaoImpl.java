@@ -30,7 +30,7 @@ public class UserDaoImpl implements UserDao {
 
         log.info("[createUser] UserDaoImpl{}", employeeEntity);
 
-        EmployeeEntity response = employeeRepository.save(employeeEntity);
+        employeeRepository.save(employeeEntity);
 
         UserDto signUpResponse = new UserDto();
         BeanUtils.copyProperties(employeeEntity, signUpResponse);
