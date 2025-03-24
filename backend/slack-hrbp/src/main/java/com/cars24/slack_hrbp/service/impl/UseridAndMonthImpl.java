@@ -44,16 +44,16 @@ public class UseridAndMonthImpl implements UseridAndMonth {
 
             Sheet sheet = workbook.createSheet("Leave Report");
 
-            // 1. Get all months in range
+            // Get all months in range
             List<String> monthYears = getAllMonthsInRange(frommonth, tomonth);
 
-            // 2. Generate all dates for each month
+            // Generate all dates for each month
             Map<String, List<String>> monthDatesMap = new LinkedHashMap<>();
             for (String monthYear : monthYears) {
                 monthDatesMap.put(monthYear, getAllDatesForMonth(monthYear));
             }
 
-            // 3. Create Header Row
+            // Create Header Row
             Row headerRow = sheet.createRow(0);
             int colIndex = 0;
             for (String monthYear : monthYears) {
@@ -62,20 +62,64 @@ public class UseridAndMonthImpl implements UseridAndMonth {
                 colIndex += 2;
             }
 
-            // 4. Fill Data Rows
+            // Define all possible leave types
+            List<String> leaveTypes = Arrays.asList("Sick Leave", "Planned Leave", "Unplanned Leave", "WFH");
+
+            // Initialize leaveSummary with zero values
+            Map<String, Map<String, Integer>> leaveSummary = new LinkedHashMap<>();
+            for (String monthYear : monthYears) {
+                Map<String, Integer> defaultLeaveMap = new LinkedHashMap<>();
+                for (String leaveType : leaveTypes) {
+                    defaultLeaveMap.put(leaveType, 0);  // Default count = 0
+                }
+                leaveSummary.put(monthYear, defaultLeaveMap);
+            }
+
+            // Fill Data Rows
             int maxRows = monthDatesMap.values().stream().mapToInt(List::size).max().orElse(0);
+            int currentRow = 1;
+
             for (int rowIndex = 1; rowIndex <= maxRows; rowIndex++) {
-                Row row = sheet.createRow(rowIndex);
+                Row row = sheet.createRow(currentRow);
                 int col = 0;
 
                 for (String monthYear : monthYears) {
                     List<String> allDates = monthDatesMap.get(monthYear);
                     if (rowIndex <= allDates.size()) {
                         String date = allDates.get(rowIndex - 1);
+                        String leaveType = attendanceData.getOrDefault(monthYear, new HashMap<>()).getOrDefault(date, "");
+
                         row.createCell(col).setCellValue(date); // Leave Date
-                        row.createCell(col + 1).setCellValue(attendanceData.getOrDefault(monthYear, new HashMap<>()).getOrDefault(date, "")); // Leave Type
+                        row.createCell(col + 1).setCellValue(leaveType); // Leave Type
+
+                        // Update leave summary count
+                        if (!leaveType.isEmpty()) {
+                            leaveSummary.get(monthYear).merge(leaveType, 1, Integer::sum);
+                        }
                     }
                     col += 2;
+                }
+                currentRow++;
+            }
+
+            // Find the correct starting row for the summary section
+            int summaryStartRow = currentRow + 2;
+
+            // Add summary under the correct columns for each month
+            for (String monthYear : monthYears) {
+                int col = monthYears.indexOf(monthYear) * 2; // Correct column index
+                int summaryRow = summaryStartRow; // Summary row for this month
+
+                Row summaryHeaderRow = sheet.createRow(summaryRow++);
+                summaryHeaderRow.createCell(col).setCellValue(monthYear + " Leave Summary");
+
+                // Get summary values for this month
+                Map<String, Integer> monthSummary = leaveSummary.getOrDefault(monthYear, new LinkedHashMap<>());
+
+                for (String leaveType : leaveTypes) {
+                    Row summaryDataRow = sheet.createRow(summaryRow++);
+                    summaryDataRow.createCell(col).setCellValue(leaveType);  // Leave Type
+                    summaryDataRow.createCell(col + 1).setCellValue(monthSummary.getOrDefault(leaveType, 0));
                 }
             }
 
@@ -88,6 +132,7 @@ public class UseridAndMonthImpl implements UseridAndMonth {
             return outputStream.toByteArray();
         }
     }
+
 
     // Helper: Get all months between frommonth and tomonth
     private List<String> getAllMonthsInRange(String fromMonth, String toMonth) {

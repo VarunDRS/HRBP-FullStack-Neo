@@ -135,11 +135,12 @@ public class ManagerController {
                 long endTime = System.currentTimeMillis(); // Record end time
                 long duration = endTime - startTime; // Calculate latency
 
+
                 log.info("Report generation time: {} ms", duration);
+
                 String filePath = "reports/Attendance_" + userid + "_" + "from_" + frommonth + "_to_" + tomonth + ".xlsx";
                 Files.write(Paths.get(filePath), excelData);
                 log.info("Report generated at: {}",filePath);
-                // Send "Download Ready" message
                 emitter.send(SseEmitter.event().data("Report Ready"));
                 emitter.complete(); // Close connection after sending
             } catch (IOException e) {
@@ -157,8 +158,13 @@ public class ManagerController {
 
     // Notify frontend for download report for specific time period (from and to)
     @GetMapping("/download/{userid}/{frommonth}/{tomonth}")
-    public ResponseEntity<Resource> downloadReport(@PathVariable String userid, @PathVariable String frommonth, @PathVariable String tomonth) {
-        String filePath = "reports/Attendance_" + userid + "_" + "from_" + frommonth + "_to_" + tomonth + ".xlsx";
+    public ResponseEntity<Resource> downloadReport(
+            @PathVariable String userid,
+            @PathVariable String frommonth,
+            @PathVariable String tomonth) {
+
+        String filename = "Attendance_" + userid + "_from_" + frommonth + "_to_" + tomonth + ".xlsx";
+        String filePath = "reports/" + filename;
         File file = new File(filePath);
 
         if (!file.exists()) {
@@ -167,11 +173,9 @@ public class ManagerController {
 
         Resource resource = new FileSystemResource(file);
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + file.getName())
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"") // Ensure double quotes
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(resource);
-
-
     }
 
 
