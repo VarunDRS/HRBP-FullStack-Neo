@@ -127,4 +127,12 @@ public class HrServiceImpl implements HrService {
         return hrDao.deleteEntry(userId,date);
     }
 
+    @Override
+    public String addEntry(String userId,String date,String leaveType,String reason){
+//        if(attendanceRepository.existsByUseridAndDateStartingWith(userId,date)){
+//            throw new UserServiceException("Not such entry for the user exists");
+//        }
+        return hrDao.addEntry(userId,date,leaveType,reason);
+    }
+
 }

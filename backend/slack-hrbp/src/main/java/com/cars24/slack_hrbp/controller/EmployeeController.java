@@ -45,8 +45,7 @@ public class EmployeeController {
     public Map<String, Map<String, String>> getUserDetails(@PathVariable String userId){
 
         log.info("GetUserDetails Manager called");
-        Map<String, Map<String, String>> resp = useridandmonth.getCustomerDetails(userId);
-        return resp;
+        return useridandmonth.getCustomerDetails(userId);
 
     }
 

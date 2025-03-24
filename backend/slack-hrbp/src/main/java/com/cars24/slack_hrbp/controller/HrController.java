@@ -3,6 +3,7 @@ package com.cars24.slack_hrbp.controller;
 import com.cars24.slack_hrbp.data.dao.impl.ListAllEmployeesUnderManagerDaoImpl;
 import com.cars24.slack_hrbp.data.entity.AttendanceEntity;
 import com.cars24.slack_hrbp.data.entity.EmployeeEntity;
+import com.cars24.slack_hrbp.data.request.AddLeaveRequest;
 import com.cars24.slack_hrbp.data.request.EmployeeUpdateRequest;
 import com.cars24.slack_hrbp.data.request.CreateEmployeeRequest;
 import com.cars24.slack_hrbp.data.request.PasswordUpdateRequest;
@@ -98,9 +99,15 @@ public class HrController {
     public ResponseEntity<String> deleteEntry(@PathVariable String userId,@PathVariable String date){
         String resp = hrService.deleteEntry(userId,date);
         return ResponseEntity.ok(resp);
-   }
+    }
 
-
+    @PreAuthorize("hasRole('HR')")
+    @PostMapping ("/addEntry/{userId}")
+    public ResponseEntity<String> addEntry(@PathVariable String userId, @RequestBody AddLeaveRequest addLeaveRequest){
+        log.info("The inputs are {} {} {} {}" , userId , addLeaveRequest.getDate(), addLeaveRequest.getLeaveType(), addLeaveRequest.getReason());
+        String resp = hrService.addEntry(userId,addLeaveRequest.getDate(), addLeaveRequest.getLeaveType(), addLeaveRequest.getReason());
+        return ResponseEntity.ok(resp);
+    }
 
     @PreAuthorize("hasRole('HR')")
     @GetMapping("/displayUsers/{userId}/{searchtag}")
