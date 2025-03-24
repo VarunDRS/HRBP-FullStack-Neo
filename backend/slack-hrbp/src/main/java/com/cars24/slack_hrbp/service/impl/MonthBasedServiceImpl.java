@@ -1,3 +1,4 @@
+
 package com.cars24.slack_hrbp.service.impl;
 
 import com.cars24.slack_hrbp.data.dao.impl.MonthBasedDaoImpl;
@@ -32,6 +33,8 @@ public class MonthBasedServiceImpl {
     private MonthBasedDaoImpl monthBasedDao;
 
 
+
+
     public byte[] generateAttendanceReport(String monthYear, String managerId) throws IOException, ParseException {
         // Fetch data for the given month and year
         List<AttendanceEntity> attendanceList = attendanceRepository.findByDateStartingWith(monthYear);
@@ -58,6 +61,25 @@ public class MonthBasedServiceImpl {
 
             // Store username and request type in the map
             userAttendanceMap.computeIfAbsent(userid, k -> new HashMap<>()).put(formattedDate, requestType);
+        }
+
+        for (Map.Entry<String, Map<String, String>> entry : userAttendanceMap.entrySet()) {
+            Map<String, String> userData = entry.getValue();
+            int totalWFH = 0;
+            int totalLeaves = 0;
+
+            for (Map.Entry<String, String> dateEntry : userData.entrySet()) {
+                String type = dateEntry.getValue();
+                if (type.equals("W")) {
+                    totalWFH++;
+                } else if (type.equals("P") || type.equals("U") || type.equals("S") || type.equals("P*") || type.equals("P**")) {
+                    totalLeaves++;
+                }
+            }
+
+            // Add Total WFH and Total Leaves to the user's map
+            userData.put("Total WFH", String.valueOf(totalWFH));
+            userData.put("Total Leaves", String.valueOf(totalLeaves));
         }
 
         // Generate Excel file and return it as a byte array
@@ -126,12 +148,14 @@ public class MonthBasedServiceImpl {
         // Create header row
         Row headerRow = sheet.createRow(0);
         headerRow.createCell(0).setCellValue("User Name");
+        headerRow.createCell(1).setCellValue("Total Leaves"); // Inserted column
+        headerRow.createCell(2).setCellValue("Total WFH"); // Inserted column
 
         // Generate all dates for the given month
         List<String> allDates = generateAllDatesForMonth(monthYear);
 
-        // Add all dates to the header row
-        int colNum = 1;
+        // Adjust column numbers for allDates
+        int colNum = 3; // Shifted to accommodate new columns
         for (String date : allDates) {
             headerRow.createCell(colNum++).setCellValue(date);
         }
@@ -141,10 +165,9 @@ public class MonthBasedServiceImpl {
         for (String userid : employeeIds) {
             List<EmployeeEntity> employeeList = employeeRepository.findAllByUserId(userid);
             if (!employeeList.isEmpty()) {
-                // Use the username from the first result
                 userIdToUsernameMap.put(userid, employeeList.get(0).getUsername());
             } else {
-                userIdToUsernameMap.put(userid, "Unknown User"); // Default to "Unknown User" if username not found
+                userIdToUsernameMap.put(userid, "Unknown User");
             }
         }
 
@@ -152,13 +175,17 @@ public class MonthBasedServiceImpl {
         int rowNum = 1;
         for (String userid : employeeIds) {
             Row row = sheet.createRow(rowNum++);
-            String username = userIdToUsernameMap.getOrDefault(userid, "Unknown User"); // Default to "Unknown User" if username not found
+            String username = userIdToUsernameMap.getOrDefault(userid, "Unknown User");
             row.createCell(0).setCellValue(username);
 
-            colNum = 1;
+            // Insert Total Leaves and Total WFH
+            Map<String, String> userAttendance = userAttendanceMap.getOrDefault(userid, new HashMap<>());
+            row.createCell(1).setCellValue(userAttendance.getOrDefault("Total Leaves", "0")); // Inserted value
+            row.createCell(2).setCellValue(userAttendance.getOrDefault("Total WFH", "0")); // Inserted value
+
+            colNum = 3; // Adjusted to start from the correct column
             for (String date : allDates) {
-                // Get the request type for the userid and date, or default to empty string
-                String requestType = userAttendanceMap.getOrDefault(userid, new HashMap<>()).getOrDefault(date, "");
+                String requestType = userAttendance.getOrDefault(date, "");
                 row.createCell(colNum++).setCellValue(requestType);
             }
         }
@@ -168,7 +195,6 @@ public class MonthBasedServiceImpl {
         workbook.write(outputStream);
         workbook.close();
 
-        // Return the byte array
         return outputStream.toByteArray();
     }
 
@@ -279,7 +305,6 @@ public class MonthBasedServiceImpl {
         // Return the byte array
         return outputStream.toByteArray();
     }
-
 
 
     private Map<String, Map<String, String>> formatAttendanceData(List<AttendanceEntity> attendanceRecords, List<String> employeeUserIds) {
@@ -397,6 +422,5 @@ public class MonthBasedServiceImpl {
 
         return response;
     }
-
 
 }

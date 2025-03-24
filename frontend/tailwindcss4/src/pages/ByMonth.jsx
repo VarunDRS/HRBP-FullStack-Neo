@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
@@ -435,22 +436,24 @@ const ByMonth = () => {
     }
   };
 
+
   const handleGenerateMultiMonthReport = async (
     fromMonth,
     toMonth,
-    managerId
+    managerId,
+    navigate // Pass `navigate` as an argument
   ) => {
     try {
       const token = localStorage.getItem("Authorization");
       if (!token) {
-        navigate("/login");
+        navigate("/login"); // Use the passed `navigate` function
         return;
       }
-
+  
       // Decode the token to get role
       const decodedToken = jwtDecode(token);
       const role = decodedToken.roles?.[0];
-
+  
       // SSE URL to start report generation
       let url;
       if (role === "ROLE_HR") {
@@ -458,58 +461,78 @@ const ByMonth = () => {
       } else if (role === "ROLE_MANAGER") {
         url = `http://localhost:8080/manager/events/bymonthreportformanager?frommonth=${fromMonth}&tomonth=${toMonth}&managerId=${managerId}`;
       } else {
-        toast.error(
-          "Unauthorized role. You do not have permission to generate reports."
-        );
+        toast.error("Unauthorized role. You do not have permission to generate reports.");
         return;
       }
-
+  
       // Create an EventSource to listen for updates
       const eventSource = new EventSource(url);
-
+  
       eventSource.onmessage = async (event) => {
         const message = event.data;
-
+  
         if (message === "Generating Excel...") {
-          toast.info("Generating Excel report...", { autoClose: false });
+          toast.dismiss();
+          toast.info("Generating Excel report...", { autoClose: 3000 });
         } else if (message === "Report Ready") {
-          toast.success("Report is ready for download!", { autoClose: 5000 });
           eventSource.close(); // Close the SSE connection
-
-          try {
-            // Construct the download URL
-            const downloadUrl =
-              role === "ROLE_HR"
-                ? `http://localhost:8080/hr/download/bymonthreport?frommonth=${fromMonth}&tomonth=${toMonth}&managerId=${managerId}`
-                : `http://localhost:8080/manager/download/bymonthreportformanager?frommonth=${fromMonth}&tomonth=${toMonth}`;
-
-            // Fetch the file securely with Authorization header
-            const response = await axios.get(downloadUrl, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-              responseType: "blob", // Ensures correct file download
-            });
-
-            // Create Blob and Trigger Download
-            const blob = new Blob([response.data], {
-              type: response.headers["content-type"],
-            });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "report.xlsx";
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-          } catch (downloadError) {
-            console.error("Error downloading report:", downloadError);
-            toast.error("Failed to download report.");
-          }
+  
+          // Construct the download URL
+          const downloadUrl =
+            role === "ROLE_HR"
+              ? `http://localhost:8080/hr/download/bymonthreport?frommonth=${fromMonth}&tomonth=${toMonth}&managerId=${managerId}`
+              : `http://localhost:8080/manager/download/bymonthreportformanager?frommonth=${fromMonth}&tomonth=${toMonth}`;
+  
+          // Display a custom toast with a Download button
+          toast(
+            (t) => (
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-black">Report is ready!</span>
+                <button
+                  onClick={async () => {
+                    toast.dismiss(t.id); // Dismiss the toast
+                    try {
+                      // Fetch the file securely with Authorization header
+                      const response = await axios.get(downloadUrl, {
+                        headers: {
+                          Authorization: `Bearer ${token}`,
+                        },
+                        responseType: "blob", // Ensures correct file download
+                      });
+  
+                      // Create Blob and Trigger Download
+                      const blob = new Blob([response.data], {
+                        type: response.headers["content-type"],
+                      });
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = "report.xlsx";
+                      document.body.appendChild(a);
+                      a.click();
+                      window.URL.revokeObjectURL(url);
+                      document.body.removeChild(a);
+                    } catch (downloadError) {
+                      console.error("Error downloading report:", downloadError);
+                      toast.error("Failed to download report.");
+                    }
+                  }}
+                  className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Download
+                </button>
+              </div>
+            ),
+            {
+              duration: Infinity, // Keep the toast open until dismissed
+              closeButton: true, // Show close button
+              autoClose: false, // Don't auto-close
+              position: "top-right", // Position of the toast
+            }
+          );
         }
       };
-
+  
       eventSource.onerror = (error) => {
         console.error("SSE Error:", error);
         toast.error("Error generating report. Please try again.");
@@ -520,6 +543,7 @@ const ByMonth = () => {
       toast.error("Failed to generate report. Please try again.");
     }
   };
+  
 
   const generateCalendar = () => {
     if (!reportData) return null;
@@ -1074,3 +1098,4 @@ const ByMonth = () => {
 };
 
 export default ByMonth;
+
