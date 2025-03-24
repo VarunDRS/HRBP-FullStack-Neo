@@ -1,11 +1,13 @@
 
 package com.cars24.slack_hrbp.service.impl;
 
+import com.cars24.slack_hrbp.data.Pair;
 import com.cars24.slack_hrbp.data.dao.impl.MonthBasedDaoImpl;
 import com.cars24.slack_hrbp.data.entity.AttendanceEntity;
 import com.cars24.slack_hrbp.data.entity.EmployeeEntity;
 import com.cars24.slack_hrbp.data.repository.AttendanceRepository;
 import com.cars24.slack_hrbp.data.repository.EmployeeRepository;
+import com.cars24.slack_hrbp.excpetion.UserServiceException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -19,6 +21,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+
 @Service
 @Slf4j
 public class MonthBasedServiceImpl {
@@ -31,8 +34,6 @@ public class MonthBasedServiceImpl {
 
     @Autowired
     private MonthBasedDaoImpl monthBasedDao;
-
-
 
 
     public byte[] generateAttendanceReport(String monthYear, String managerId) throws IOException, ParseException {
@@ -123,22 +124,32 @@ public class MonthBasedServiceImpl {
             return "";  // Or some default code
         }
         switch (requestType) {
-            case "Planned Leave": return "P";
+            case "Planned Leave":
+                return "P";
             case "Unplanned Leave":
-            case "UnPlanned Leave": return "U";
-            case "Planned Leave (Second Half)": return "P*";
-            case "Sick Leave": return "S";
+            case "UnPlanned Leave":
+                return "U";
+            case "Planned Leave (Second Half)":
+                return "P*";
+            case "Sick Leave":
+                return "S";
             case "Work From Home":
-            case "WFH": return "W";
-            case "Travelling to HQ": return "T";
-            case "Holiday": return "H";
-            case "Elections": return "E";
-            case "Joined": return "J";
-            case "Planned Leave (First Half)": return "P**";
-            default: return "";
+            case "WFH":
+                return "W";
+            case "Travelling to HQ":
+                return "T";
+            case "Holiday":
+                return "H";
+            case "Elections":
+                return "E";
+            case "Joined":
+                return "J";
+            case "Planned Leave (First Half)":
+                return "P**";
+            default:
+                return "";
         }
     }
-
 
 
     private byte[] generateExcel(Map<String, Map<String, String>> userAttendanceMap, String monthYear, List<String> employeeIds) throws IOException, ParseException {
@@ -220,7 +231,6 @@ public class MonthBasedServiceImpl {
 
         return allDates;
     }
-
 
 
     private Map<String, Map<String, String>> processAttendanceData(List<AttendanceEntity> attendanceList) throws ParseException {
@@ -307,18 +317,34 @@ public class MonthBasedServiceImpl {
     }
 
 
-    private Map<String, Map<String, String>> formatAttendanceData(List<AttendanceEntity> attendanceRecords, List<String> employeeUserIds) {
-        Map<String, Map<String, String>> paginatedReportData = new LinkedHashMap<>();
+    private Map<Pair, Map<String, String>> formatAttendanceData(List<AttendanceEntity> attendanceRecords, List<String> employeeUserIds) {
+        Map<Pair, Map<String, String>> paginatedReportData = new LinkedHashMap<>();
+
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         SimpleDateFormat displayFormat = new SimpleDateFormat("MMM-dd");
 
-        // Initialize the report data for all employees with empty maps
+        // Create a mapping of userId → username (Assuming you get username from `attendanceRecords`)
+        String username = "";
+        Map<String, String> userIdToNameMap = new HashMap<>();
+        for (String id : employeeUserIds) {
+            Optional<EmployeeEntity> employee = employeeRepository.findByUserId(id);
+            if (employee.isPresent()) {
+                username = employee.get().getUsername();
+            }
+            userIdToNameMap.put(id, username);
+        }
+
+        // Initialize report data for all employees
         for (String userId : employeeUserIds) {
-            paginatedReportData.putIfAbsent(userId, new LinkedHashMap<>());
+            username = userIdToNameMap.getOrDefault(userId, "Unknown"); // Handle missing usernames
+            paginatedReportData.putIfAbsent(new Pair(userId, username), new LinkedHashMap<>());
         }
 
         for (AttendanceEntity attendance : attendanceRecords) {
             String userId = attendance.getUserid();
+            username = userIdToNameMap.getOrDefault(userId, "Unknown");
+            Pair key = new Pair(userId, username);
+
             String date = attendance.getDate();
             String requestType = getRequestTypeCode(attendance.getType());
 
@@ -326,31 +352,32 @@ public class MonthBasedServiceImpl {
                 Date parsedDate = dateFormat.parse(date);
                 String formattedDate = displayFormat.format(parsedDate);
 
-                paginatedReportData.computeIfAbsent(userId, k -> new LinkedHashMap<>()).put(formattedDate, requestType);
+                paginatedReportData.computeIfAbsent(key, k -> new LinkedHashMap<>()).put(formattedDate, requestType);
             } catch (ParseException e) {
                 e.printStackTrace(); // Log error
             }
         }
 
-        log.info("paginatedReportData in formatAttendanceData: {}" + paginatedReportData);
+        log.info("paginatedReportData in formatAttendanceData: {}", paginatedReportData);
         return paginatedReportData;
     }
 
 
-    public Map<String, Object> getAttendanceReportForHR(String monthYear,int page, int limit) {
+    public Map<String, Object> getAttendanceReportForHR(String monthYear, int page, int limit) {
         if (page > 0) page -= 1; // Convert to zero-based index
 
         // Get paginated employees under the manager
         Page<String> employeePage = monthBasedDao.getPaginatedEmployeesForHr(page, limit);
         List<String> employeeUserIds = employeePage.getContent(); // Use userId instead of username
 
+
         // Fetch attendance records for these employees
         List<AttendanceEntity> attendanceRecords = monthBasedDao.getAttendanceForEmployees(monthYear, employeeUserIds);
         log.info("getAttendanceForEmployees in service layer: {}" + attendanceRecords);
 
         // Transform attendance records into structured data
-        Map<String, Map<String, String>> paginatedReportData = formatAttendanceData(attendanceRecords,employeeUserIds);
-        for (Map.Entry<String, Map<String, String>> entry : paginatedReportData.entrySet()) {
+        Map<Pair, Map<String, String>> paginatedReportData = formatAttendanceData(attendanceRecords, employeeUserIds);
+        for (Map.Entry<Pair, Map<String, String>> entry : paginatedReportData.entrySet()) {
             Map<String, String> userData = entry.getValue();
             int totalWFH = 0;
             int totalLeaves = 0;
@@ -392,8 +419,8 @@ public class MonthBasedServiceImpl {
         log.info("getAttendanceForEmployees in service layer: {}" + attendanceRecords);
 
         // Transform attendance records into structured data
-        Map<String, Map<String, String>> paginatedReportData = formatAttendanceData(attendanceRecords,employeeUserIds);
-        for (Map.Entry<String, Map<String, String>> entry : paginatedReportData.entrySet()) {
+        Map<Pair, Map<String, String>> paginatedReportData = formatAttendanceData(attendanceRecords, employeeUserIds);
+        for (Map.Entry<Pair, Map<String, String>> entry : paginatedReportData.entrySet()) {
             Map<String, String> userData = entry.getValue();
             int totalWFH = 0;
             int totalLeaves = 0;

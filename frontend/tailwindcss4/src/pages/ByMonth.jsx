@@ -371,6 +371,19 @@ const ByMonth = () => {
     }
   };
 
+  const extractUsername = (pairString) => {
+    // Check if it's in the new Pair format
+    if (pairString.includes('Pair(') && pairString.includes('username=')) {
+      // Extract just the username part
+      const match = pairString.match(/username=([^,\)]+)/);
+      if (match && match[1]) {
+        return match[1]; // Return just the username
+      }
+    }
+    // If not in the new format or extraction fails, return the original string
+    return pairString;
+  };
+
   // Add this function to handle the report generation and download
   const handleGenerateReport = async () => {
     try {
@@ -651,14 +664,16 @@ const ByMonth = () => {
               </tr>
             </thead>
             <tbody>
-              {Object.entries(reportData).map(
-                ([username, attendance], rowIndex) => (
+            {Object.entries(reportData).map(([userKey, attendance], rowIndex) => {
+                const displayName = extractUsername(userKey);
+                
+                return (
                   <tr
-                    key={username}
+                    key={userKey}
                     className="hover:bg-blue-50 transition-colors duration-150"
                   >
                     <td className="sticky left-0 bg-white z-10 text-left py-4 px-4 font-medium min-w-[180px] max-w-[250px] whitespace-nowrap overflow-hidden text-ellipsis border border-gray-300 shadow-sm">
-                      {username}
+                      {displayName}
                     </td>
                     <td className="sticky left-[180px] bg-white z-10 text-center py-4 px-2 font-semibold border border-gray-300 min-w-[80px] max-w-[80px]">
                       {attendance["Total WFH"] || 0}
@@ -696,7 +711,7 @@ const ByMonth = () => {
                   </td> */}
                   </tr>
                 )
-              )}
+  })}
             </tbody>
           </table>
         </div>
