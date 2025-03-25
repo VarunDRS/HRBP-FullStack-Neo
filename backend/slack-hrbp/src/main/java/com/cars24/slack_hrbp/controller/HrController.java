@@ -58,9 +58,10 @@ public class HrController {
     private String generatedReportPath;
 
     private static final Logger log = LoggerFactory.getLogger(HrController.class);
+    private final List<Long> individualResponseTimes = new CopyOnWriteArrayList<>();
+    private final List<Long> monthReportResponseTimes = new CopyOnWriteArrayList<>();
 
-    // Store response times for P90 calculation
-    private final List<Long> responseTimes = new CopyOnWriteArrayList<>();
+    private final ExecutorService executor = Executors.newFixedThreadPool(5);
 
     @PreAuthorize("hasRole('HR')")
     @PostMapping("/createUser")
@@ -167,8 +168,7 @@ public class HrController {
     // Generate report call
     @GetMapping(value = "/events/{userid}/{frommonth}/{tomonth}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamEvents(@PathVariable String userid, @PathVariable String frommonth, @PathVariable String tomonth) {
-        SseEmitter emitter = new SseEmitter(0L); // No timeout
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+        SseEmitter emitter = new SseEmitter(0L);
 
         executor.execute(() -> {
             long startTime = System.currentTimeMillis(); // Record start time
@@ -189,12 +189,10 @@ public class HrController {
                 String filePath = "reports/Attendance_" + userid + "_from_" + frommonth + "_to_" + tomonth + ".xlsx";
                 Files.write(Paths.get(filePath), excelData);
 
-                long endTime = System.currentTimeMillis();
-                long duration = endTime - startTime;
+                long duration = System.currentTimeMillis() - startTime;
+                individualResponseTimes.add(duration);
+                log.info("Individual Report generated in {} ms", duration);
 
-                // Store response time for P90 calculation
-                responseTimes.add(duration);
-                log.info("Report generation time: {} ms", duration);
 
                 emitter.send(SseEmitter.event().data("Report Ready"));
                 emitter.complete();
@@ -211,20 +209,43 @@ public class HrController {
         return emitter;
     }
 
-    // Endpoint to get P90 latency
-    @GetMapping("/metrics/p90-latency")
-    public ResponseEntity<String> getP90Latency() {
-        if (responseTimes.isEmpty()) {
-            return ResponseEntity.ok("No data available.");
+    // 🔹 Endpoint to Get P90 Latency for Individual Reports
+    @GetMapping("/metrics/p90-latency/individual")
+    public ResponseEntity<String> getP90LatencyForIndividual() {
+        if (individualResponseTimes.isEmpty()) {
+            return ResponseEntity.ok("No data available for individual reports.");
         }
 
-        long p90Latency = calculateP90(responseTimes);
-        return ResponseEntity.ok("P90 Latency: " + p90Latency + " ms");
+        long p90Latency = calculateP90(individualResponseTimes);
+        return ResponseEntity.ok("P90 Latency for Individual Reports: " + p90Latency + " ms");
     }
 
+    // 🔹 Endpoint to Get P90 Latency for Month-based Reports
+    @GetMapping("/metrics/p90-latency/bymonthreport")
+    public ResponseEntity<String> getP90LatencyForMonthReport() {
+        if (monthReportResponseTimes.isEmpty()) {
+            return ResponseEntity.ok("No data available for month-based reports.");
+        }
+
+        long p90Latency = calculateP90(monthReportResponseTimes);
+        return ResponseEntity.ok("P90 Latency for Month-based Reports: " + p90Latency + " ms");
+    }
+
+    // 🔹 P90 Calculation Function
     private long calculateP90(List<Long> responseTimes) {
-        List<Long> sortedTimes = responseTimes.stream().sorted().collect(Collectors.toList());
+        if (responseTimes.isEmpty()) {
+            return 0;
+        }
+
+        List<Long> sortedTimes = responseTimes.stream()
+                .sorted()
+                .skip(Math.max(0, responseTimes.size() - 100)) // Keep last 100
+                .collect(Collectors.toList());
+
+        log.info("Stored response times: {}", sortedTimes);
+
         int index = (int) Math.ceil(0.90 * sortedTimes.size()) - 1;
+        index = Math.max(index, 0);  // Ensure index is not negative
         return sortedTimes.get(index);
     }
 
@@ -296,11 +317,12 @@ public class HrController {
             @RequestParam String tomonth,
             @RequestParam String managerId) { // Added managerId parameter
         SseEmitter emitter = new SseEmitter(0L); // No timeout
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+
 
         executor.execute(() -> {
+            long startTime = System.currentTimeMillis();
             try {
-                long startTime = System.currentTimeMillis();
+
                 // Send "Generating Excel" message first
                 emitter.send(SseEmitter.event().data("Generating Excel..."));
 
@@ -315,12 +337,13 @@ public class HrController {
                     reportsDir.mkdirs();  // Create the directory if it doesn't exist
                 }
 
-                long endTime = System.currentTimeMillis(); // Record end time
-                long duration = endTime - startTime; // Calculate latency
-
-                log.info("Report generation time: {} ms", duration);
                 String filePath = "monthreports/Attendance_" + "_" + "from_" + frommonth + "_to_" + tomonth + ".xlsx";
                 Files.write(Paths.get(filePath), excelData);
+
+                long duration = System.currentTimeMillis() - startTime;
+                monthReportResponseTimes.add(duration);
+                log.info("Month-based Report generated in {} ms", duration);
+
                 log.info(" Report generated at: {}",filePath);
 
                 // Send "Download Ready" message
@@ -338,6 +361,7 @@ public class HrController {
 
         return emitter;
     }
+
 
     // Notify frontend for download report for specific time period (from and to)
     @PreAuthorize("hasRole('HR')")
