@@ -14,6 +14,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
@@ -35,8 +37,10 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -52,6 +56,11 @@ public class HrController {
     private final ConcurrentHashMap<String, SseEmitter> emitters = new ConcurrentHashMap<>();
 
     private String generatedReportPath;
+
+    private static final Logger log = LoggerFactory.getLogger(HrController.class);
+
+    // Store response times for P90 calculation
+    private final List<Long> responseTimes = new CopyOnWriteArrayList<>();
 
     @PreAuthorize("hasRole('HR')")
     @PostMapping("/createUser")
@@ -157,40 +166,38 @@ public class HrController {
     // Individual calender view
     // Generate report call
     @GetMapping(value = "/events/{userid}/{frommonth}/{tomonth}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter streamEvents(@PathVariable String userid,@PathVariable String frommonth,@PathVariable String tomonth) {
+    public SseEmitter streamEvents(@PathVariable String userid, @PathVariable String frommonth, @PathVariable String tomonth) {
         SseEmitter emitter = new SseEmitter(0L); // No timeout
         ExecutorService executor = Executors.newSingleThreadExecutor();
 
         executor.execute(() -> {
+            long startTime = System.currentTimeMillis(); // Record start time
+
             try {
-                long startTime = System.currentTimeMillis();
-                // Send "Generating Excel" message first
                 emitter.send(SseEmitter.event().data("Generating Excel..."));
 
                 // Simulate report generation delay (replace with actual logic)
-//                Thread.sleep(5000); // Simulate processing delay
-
-                byte[] excelData = useridandmonth.generateAttendanceExcel(userid, frommonth ,tomonth);
+                byte[] excelData = useridandmonth.generateAttendanceExcel(userid, frommonth, tomonth);
 
                 String directoryPath = "reports";
                 File reportsDir = new File(directoryPath);
 
-                // Ensure the directory exists
                 if (!reportsDir.exists()) {
-                    reportsDir.mkdirs();  // Create the directory if it doesn't exist
+                    reportsDir.mkdirs();
                 }
 
-                long endTime = System.currentTimeMillis(); // Record end time
-                long duration = endTime - startTime; // Calculate latency
+                String filePath = "reports/Attendance_" + userid + "_from_" + frommonth + "_to_" + tomonth + ".xlsx";
+                Files.write(Paths.get(filePath), excelData);
 
+                long endTime = System.currentTimeMillis();
+                long duration = endTime - startTime;
 
+                // Store response time for P90 calculation
+                responseTimes.add(duration);
                 log.info("Report generation time: {} ms", duration);
 
-                String filePath = "reports/Attendance_" + userid + "_" + "from_" + frommonth + "_to_" + tomonth + ".xlsx";
-                Files.write(Paths.get(filePath), excelData);
-                log.info("Report generated at: {}",filePath);
                 emitter.send(SseEmitter.event().data("Report Ready"));
-                emitter.complete(); // Close connection after sending
+                emitter.complete();
             } catch (IOException e) {
                 try {
                     emitter.send(SseEmitter.event().data("Error generating report"));
@@ -202,6 +209,23 @@ public class HrController {
         });
 
         return emitter;
+    }
+
+    // Endpoint to get P90 latency
+    @GetMapping("/metrics/p90-latency")
+    public ResponseEntity<String> getP90Latency() {
+        if (responseTimes.isEmpty()) {
+            return ResponseEntity.ok("No data available.");
+        }
+
+        long p90Latency = calculateP90(responseTimes);
+        return ResponseEntity.ok("P90 Latency: " + p90Latency + " ms");
+    }
+
+    private long calculateP90(List<Long> responseTimes) {
+        List<Long> sortedTimes = responseTimes.stream().sorted().collect(Collectors.toList());
+        int index = (int) Math.ceil(0.90 * sortedTimes.size()) - 1;
+        return sortedTimes.get(index);
     }
 
     // Notify frontend for download report for specific time period (from and to)
