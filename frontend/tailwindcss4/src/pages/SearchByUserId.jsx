@@ -461,7 +461,7 @@ const EnhancedCalendarView = () => {
         label: "PL",
         textColor: "text-amber-800",
       },
-      "?": {
+      U: {
         icon: (
           <svg
             className={`${baseIconClass} text-orange-600 hover:text-orange-700`}
@@ -1306,10 +1306,10 @@ const EnhancedCalendarView = () => {
               )}
               <button
                 onClick={handleGraphClick}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center shadow-sm"
+                className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center shadow-sm"
               >
                 <svg
-                  className="w-5 h-5 mr-2"
+                  className="w-4 h-4 mr-1"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -1336,11 +1336,11 @@ const EnhancedCalendarView = () => {
                         onClick={() =>
                           setShowFromMonthDropdown(!showFromMonthDropdown)
                         }
-                        className="py-2 px-4 bg-white border border-blue-300 text-blue-700 rounded-lg text-sm font-medium cursor-pointer focus:ring-2 focus:ring-blue-300 focus:border-blue-500 focus:outline-none flex items-center"
+                        className="px-3 py-1.5 bg-white border border-blue-300 text-blue-700 rounded-lg text-sm font-medium cursor-pointer focus:ring-2 focus:ring-blue-300 focus:border-blue-500 focus:outline-none flex items-center"
                       >
                         From Month: {fromMonth}
                         <svg
-                          className="w-4 h-4 ml-2"
+                          className="w-4 h-4 mr-1"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -1391,11 +1391,11 @@ const EnhancedCalendarView = () => {
                         onClick={() =>
                           setShowToMonthDropdown(!showToMonthDropdown)
                         }
-                        className="py-2 px-4 bg-white border border-blue-300 text-blue-700 rounded-lg text-sm font-medium cursor-pointer focus:ring-2 focus:ring-blue-300 focus:border-blue-500 focus:outline-none flex items-center"
+                        className="px-3 py-1.5 bg-white border border-blue-300 text-blue-700 rounded-lg text-sm font-medium cursor-pointer focus:ring-2 focus:ring-blue-300 focus:border-blue-500 focus:outline-none flex items-center"
                       >
                         To Month: {toMonth}
                         <svg
-                          className="w-4 h-4 ml-2"
+                          className="w-4 h-4 mr-1"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -1443,10 +1443,10 @@ const EnhancedCalendarView = () => {
                     {/* Generate Report Button */}
                     <button
                       onClick={() => handleGenerateReport(userId)}
-                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center shadow-sm"
+                      className="px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center shadow-sm"
                     >
                       <svg
-                        className="w-5 h-5 mr-2"
+                        className="w-4 h-4 mr-1"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
