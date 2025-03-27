@@ -20,6 +20,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import io.github.cdimascio.dotenv.Dotenv;
+
+
 
 @Slf4j
 @Service
@@ -56,7 +59,12 @@ public class HrServiceImpl implements HrService {
             managerName = managerOpt.getUsername();
         }
 
-        String password = "Temp#555";
+        log.info("Helloo");
+        Dotenv dotenv = Dotenv.load();
+        String password = dotenv.get("DEFAULT_TEMP_PASSWORD");
+        log.info("Password {}",password);
+
+
         ProfileEntity entity = profileRepository.findByEmail(request.getEmail());
 
         String userId = entity.getSlackid();
