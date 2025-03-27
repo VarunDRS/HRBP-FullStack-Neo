@@ -119,7 +119,7 @@ public class MonthBasedServiceImpl {
         }
     }
 
-    private String getRequestTypeCode(String requestType) {
+    public String getRequestTypeCode(String requestType) {
         if (requestType == null) {
             return "";  // Or some default code
         }
@@ -233,7 +233,7 @@ public class MonthBasedServiceImpl {
     }
 
 
-    private Map<String, Map<String, String>> processAttendanceData(List<AttendanceEntity> attendanceList) throws ParseException {
+    public Map<String, Map<String, String>> processAttendanceData(List<AttendanceEntity> attendanceList) throws ParseException {
         Map<String, Map<String, String>> userAttendanceMap = new HashMap<>();
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         SimpleDateFormat displayFormat = new SimpleDateFormat("MMM-dd");
@@ -317,7 +317,7 @@ public class MonthBasedServiceImpl {
     }
 
 
-    private Map<Pair, Map<String, String>> formatAttendanceData(List<AttendanceEntity> attendanceRecords, List<String> employeeUserIds) {
+    public Map<Pair, Map<String, String>> formatAttendanceData(List<AttendanceEntity> attendanceRecords, List<String> employeeUserIds) {
         Map<Pair, Map<String, String>> paginatedReportData = new LinkedHashMap<>();
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");

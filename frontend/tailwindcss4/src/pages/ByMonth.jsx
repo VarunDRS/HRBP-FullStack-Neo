@@ -454,12 +454,12 @@ const ByMonth = () => {
     fromMonth,
     toMonth,
     managerId,
-    navigate // Pass `navigate` as an argument
+    navigate
   ) => {
     try {
       const token = localStorage.getItem("Authorization");
       if (!token) {
-        navigate("/login"); // Use the passed `navigate` function
+        navigate("/login");
         return;
       }
   
@@ -481,12 +481,18 @@ const ByMonth = () => {
       // Create an EventSource to listen for updates
       const eventSource = new EventSource(url);
   
+      // Use a constant ID for the generating toast
+      const generatingToastId = 'generating-report-toast';
+      
       eventSource.onmessage = async (event) => {
         const message = event.data;
   
         if (message === "Generating Excel...") {
-          toast.dismiss();
-          toast.info("Generating Excel report...", { autoClose: 3000 });
+          toast.dismiss(); // Dismiss any existing toasts
+          toast.info("Generating Excel report...", { 
+            toastId: generatingToastId,
+            autoClose: false 
+          });
         } else if (message === "Report Ready") {
           eventSource.close(); // Close the SSE connection
   
@@ -496,21 +502,24 @@ const ByMonth = () => {
               ? `http://localhost:8080/hr/download/bymonthreport?frommonth=${fromMonth}&tomonth=${toMonth}&managerId=${managerId}`
               : `http://localhost:8080/manager/download/bymonthreportformanager?frommonth=${fromMonth}&tomonth=${toMonth}`;
   
+          // Use a constant ID for the download toast
+          const downloadToastId = 'report-download-toast';
+          
           // Display a custom toast with a Download button
+          toast.dismiss(generatingToastId); // Dismiss the generating toast
           toast(
             (t) => (
               <div className="flex items-center justify-between gap-4">
                 <span className="text-black">Report is ready!</span>
                 <button
                   onClick={async () => {
-                    toast.dismiss(t.id); // Dismiss the toast
                     try {
                       // Fetch the file securely with Authorization header
                       const response = await axios.get(downloadUrl, {
                         headers: {
                           Authorization: `Bearer ${token}`,
                         },
-                        responseType: "blob", // Ensures correct file download
+                        responseType: "blob",
                       });
   
                       // Create Blob and Trigger Download
@@ -525,6 +534,9 @@ const ByMonth = () => {
                       a.click();
                       window.URL.revokeObjectURL(url);
                       document.body.removeChild(a);
+                      
+                      // Only dismiss after successful download
+                      toast.dismiss(t.id);
                     } catch (downloadError) {
                       console.error("Error downloading report:", downloadError);
                       toast.error("Failed to download report.");
@@ -537,6 +549,7 @@ const ByMonth = () => {
               </div>
             ),
             {
+              toastId: downloadToastId, // Unique ID for persistence
               duration: Infinity, // Keep the toast open until dismissed
               closeButton: true, // Show close button
               autoClose: false, // Don't auto-close
