@@ -1,4 +1,16 @@
 -------------------------------------------------------------------------------
 Test set: com.cars24.slack_hrbp.service.MonthBasedServiceImplTest
 -------------------------------------------------------------------------------
-Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.817 s -- in com.cars24.slack_hrbp.service.MonthBasedServiceImplTest
+Tests run: 6, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 2.037 s <<< FAILURE! -- in com.cars24.slack_hrbp.service.MonthBasedServiceImplTest
+com.cars24.slack_hrbp.service.MonthBasedServiceImplTest.generateAttendanceReport_ShouldReturnExcelBytes -- Time elapsed: 0.152 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.cars24.slack_hrbp.service.MonthBasedServiceImplTest.createMockAttendance(MonthBasedServiceImplTest.java:159)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:197)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1597)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1597)
+
