@@ -8,6 +8,7 @@ import com.cars24.slack_hrbp.data.entity.EmployeeEntity;
 import com.cars24.slack_hrbp.data.repository.AttendanceRepository;
 import com.cars24.slack_hrbp.data.repository.EmployeeRepository;
 import com.cars24.slack_hrbp.excpetion.UserServiceException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -21,20 +22,14 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-
-@Service
 @Slf4j
+@Service
+@RequiredArgsConstructor
 public class MonthBasedServiceImpl {
 
-    @Autowired
-    private AttendanceRepository attendanceRepository;
-
-    @Autowired
-    private EmployeeRepository employeeRepository;
-
-    @Autowired
-    private MonthBasedDaoImpl monthBasedDao;
-
+    private final AttendanceRepository attendanceRepository;
+    private final EmployeeRepository employeeRepository;
+    private final MonthBasedDaoImpl monthBasedDao;
 
     public byte[] generateAttendanceReport(String monthYear, String managerId) throws IOException, ParseException {
         // Fetch data for the given month and year
@@ -253,67 +248,62 @@ public class MonthBasedServiceImpl {
 
     public byte[] generateAttendanceReports(String fromMonth, String toMonth, String managerId) throws IOException, ParseException {
         // Create a new workbook to combine all sheets
-        Workbook combinedWorkbook = new XSSFWorkbook();
+        try (Workbook combinedWorkbook = new XSSFWorkbook();
+             ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
 
-        // Parse the from and to monthYear strings into dates
-        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM");
-        Date fromDate = inputFormat.parse(fromMonth);
-        Date toDate = inputFormat.parse(toMonth);
+            // Parse the from and to monthYear strings into dates
+            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM");
+            Date fromDate = inputFormat.parse(fromMonth);
+            Date toDate = inputFormat.parse(toMonth);
 
-        // Create a calendar to iterate through the months
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(fromDate);
+            // Create a calendar to iterate through the months
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(fromDate);
 
-        // Iterate through each month in the range
-        while (!calendar.getTime().after(toDate)) {
-            String currentMonthYear = inputFormat.format(calendar.getTime());
+            // Iterate through each month in the range
+            while (!calendar.getTime().after(toDate)) {
+                String currentMonthYear = inputFormat.format(calendar.getTime());
 
-            // Generate the report for the current month
-            byte[] excelData = generateAttendanceReport(currentMonthYear, managerId);
+                // Generate the report for the current month
+                byte[] excelData = generateAttendanceReport(currentMonthYear, managerId);
 
-            // Load the generated workbook
-            Workbook monthlyWorkbook = new XSSFWorkbook(new ByteArrayInputStream(excelData));
+                // Load the generated workbook
+                try (Workbook monthlyWorkbook = new XSSFWorkbook(new ByteArrayInputStream(excelData))) {
+                    // Copy the sheet from the monthly workbook to the combined workbook
+                    for (int i = 0; i < monthlyWorkbook.getNumberOfSheets(); i++) {
+                        Sheet sourceSheet = monthlyWorkbook.getSheetAt(i);
+                        String sheetName = currentMonthYear; // Use the monthYear as the sheet name
+                        Sheet targetSheet = combinedWorkbook.createSheet(sheetName);
 
-            // Copy the sheet from the monthly workbook to the combined workbook
-            for (int i = 0; i < monthlyWorkbook.getNumberOfSheets(); i++) {
-                Sheet sourceSheet = monthlyWorkbook.getSheetAt(i);
-
-                // Create a unique sheet name for the combined workbook
-                String sheetName = currentMonthYear; // Use the monthYear as the sheet name
-                Sheet targetSheet = combinedWorkbook.createSheet(sheetName);
-
-                // Copy all rows and cells from the source sheet to the target sheet
-                for (int j = 0; j <= sourceSheet.getLastRowNum(); j++) {
-                    Row sourceRow = sourceSheet.getRow(j);
-                    if (sourceRow != null) {
-                        Row targetRow = targetSheet.createRow(j);
-
-                        for (int k = 0; k < sourceRow.getLastCellNum(); k++) {
-                            Cell sourceCell = sourceRow.getCell(k);
-                            if (sourceCell != null) {
-                                Cell targetCell = targetRow.createCell(k);
-                                targetCell.setCellValue(sourceCell.getStringCellValue());
+                        // Copy all rows and cells from the source sheet to the target sheet
+                        for (int j = 0; j <= sourceSheet.getLastRowNum(); j++) {
+                            Row sourceRow = sourceSheet.getRow(j);
+                            if (sourceRow != null) {
+                                Row targetRow = targetSheet.createRow(j);
+                                for (int k = 0; k < sourceRow.getLastCellNum(); k++) {
+                                    Cell sourceCell = sourceRow.getCell(k);
+                                    if (sourceCell != null) {
+                                        Cell targetCell = targetRow.createCell(k);
+                                        targetCell.setCellValue(sourceCell.getStringCellValue());
+                                    }
+                                }
                             }
                         }
                     }
                 }
+
+                // Move to the next month
+                calendar.add(Calendar.MONTH, 1);
             }
 
-            // Close the monthly workbook
-            monthlyWorkbook.close();
+            // Write the combined workbook to a ByteArrayOutputStream
+            combinedWorkbook.write(outputStream);
 
-            // Move to the next month
-            calendar.add(Calendar.MONTH, 1);
+            // Return the byte array
+            return outputStream.toByteArray();
         }
-
-        // Write the combined workbook to a ByteArrayOutputStream
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        combinedWorkbook.write(outputStream);
-        combinedWorkbook.close();
-
-        // Return the byte array
-        return outputStream.toByteArray();
     }
+
 
 
     public Map<Pair, Map<String, String>> formatAttendanceData(List<AttendanceEntity> attendanceRecords, List<String> employeeUserIds) {

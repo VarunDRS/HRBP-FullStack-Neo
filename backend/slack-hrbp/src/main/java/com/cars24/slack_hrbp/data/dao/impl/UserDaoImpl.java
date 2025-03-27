@@ -8,6 +8,7 @@ import com.cars24.slack_hrbp.data.repository.EmployeeRepository;
 import com.cars24.slack_hrbp.data.request.EmployeeUpdateRequest;
 import com.cars24.slack_hrbp.util.Utils;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,16 +16,13 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
-@Service
 @Slf4j
-
+@Service
+@RequiredArgsConstructor
 public class UserDaoImpl implements UserDao {
 
-    @Autowired
-    EmployeeRepository employeeRepository;
-
-    @Autowired
-    Utils utils;
+    private final EmployeeRepository employeeRepository;
+    private final Utils utils;
 
     public UserDto createUser(EmployeeEntity employeeEntity) {
 
