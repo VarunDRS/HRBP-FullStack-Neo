@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MonthBasedDaoImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">mobile-app-ws</a> &gt; <a href="index.source.html" class="el_package">com.cars24.slack_hrbp.data.dao.impl</a> &gt; <span class="el_source">MonthBasedDaoImpl.java</span></div><h1>MonthBasedDaoImpl.java</h1><pre class="source lang-java linenums">package com.cars24.slack_hrbp.data.dao.impl;
+
+import com.cars24.slack_hrbp.data.entity.AttendanceEntity;
+import com.cars24.slack_hrbp.data.entity.EmployeeEntity;
+import com.cars24.slack_hrbp.data.repository.AttendanceRepository;
+import com.cars24.slack_hrbp.data.repository.EmployeeRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.springframework.data.neo4j.core.Neo4jClient;
+
+
+@Service
+<span class="fc" id="L27">@RequiredArgsConstructor</span>
+<span class="fc" id="L28">@Slf4j</span>
+public class MonthBasedDaoImpl {
+
+    private final EmployeeRepository employeeRepository;
+    private final Neo4jClient neo4jClient;
+    private final AttendanceRepository attendanceRepository;
+
+    public List&lt;String&gt; getAllEmployeesUnderManager(String managerId) {
+<span class="nc" id="L36">        List&lt;EmployeeEntity&gt; employees = employeeRepository.findByManagerId(managerId); // Assuming this returns List&lt;EmployeeEntity&gt;</span>
+
+<span class="nc" id="L38">        return employees.stream()</span>
+<span class="nc" id="L39">                .map(EmployeeEntity::getUserId)</span>
+<span class="nc" id="L40">                .collect(Collectors.toList());</span>
+    }
+
+
+    public Page&lt;String&gt; getPaginatedEmployeesForManager(String managerId, int page, int limit) {
+<span class="nc" id="L45">        String query = &quot;MATCH (:Employee {userId: $managerId})&lt;-[:REPORTED_BY*]-(e:Employee) &quot; +</span>
+                &quot;RETURN e.userId SKIP $skip LIMIT $limit&quot;;
+
+<span class="nc" id="L48">        var queryBuilder = neo4jClient.query(query)</span>
+<span class="nc" id="L49">                .bind(managerId).to(&quot;managerId&quot;)</span>
+<span class="nc" id="L50">                .bind(page * limit).to(&quot;skip&quot;)</span>
+<span class="nc" id="L51">                .bind(limit).to(&quot;limit&quot;);</span>
+
+<span class="nc" id="L53">        List&lt;String&gt; userIds = (List&lt;String&gt;) queryBuilder.fetchAs(String.class)</span>
+<span class="nc" id="L54">                .all();</span>
+
+<span class="nc" id="L56">        long totalEmployees = employeeRepository.countByManagerId(managerId); // Fetch total count separately for pagination</span>
+
+<span class="nc" id="L58">        Pageable pageable = PageRequest.of(page, limit);</span>
+<span class="nc" id="L59">        return new PageImpl&lt;&gt;(userIds, pageable, totalEmployees);</span>
+    }
+
+    public Page&lt;String&gt; getPaginatedEmployeesForHr(int page, int limit) {
+<span class="nc" id="L63">        String query = &quot;MATCH (e:Employee) RETURN e.userId SKIP $skip LIMIT $limit&quot;;</span>
+
+<span class="nc" id="L65">        var queryBuilder = neo4jClient.query(query)</span>
+<span class="nc" id="L66">                .bind(page * limit).to(&quot;skip&quot;)</span>
+<span class="nc" id="L67">                .bind(limit).to(&quot;limit&quot;);</span>
+
+<span class="nc" id="L69">        List&lt;String&gt; userIds = (List&lt;String&gt;) queryBuilder.fetchAs(String.class).all();</span>
+
+<span class="nc" id="L71">        long totalEmployees = employeeRepository.count(); // Fetch total count separately for pagination</span>
+
+<span class="nc" id="L73">        Pageable pageable = PageRequest.of(page, limit);</span>
+<span class="nc" id="L74">        return new PageImpl&lt;&gt;(userIds, pageable, totalEmployees);</span>
+    }
+
+
+    public List&lt;AttendanceEntity&gt; getAttendanceForEmployees(String monthYear, List&lt;String&gt; userIds) {
+<span class="nc" id="L79">        return attendanceRepository.findByDateStartingWithAndUseridIn(monthYear, userIds); // Use userId</span>
+    }
+
+
+    public Page&lt;String&gt; getPaginatedEmployees(String monthYear, int page, int limit) {
+<span class="nc" id="L84">        Pageable pageable = PageRequest.of(page, limit);</span>
+
+        // Directly fetch paginated employees from Neo4j
+<span class="nc" id="L87">        Page&lt;EmployeeEntity&gt; employeePage = employeeRepository.findAll(pageable);</span>
+
+<span class="nc" id="L89">        List&lt;String&gt; employeeUserIds = employeePage.getContent()</span>
+<span class="nc" id="L90">                .stream()</span>
+<span class="nc" id="L91">                .map(EmployeeEntity::getUserId) // Extract user IDs</span>
+<span class="nc" id="L92">                .toList();</span>
+
+<span class="nc" id="L94">        return new PageImpl&lt;&gt;(employeeUserIds, pageable, employeePage.getTotalElements());</span>
+    }
+
+
+    public Page&lt;EmployeeEntity&gt; getEmployees(int page, int limit) {
+<span class="nc" id="L99">        Pageable pageable = PageRequest.of(page, limit);</span>
+<span class="nc" id="L100">        return employeeRepository.findAll(pageable);</span>
+    }
+
+    private String getRequestTypeCode(String requestType) {
+<span class="nc bnc" id="L104" title="All 2 branches missed.">        if (requestType == null) {</span>
+<span class="nc" id="L105">            return &quot;&quot;;  // Or some default code</span>
+        }
+<span class="nc bnc" id="L107" title="All 11 branches missed.">        switch (requestType) {</span>
+<span class="nc" id="L108">            case &quot;Planned Leave&quot;: return &quot;P&quot;;</span>
+            case &quot;Unplanned Leave&quot;:
+<span class="nc" id="L110">            case &quot;UnPlanned Leave&quot;: return &quot;U&quot;;</span>
+<span class="nc" id="L111">            case &quot;Planned Leave (Second Half)&quot;: return &quot;P*&quot;;</span>
+<span class="nc" id="L112">            case &quot;Sick Leave&quot;: return &quot;S&quot;;</span>
+            case &quot;Work From Home&quot;:
+<span class="nc" id="L114">            case &quot;WFH&quot;: return &quot;W&quot;;</span>
+<span class="nc" id="L115">            case &quot;Travelling to HQ&quot;: return &quot;T&quot;;</span>
+<span class="nc" id="L116">            case &quot;Holiday&quot;: return &quot;H&quot;;</span>
+<span class="nc" id="L117">            case &quot;Elections&quot;: return &quot;E&quot;;</span>
+<span class="nc" id="L118">            case &quot;Joined&quot;: return &quot;J&quot;;</span>
+<span class="nc" id="L119">            case &quot;Planned Leave (First Half)&quot;: return &quot;P**&quot;;</span>
+<span class="nc" id="L120">            default: return &quot;&quot;;</span>
+        }
+    }
+
+
+    public Map&lt;String, Map&lt;String, String&gt;&gt; generateAttendanceReport(String monthYear) throws IOException, ParseException
+        {
+            // Fetch data for the given month and year
+<span class="nc" id="L128">            List&lt;AttendanceEntity&gt; attendanceList = attendanceRepository.findByDateStartingWith(monthYear);</span>
+
+
+            // Create a map to store user-wise attendance data
+<span class="nc" id="L132">            Map&lt;String, Map&lt;String, String&gt;&gt; userAttendanceMap = new HashMap&lt;&gt;();</span>
+
+            // Parse the date and populate the map
+<span class="nc" id="L135">            SimpleDateFormat dateFormat = new SimpleDateFormat(&quot;yyyy-MM-dd&quot;);</span>
+<span class="nc" id="L136">            SimpleDateFormat displayFormat = new SimpleDateFormat(&quot;MMM-dd&quot;);</span>
+
+<span class="nc bnc" id="L138" title="All 2 branches missed.">            for (AttendanceEntity attendance : attendanceList) {</span>
+<span class="nc" id="L139">                String username = attendance.getUsername();</span>
+
+                // Skip records with null usernames
+<span class="nc bnc" id="L142" title="All 4 branches missed.">                if (username == null || username.isEmpty()) {</span>
+<span class="nc" id="L143">                    continue;</span>
+                }
+
+<span class="nc" id="L146">                String date = attendance.getDate();</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">                String requestType = attendance.getType() != null ? getRequestTypeCode(attendance.getType()) : &quot;&quot;;</span>
+
+<span class="nc" id="L149">                Date parsedDate = null;</span>
+                try {
+<span class="nc" id="L151">                    parsedDate = dateFormat.parse(date);</span>
+<span class="nc" id="L152">                } catch (ParseException e) {</span>
+<span class="nc" id="L153">                    throw new RuntimeException(e);</span>
+<span class="nc" id="L154">                }</span>
+<span class="nc" id="L155">                String formattedDate = displayFormat.format(parsedDate);</span>
+
+<span class="nc" id="L157">                userAttendanceMap.computeIfAbsent(username, k -&gt; new HashMap&lt;&gt;()).put(formattedDate, requestType);</span>
+<span class="nc" id="L158">            }</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">            for (Map.Entry&lt;String, Map&lt;String, String&gt;&gt; entry : userAttendanceMap.entrySet()) {</span>
+<span class="nc" id="L160">                Map&lt;String, String&gt; userData = entry.getValue();</span>
+<span class="nc" id="L161">                int totalWFH = 0;</span>
+<span class="nc" id="L162">                int totalLeaves = 0;</span>
+
+<span class="nc bnc" id="L164" title="All 2 branches missed.">                for (Map.Entry&lt;String, String&gt; dateEntry : userData.entrySet()) {</span>
+<span class="nc" id="L165">                    String type = dateEntry.getValue();</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">                    if (type.equals(&quot;W&quot;)) {</span>
+<span class="nc" id="L167">                        totalWFH++;</span>
+<span class="nc bnc" id="L168" title="All 10 branches missed.">                    } else if (type.equals(&quot;P&quot;) || type.equals(&quot;U&quot;) || type.equals(&quot;S&quot;) || type.equals(&quot;P*&quot;) || type.equals(&quot;P**&quot;)) {</span>
+<span class="nc" id="L169">                        totalLeaves++;</span>
+                    }
+<span class="nc" id="L171">                }</span>
+
+                // Add Total WFH and Total Leaves to the user's map
+<span class="nc" id="L174">                userData.put(&quot;Total WFH&quot;, String.valueOf(totalWFH));</span>
+<span class="nc" id="L175">                userData.put(&quot;Total Leaves&quot;, String.valueOf(totalLeaves));</span>
+<span class="nc" id="L176">            }</span>
+
+
+            // Return the processed data
+<span class="nc" id="L180">            return userAttendanceMap;</span>
+        }
+
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

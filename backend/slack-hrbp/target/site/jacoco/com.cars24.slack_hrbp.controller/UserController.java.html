@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">mobile-app-ws</a> &gt; <a href="index.source.html" class="el_package">com.cars24.slack_hrbp.controller</a> &gt; <span class="el_source">UserController.java</span></div><h1>UserController.java</h1><pre class="source lang-java linenums">package com.cars24.slack_hrbp.controller;
+
+import com.cars24.slack_hrbp.data.dto.UserDto;
+import com.cars24.slack_hrbp.data.entity.EmployeeEntity;
+import com.cars24.slack_hrbp.data.repository.EmployeeRepository;
+import com.cars24.slack_hrbp.data.request.PasswordUpdateRequest;
+import com.cars24.slack_hrbp.data.request.PasswordVerificationRequest;
+import com.cars24.slack_hrbp.data.request.SignUpRequest;
+import com.cars24.slack_hrbp.data.request.EmployeeUpdateRequest;
+import com.cars24.slack_hrbp.data.response.GetUserResponse;
+import com.cars24.slack_hrbp.service.UserService;
+import com.cars24.slack_hrbp.service.impl.EmployeeServiceImpl;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.*;
+
+<span class="fc" id="L26">@Slf4j</span>
+@RestController
+@RequestMapping(&quot;/users&quot;)
+<span class="fc" id="L29">@RequiredArgsConstructor</span>
+public class UserController {
+
+    private final UserService userService;
+    private final EmployeeRepository employeeRepository;
+    private final BCryptPasswordEncoder bCryptPasswordEncoder;
+    private final EmployeeServiceImpl employeeService;
+
+    @GetMapping(&quot;/{userId}&quot;)
+    public ResponseEntity&lt;String&gt; getUserName(@PathVariable String userId) {
+<span class="fc" id="L39">        Optional&lt;EmployeeEntity&gt; entity = employeeRepository.findByUserId(userId);</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        if (!entity.isPresent()) {</span>
+<span class="fc" id="L41">            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(&quot;User not found&quot;);</span>
+        }
+<span class="fc" id="L43">        String userName = entity.get().getUsername();</span>
+<span class="fc" id="L44">        return ResponseEntity.ok(userName);</span>
+    }
+
+    @PostMapping(&quot;/updatePassword&quot;)
+    public ResponseEntity&lt;?&gt; updatePassword(@RequestBody PasswordUpdateRequest passwordUpdateRequest){
+<span class="fc" id="L49">        String response = employeeService.updatePassword(passwordUpdateRequest);</span>
+<span class="fc" id="L50">        return ResponseEntity.ok(Collections.singletonMap(&quot;success&quot;, true));</span>
+    }
+
+
+    @PostMapping(&quot;/verify-password&quot;)
+    public ResponseEntity&lt;?&gt; verifyPassword(@RequestBody PasswordVerificationRequest request,
+                                            @RequestHeader(&quot;Authorization&quot;) String token) {
+
+<span class="fc" id="L58">        log.info(&quot;[Password Verification] Verifying password for user: {}&quot;, request.getUserId());</span>
+
+        // Fetch user details from Neo4j
+<span class="fc" id="L61">        Optional&lt;EmployeeEntity&gt; optionalEntity = employeeRepository.findByUserId(request.getUserId());</span>
+
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        if (optionalEntity.isEmpty()) {</span>
+<span class="fc" id="L64">            return ResponseEntity.status(HttpStatus.NOT_FOUND)</span>
+<span class="fc" id="L65">                    .body(Collections.singletonMap(&quot;error&quot;, &quot;User not found&quot;));</span>
+        }
+
+<span class="fc" id="L68">        EmployeeEntity entity = optionalEntity.get();</span>
+
+        // Compare passwords using BCrypt
+<span class="fc" id="L71">        boolean isValid = bCryptPasswordEncoder.matches(request.getPassword(), entity.getEncryptedPassword());</span>
+
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        if (isValid) {</span>
+<span class="fc" id="L74">            return ResponseEntity.ok(Collections.singletonMap(&quot;success&quot;, &quot;Password is correct&quot;));</span>
+        } else {
+<span class="fc" id="L76">            return ResponseEntity.status(400)</span>
+<span class="fc" id="L77">                    .body(Collections.singletonMap(&quot;error&quot;, &quot;Invalid password&quot;));</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
