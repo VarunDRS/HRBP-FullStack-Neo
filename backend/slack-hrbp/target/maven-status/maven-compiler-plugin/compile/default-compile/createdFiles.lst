@@ -51,6 +51,7 @@ com\cars24\slack_hrbp\data\dto\UserDto.class
 com\cars24\slack_hrbp\data\request\EmployeeUpdateRequest.class
 com\cars24\slack_hrbp\data\dao\impl\GraphDaoImpl.class
 com\cars24\slack_hrbp\data\dao\EmployeeDao.class
+com\cars24\slack_hrbp\controller\AttendanceControllerHelper.class
 com\cars24\slack_hrbp\data\request\SignUpRequest.class
 com\cars24\slack_hrbp\controller\GraphsController.class
 com\cars24\slack_hrbp\service\GraphServices.class

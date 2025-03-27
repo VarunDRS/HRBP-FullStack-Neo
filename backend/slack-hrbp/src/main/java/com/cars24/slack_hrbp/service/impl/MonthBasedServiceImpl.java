@@ -351,21 +351,18 @@ public class MonthBasedServiceImpl {
         return paginatedReportData;
     }
 
-
-    public Map<String, Object> getAttendanceReportForHR(String monthYear, int page, int limit) {
-        if (page > 0) page -= 1; // Convert to zero-based index
-
-        // Get paginated employees under the manager
-        Page<String> employeePage = monthBasedDao.getPaginatedEmployeesForHr(page, limit);
-        List<String> employeeUserIds = employeePage.getContent(); // Use userId instead of username
-
+    // Common helper method that both report methods will use
+    private Map<String, Object> generateAttendanceReportCommon(String monthYear, List<String> employeeUserIds,
+                                                               Page<String> employeePage, int page) {
 
         // Fetch attendance records for these employees
         List<AttendanceEntity> attendanceRecords = monthBasedDao.getAttendanceForEmployees(monthYear, employeeUserIds);
-        log.info("getAttendanceForEmployees in service layer: {}" + attendanceRecords);
+        log.info("getAttendanceForEmployees in service layer: {}", attendanceRecords);
 
         // Transform attendance records into structured data
         Map<Pair, Map<String, String>> paginatedReportData = formatAttendanceData(attendanceRecords, employeeUserIds);
+
+        // Calculate totals for each user
         for (Map.Entry<Pair, Map<String, String>> entry : paginatedReportData.entrySet()) {
             Map<String, String> userData = entry.getValue();
             int totalWFH = 0;
@@ -375,7 +372,8 @@ public class MonthBasedServiceImpl {
                 String type = dateEntry.getValue();
                 if (type.equals("W")) {
                     totalWFH++;
-                } else if (type.equals("P") || type.equals("U") || type.equals("S") || type.equals("P*") || type.equals("P**")) {
+                } else if (type.equals("P") || type.equals("U") || type.equals("S") ||
+                        type.equals("P*") || type.equals("P**")) {
                     totalLeaves++;
                 }
             }
@@ -390,53 +388,32 @@ public class MonthBasedServiceImpl {
         response.put("reportData", paginatedReportData);
         response.put("totalPages", employeePage.getTotalPages());
         response.put("currentPage", page + 1);
-        response.put("pageSize", limit);
+        response.put("pageSize", employeePage.getSize());
         response.put("totalRecords", employeePage.getTotalElements());
 
         return response;
     }
 
+    // Original HR method (now simplified)
+    public Map<String, Object> getAttendanceReportForHR(String monthYear, int page, int limit) {
+        if (page > 0) page -= 1; // Convert to zero-based index
+
+        // Get paginated employees for HR
+        Page<String> employeePage = monthBasedDao.getPaginatedEmployeesForHr(page, limit);
+        List<String> employeeUserIds = employeePage.getContent();
+
+        return generateAttendanceReportCommon(monthYear, employeeUserIds, employeePage, page);
+    }
+
+    // Original Manager method (now simplified)
     public Map<String, Object> getAttendanceReportForManager(String monthYear, String managerId, int page, int limit) {
         if (page > 0) page -= 1; // Convert to zero-based index
 
-        // Get paginated employees under the manager
+        // Get paginated employees for Manager
         Page<String> employeePage = monthBasedDao.getPaginatedEmployeesForManager(managerId, page, limit);
-        List<String> employeeUserIds = employeePage.getContent(); // Use userId instead of username
+        List<String> employeeUserIds = employeePage.getContent();
 
-        // Fetch attendance records for these employees
-        List<AttendanceEntity> attendanceRecords = monthBasedDao.getAttendanceForEmployees(monthYear, employeeUserIds);
-        log.info("getAttendanceForEmployees in service layer: {}" + attendanceRecords);
-
-        // Transform attendance records into structured data
-        Map<Pair, Map<String, String>> paginatedReportData = formatAttendanceData(attendanceRecords, employeeUserIds);
-        for (Map.Entry<Pair, Map<String, String>> entry : paginatedReportData.entrySet()) {
-            Map<String, String> userData = entry.getValue();
-            int totalWFH = 0;
-            int totalLeaves = 0;
-
-            for (Map.Entry<String, String> dateEntry : userData.entrySet()) {
-                String type = dateEntry.getValue();
-                if (type.equals("W")) {
-                    totalWFH++;
-                } else if (type.equals("P") || type.equals("U") || type.equals("S") || type.equals("P*") || type.equals("P**")) {
-                    totalLeaves++;
-                }
-            }
-
-            // Add Total WFH and Total Leaves to the user's map
-            userData.put("Total WFH", String.valueOf(totalWFH));
-            userData.put("Total Leaves", String.valueOf(totalLeaves));
-        }
-
-        // Prepare response
-        Map<String, Object> response = new HashMap<>();
-        response.put("reportData", paginatedReportData);
-        response.put("totalPages", employeePage.getTotalPages());
-        response.put("currentPage", page + 1);
-        response.put("pageSize", limit);
-        response.put("totalRecords", employeePage.getTotalElements());
-
-        return response;
+        return generateAttendanceReportCommon(monthYear, employeeUserIds, employeePage, page);
     }
 
 }
