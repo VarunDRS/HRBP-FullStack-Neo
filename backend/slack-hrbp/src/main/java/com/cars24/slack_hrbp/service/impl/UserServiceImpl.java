@@ -9,6 +9,7 @@ import com.cars24.slack_hrbp.excpetion.UserServiceException;
 import com.cars24.slack_hrbp.service.UserService;
 import com.cars24.slack_hrbp.util.Utils;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,20 +35,13 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @Transactional
-
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    @Autowired
-    Neo4jClient neo4jClient;
-
-    @Autowired
-    Utils utils;
-
-    @Autowired
-    EmployeeRepository employeeRepository;
-
-    @Autowired
-    BCryptPasswordEncoder bCryptPasswordEncoder;
+    private final Neo4jClient neo4jClient;
+    private final Utils utils;
+    private final EmployeeRepository employeeRepository;
+    private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
     @Override
     public UserDto createUser(UserDto user) {

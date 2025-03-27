@@ -10,6 +10,7 @@ import com.cars24.slack_hrbp.data.request.EmployeeUpdateRequest;
 import com.cars24.slack_hrbp.data.response.GetUserResponse;
 import com.cars24.slack_hrbp.service.UserService;
 import com.cars24.slack_hrbp.service.impl.EmployeeServiceImpl;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,21 +26,13 @@ import java.util.*;
 @Slf4j
 @RestController
 @RequestMapping("/users")
-@Service
+@RequiredArgsConstructor
 public class UserController {
 
-    @Autowired
-    UserService userService;
-
-    @Autowired
-    EmployeeRepository employeeRepository;
-
-    @Autowired
-    BCryptPasswordEncoder bCryptPasswordEncoder;
-
-    @Autowired
-    EmployeeServiceImpl employeeService;
-
+    private final UserService userService;
+    private final EmployeeRepository employeeRepository;
+    private final BCryptPasswordEncoder bCryptPasswordEncoder;
+    private final EmployeeServiceImpl employeeService;
 
     @GetMapping("/{userId}")
     public ResponseEntity<String> getUserName(@PathVariable String userId) {
