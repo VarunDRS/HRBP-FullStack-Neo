@@ -53,7 +53,6 @@ public class MonthBasedServiceImpl {
 
         for (AttendanceEntity attendance : attendanceList) {
             String userid = attendance.getUserid(); // Use userid as the key
-            String username = attendance.getUsername(); // Include username for reference
             String date = attendance.getDate();
             String requestType = getRequestTypeCode(attendance.getType());
 
