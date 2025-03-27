@@ -23,6 +23,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
@@ -30,6 +31,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -270,44 +272,48 @@ public class HrController {
     public SseEmitter streamEventsForMonth(
             @RequestParam String frommonth,
             @RequestParam String tomonth,
-            @RequestParam String managerId) { // Added managerId parameter
+            @RequestParam String managerId) {
+
+        // Validate inputs
+        if (!frommonth.matches("\\d{4}-\\d{2}") || !tomonth.matches("\\d{4}-\\d{2}")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid date format. Use YYYY-MM.");
+        }
+
         SseEmitter emitter = new SseEmitter(0L); // No timeout
         ExecutorService executor = Executors.newSingleThreadExecutor();
 
         executor.execute(() -> {
             try {
                 long startTime = System.currentTimeMillis();
-                // Send "Generating Excel" message first
                 emitter.send(SseEmitter.event().data("Generating Excel..."));
 
                 // Generate the report
                 byte[] excelData = monthBasedService.generateAttendanceReports(frommonth, tomonth, managerId);
 
-                String directoryPath = "monthreports";
-                File reportsDir = new File(directoryPath);
+                // Define a safe base directory
+                Path baseDirectory = Paths.get("secure-reports/monthreports").toAbsolutePath().normalize();
+                Files.createDirectories(baseDirectory); // Ensure the directory exists
 
-                // Ensure the directory exists
-                if (!reportsDir.exists()) {
-                    reportsDir.mkdirs();  // Create the directory if it doesn't exist
+                // Construct a safe file path
+                String fileName = String.format("Attendance_from_%s_to_%s.xlsx", frommonth, tomonth);
+                Path filePath = baseDirectory.resolve(fileName).normalize();
+
+                // Prevent directory traversal attack
+                if (!filePath.startsWith(baseDirectory)) {
+                    throw new SecurityException("Invalid file path.");
                 }
 
-                long endTime = System.currentTimeMillis(); // Record end time
-                long duration = endTime - startTime; // Calculate latency
+                Files.write(filePath, excelData);
+                log.info("Report generated at: {}", filePath);
 
-                log.info("Report generation time: {} ms", duration);
-                String filePath = "monthreports/Attendance_" + "_" + "from_" + frommonth + "_to_" + tomonth + ".xlsx";
-                Files.write(Paths.get(filePath), excelData);
-                log.info(" Report generated at: {}",filePath);
-
-                // Send "Download Ready" message
                 emitter.send(SseEmitter.event().data("Report Ready"));
-                emitter.complete(); // Close connection after sending
+                emitter.complete();
             } catch (IOException | ParseException e) {
                 try {
                     emitter.send(SseEmitter.event().data("Error generating report"));
                     emitter.completeWithError(e);
                 } catch (IOException ex) {
-                    ex.printStackTrace();
+                    log.error("Error sending SSE event", ex);
                 }
             }
         });
@@ -315,16 +321,28 @@ public class HrController {
         return emitter;
     }
 
-    // Notify frontend for download report for specific time period (from and to)
     @PreAuthorize("hasRole('HR')")
     @GetMapping("/download/bymonthreport")
     public ResponseEntity<Resource> downloadMonthReport(
             @RequestParam String frommonth,
             @RequestParam String tomonth,
             @RequestParam String managerId) {
-        String filePath = "monthreports/Attendance_" + "_" + "from_" + frommonth + "_to_" + tomonth + ".xlsx";
-        File file = new File(filePath);
 
+        // Validate inputs
+        if (!frommonth.matches("\\d{4}-\\d{2}") || !tomonth.matches("\\d{4}-\\d{2}")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+
+        Path baseDirectory = Paths.get("secure-reports/monthreports").toAbsolutePath().normalize();
+        String fileName = String.format("Attendance_from_%s_to_%s.xlsx", frommonth, tomonth);
+        Path filePath = baseDirectory.resolve(fileName).normalize();
+
+        // Prevent directory traversal
+        if (!filePath.startsWith(baseDirectory)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+        }
+
+        File file = filePath.toFile();
         if (!file.exists()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
@@ -335,6 +353,7 @@ public class HrController {
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(resource);
     }
+
 
 }
 
