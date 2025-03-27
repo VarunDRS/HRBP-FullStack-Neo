@@ -8,6 +8,7 @@ import com.cars24.slack_hrbp.data.entity.EmployeeEntity;
 import com.cars24.slack_hrbp.data.repository.AttendanceRepository;
 import com.cars24.slack_hrbp.data.repository.EmployeeRepository;
 import com.cars24.slack_hrbp.excpetion.UserServiceException;
+import com.cars24.slack_hrbp.util.RequestTypeMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
@@ -49,7 +50,7 @@ public class MonthBasedServiceImpl {
         for (AttendanceEntity attendance : attendanceList) {
             String userid = attendance.getUserid(); // Use userid as the key
             String date = attendance.getDate();
-            String requestType = getRequestTypeCode(attendance.getType());
+            String requestType = RequestTypeMapper.getRequestTypeCode(attendance.getType());
 
             Date parsedDate = dateFormat.parse(date);
             String formattedDate = displayFormat.format(parsedDate);
@@ -110,38 +111,6 @@ public class MonthBasedServiceImpl {
                 String requestType = entry.getValue().getOrDefault(date, "");
                 row.createCell(colNum++).setCellValue(requestType);
             }
-        }
-    }
-
-    public String getRequestTypeCode(String requestType) {
-        if (requestType == null) {
-            return "";  // Or some default code
-        }
-        switch (requestType) {
-            case "Planned Leave":
-                return "P";
-            case "Unplanned Leave":
-            case "UnPlanned Leave":
-                return "U";
-            case "Planned Leave (Second Half)":
-                return "P*";
-            case "Sick Leave":
-                return "S";
-            case "Work From Home":
-            case "WFH":
-                return "W";
-            case "Travelling to HQ":
-                return "T";
-            case "Holiday":
-                return "H";
-            case "Elections":
-                return "E";
-            case "Joined":
-                return "J";
-            case "Planned Leave (First Half)":
-                return "P**";
-            default:
-                return "";
         }
     }
 
@@ -235,7 +204,7 @@ public class MonthBasedServiceImpl {
         for (AttendanceEntity attendance : attendanceList) {
             String username = attendance.getUsername();
             String date = attendance.getDate();
-            String requestType = getRequestTypeCode(attendance.getType());
+            String requestType = RequestTypeMapper.getRequestTypeCode(attendance.getType());
 
             Date parsedDate = dateFormat.parse(date);
             String formattedDate = displayFormat.format(parsedDate);
@@ -335,7 +304,7 @@ public class MonthBasedServiceImpl {
             Pair key = new Pair(userId, username);
 
             String date = attendance.getDate();
-            String requestType = getRequestTypeCode(attendance.getType());
+            String requestType = RequestTypeMapper.getRequestTypeCode(attendance.getType());
 
             try {
                 Date parsedDate = dateFormat.parse(date);

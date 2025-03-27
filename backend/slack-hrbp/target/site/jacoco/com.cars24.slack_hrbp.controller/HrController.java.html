@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HrController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">mobile-app-ws</a> &gt; <a href="index.source.html" class="el_package">com.cars24.slack_hrbp.controller</a> &gt; <span class="el_source">HrController.java</span></div><h1>HrController.java</h1><pre class="source lang-java linenums">package com.cars24.slack_hrbp.controller;
+
+import com.cars24.slack_hrbp.data.entity.EmployeeEntity;
+import com.cars24.slack_hrbp.data.request.*;
+import com.cars24.slack_hrbp.data.response.GetUserResponse;
+import com.cars24.slack_hrbp.service.impl.*;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.http.MediaType;
+import org.springframework.http.HttpHeaders;
+import org.springframework.core.io.Resource;
+
+
+import java.util.*;
+
+<span class="fc" id="L22">@Slf4j</span>
+@RestController
+@RequestMapping(&quot;/hr&quot;)
+<span class="fc" id="L25">@RequiredArgsConstructor</span>
+@Valid
+public class HrController {
+
+    private final HrServiceImpl hrService;
+    private final MonthBasedServiceImpl monthBasedService;
+    private final AttendanceControllerHelper helper;
+
+    // HR-specific methods remain unchanged
+    @PreAuthorize(&quot;hasRole('HR')&quot;)
+    @PostMapping(&quot;/createUser&quot;)
+    public ResponseEntity&lt;String&gt; createUser(@Valid @RequestBody CreateEmployeeRequest createEmployeeRequest) {
+<span class="nc" id="L37">        log.info(&quot;HrController createEmployeeRequest, {}&quot;, createEmployeeRequest);</span>
+<span class="nc" id="L38">        EmployeeEntity employee = hrService.createEmployee(createEmployeeRequest);</span>
+<span class="nc" id="L39">        return ResponseEntity.ok(&quot;Creation was successful&quot;);</span>
+    }
+
+    @PreAuthorize(&quot;hasRole('HR')&quot;)
+    @PutMapping(&quot;/updateManager/{userId}/{newManagerId}&quot;)
+    public ResponseEntity&lt;String&gt; updateManager(
+            @PathVariable(&quot;userId&quot;) String userId,
+            @PathVariable(&quot;newManagerId&quot;) String newManagerId) {
+        try {
+<span class="nc" id="L48">            hrService.updateManager(userId, newManagerId);</span>
+<span class="nc" id="L49">            return ResponseEntity.ok(&quot;Manager updated successfully&quot;);</span>
+<span class="nc" id="L50">        } catch (IllegalArgumentException e) {</span>
+<span class="nc" id="L51">            return ResponseEntity.badRequest().body(e.getMessage());</span>
+        }
+    }
+
+    @PreAuthorize(&quot;hasRole('HR')&quot;)
+    @PutMapping(&quot;/updaterole&quot;)
+    public ResponseEntity&lt;String&gt; updateRole(@RequestBody EmployeeUpdateRequest employeeUpdateRequest) {
+<span class="nc" id="L58">        String response = hrService.updateUser(employeeUpdateRequest);</span>
+<span class="nc" id="L59">        return ResponseEntity.ok().body(response);</span>
+    }
+
+    // Modified to use helper
+    @PreAuthorize(&quot;hasRole('HR')&quot;)
+    @GetMapping(&quot;/{userid}/{month}&quot;)
+    public Map&lt;String, Map&lt;String, String&gt;&gt; getUserDetails(@PathVariable String userid, @PathVariable String month) {
+<span class="nc" id="L66">        return helper.handleGetUserDetails(userid, month);</span>
+    }
+
+    @PreAuthorize(&quot;hasRole('HR')&quot;)
+    @GetMapping(&quot;/{userId}&quot;)
+    public Map&lt;String, Map&lt;String, String&gt;&gt; getUserDetails(@PathVariable String userId) {
+<span class="nc" id="L72">        return helper.handleGetUserDetails(userId);</span>
+    }
+
+    @PreAuthorize(&quot;hasRole('HR')&quot;)
+    @DeleteMapping(&quot;/deleteEntry/{userId}/{date}&quot;)
+    public ResponseEntity&lt;String&gt; deleteEntry(@PathVariable String userId, @PathVariable String date) {
+<span class="nc" id="L78">        String resp = hrService.deleteEntry(userId, date);</span>
+<span class="nc" id="L79">        return ResponseEntity.ok(resp);</span>
+    }
+
+    @PreAuthorize(&quot;hasRole('HR')&quot;)
+    @PostMapping(&quot;/addEntry/{userId}&quot;)
+    public ResponseEntity&lt;String&gt; addEntry(@PathVariable String userId, @RequestBody AddLeaveRequest addLeaveRequest) {
+<span class="nc" id="L85">        log.info(&quot;The inputs are {} {} {} {}&quot;, userId, addLeaveRequest.getDate(),</span>
+<span class="nc" id="L86">                addLeaveRequest.getLeaveType(), addLeaveRequest.getReason());</span>
+<span class="nc" id="L87">        String resp = hrService.addEntry(userId, addLeaveRequest.getDate(),</span>
+<span class="nc" id="L88">                addLeaveRequest.getLeaveType(), addLeaveRequest.getReason());</span>
+<span class="nc" id="L89">        return ResponseEntity.ok(resp);</span>
+    }
+
+    @PreAuthorize(&quot;hasRole('HR')&quot;)
+    @GetMapping(&quot;/displayUsers/{userId}/{searchtag}&quot;)
+    public ResponseEntity&lt;List&lt;GetUserResponse&gt;&gt; getAllUsers(
+            @PathVariable String userId,
+            @PathVariable String searchtag,
+            @RequestParam(value = &quot;page&quot;, defaultValue = &quot;1&quot;) int page,
+            @RequestParam(value = &quot;limit&quot;, defaultValue = &quot;2&quot;) int limit) {
+
+<span class="nc bnc" id="L100" title="All 2 branches missed.">        if (page &gt; 0) page -= 1;</span>
+
+<span class="nc" id="L102">        Page&lt;List&lt;String&gt;&gt; users = hrService.getAllUsers(userId, page, limit, searchtag);</span>
+<span class="nc" id="L103">        List&lt;GetUserResponse&gt; responses = new ArrayList&lt;&gt;();</span>
+
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        for (List&lt;String&gt; userDto : users.getContent()) {</span>
+<span class="nc" id="L106">            GetUserResponse res = new GetUserResponse();</span>
+<span class="nc" id="L107">            res.setUserId(userDto.get(0));</span>
+<span class="nc" id="L108">            res.setEmail(userDto.get(1));</span>
+<span class="nc" id="L109">            res.setUsername(userDto.get(2));</span>
+<span class="nc" id="L110">            responses.add(res);</span>
+<span class="nc" id="L111">        }</span>
+
+<span class="nc" id="L113">        return ResponseEntity.ok().body(responses);</span>
+    }
+
+    @PreAuthorize(&quot;hasRole('HR')&quot;)
+    @GetMapping(&quot;/displayUsers/count/{userId}/{searchtag}&quot;)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; getTotalUserCount(
+            @PathVariable String userId,
+            @PathVariable String searchtag,
+            @RequestParam(value = &quot;limit&quot;, defaultValue = &quot;2&quot;) int limit) {
+
+<span class="nc" id="L123">        long totalEmployees = hrService.getTotalEmployeesCount(searchtag);</span>
+<span class="nc" id="L124">        int totalPages = (int) Math.ceil((double) totalEmployees / limit);</span>
+
+<span class="nc" id="L126">        Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L127">        response.put(&quot;totalEmployees&quot;, totalEmployees);</span>
+<span class="nc" id="L128">        response.put(&quot;totalPages&quot;, totalPages);</span>
+
+<span class="nc" id="L130">        return ResponseEntity.ok(response);</span>
+    }
+
+    // Modified to use helper
+    @GetMapping(value = &quot;/events/{userid}/{frommonth}/{tomonth}&quot;, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamEvents(
+            @PathVariable String userid,
+            @PathVariable String frommonth,
+            @PathVariable String tomonth) {
+<span class="nc" id="L139">        return helper.handleStreamEvents(userid, frommonth, tomonth);</span>
+    }
+
+    // Modified to use helper
+    @GetMapping(&quot;/download/{userid}/{frommonth}/{tomonth}&quot;)
+    public ResponseEntity&lt;Resource&gt; downloadReport(
+            @PathVariable String userid,
+            @PathVariable String frommonth,
+            @PathVariable String tomonth) {
+<span class="nc" id="L148">        System.out.println(&quot;download backend called&quot;);</span>
+<span class="nc" id="L149">        return helper.handleDownloadReport(userid, frommonth, tomonth);</span>
+    }
+
+    @PreAuthorize(&quot;hasRole('HR')&quot;)
+    @GetMapping(&quot;/bymonth&quot;)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; getByMonth(
+            @RequestParam String monthYear,
+            @RequestParam(value = &quot;page&quot;, defaultValue = &quot;1&quot;) int page,
+            @RequestParam(value = &quot;limit&quot;, defaultValue = &quot;5&quot;) int limit) {
+<span class="nc" id="L158">        return ResponseEntity.ok(monthBasedService.getAttendanceReportForHR(monthYear, page, limit));</span>
+    }
+
+    @PreAuthorize(&quot;hasRole('HR')&quot;)
+    @GetMapping(&quot;bymonthreport&quot;)
+    public ResponseEntity&lt;byte[]&gt; getByMonth(
+            @RequestParam String monthYear,
+            @RequestParam String managerId) {
+        try {
+<span class="nc" id="L167">            byte[] excelFile = monthBasedService.generateAttendanceReport(monthYear, managerId);</span>
+<span class="nc" id="L168">            return ResponseEntity.ok()</span>
+<span class="nc" id="L169">                    .header(HttpHeaders.CONTENT_DISPOSITION,</span>
+                            &quot;attachment; filename=Attendance_Report_&quot; + monthYear + &quot;.xlsx&quot;)
+<span class="nc" id="L171">                    .contentType(MediaType.APPLICATION_OCTET_STREAM)</span>
+<span class="nc" id="L172">                    .body(excelFile);</span>
+<span class="nc" id="L173">        } catch (Exception e) {</span>
+<span class="nc" id="L174">            throw new RuntimeException(&quot;Error generating report: &quot; + e.getMessage());</span>
+        }
+    }
+
+    // Modified to use helper
+    @PreAuthorize(&quot;hasRole('HR')&quot;)
+    @GetMapping(value = &quot;/events/bymonthreport&quot;, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamEventsForMonth(
+            @RequestParam String frommonth,
+            @RequestParam String tomonth,
+            @RequestParam String managerId) {
+<span class="nc" id="L185">        return helper.handleStreamEventsForMonth(frommonth, tomonth, managerId);</span>
+    }
+
+    // Modified to use helper
+    @PreAuthorize(&quot;hasRole('HR')&quot;)
+    @GetMapping(&quot;/download/bymonthreport&quot;)
+    public ResponseEntity&lt;Resource&gt; downloadMonthReport(
+            @RequestParam String frommonth,
+            @RequestParam String tomonth) {
+<span class="nc" id="L194">        return helper.handleDownloadMonthReport(frommonth, tomonth);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
