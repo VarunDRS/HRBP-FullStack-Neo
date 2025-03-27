@@ -1,4 +1,5 @@
 com\cars24\slack_hrbp\controller\EmployeeController.class
+com\cars24\slack_hrbp\util\RequestTypeMapper.class
 com\cars24\slack_hrbp\data\request\LoginRequest.class
 com\cars24\slack_hrbp\data\response\EmployeeDisplayResponse.class
 com\cars24\slack_hrbp\data\dao\impl\EmployeeDaoImpl.class

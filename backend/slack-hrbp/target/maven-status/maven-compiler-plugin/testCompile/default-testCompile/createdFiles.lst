@@ -5,4 +5,3 @@ com\cars24\slack_hrbp\dao\GraphDaoImplTest.class
 com\cars24\slack_hrbp\controller\EmployeeControllerTest.class
 com\cars24\slack_hrbp\dao\UseridAndMonthDaoImplTest.class
 com\cars24\slack_hrbp\service\EmployeeServiceImplTest.class
-com\cars24\slack_hrbp\service\MonthBasedServiceImplTest.class

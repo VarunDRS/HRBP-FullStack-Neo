@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RequestTypeMapper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">mobile-app-ws</a> &gt; <a href="index.source.html" class="el_package">com.cars24.slack_hrbp.util</a> &gt; <span class="el_source">RequestTypeMapper.java</span></div><h1>RequestTypeMapper.java</h1><pre class="source lang-java linenums">package com.cars24.slack_hrbp.util;
+import java.util.HashMap;
+import java.util.Map;
+
+
+import java.util.Collections;
+
+public final class RequestTypeMapper {
+
+<span class="nc" id="L10">    private static final Map&lt;String, String&gt; REQUEST_TYPE_MAP = createTypeMap();</span>
+
+    // Private constructor to prevent instantiation
+    private RequestTypeMapper() {}
+
+    /**
+     * Gets the standardized code for a request type
+     * @param requestType The input request type string
+     * @return Single-character code or empty string if not found
+     */
+    public static String getRequestTypeCode(String requestType) {
+<span class="nc bnc" id="L21" title="All 2 branches missed.">        if (requestType == null) {</span>
+<span class="nc" id="L22">            return &quot;&quot;;</span>
+        }
+<span class="nc" id="L24">        return REQUEST_TYPE_MAP.getOrDefault(requestType.trim(), &quot;&quot;);</span>
+    }
+
+    private static Map&lt;String, String&gt; createTypeMap() {
+<span class="nc" id="L28">        Map&lt;String, String&gt; map = new HashMap&lt;&gt;();</span>
+
+        // Planned Leave types
+<span class="nc" id="L31">        map.put(&quot;Planned Leave&quot;, &quot;P&quot;);</span>
+<span class="nc" id="L32">        map.put(&quot;Planned Leave (First Half)&quot;, &quot;P**&quot;);</span>
+<span class="nc" id="L33">        map.put(&quot;Planned Leave (Second Half)&quot;, &quot;P*&quot;);</span>
+
+        // Unplanned Leave types
+<span class="nc" id="L36">        map.put(&quot;Unplanned Leave&quot;, &quot;U&quot;);</span>
+<span class="nc" id="L37">        map.put(&quot;UnPlanned Leave&quot;, &quot;U&quot;); // Handle typo</span>
+
+        // Other types
+<span class="nc" id="L40">        map.put(&quot;Sick Leave&quot;, &quot;S&quot;);</span>
+<span class="nc" id="L41">        map.put(&quot;Work From Home&quot;, &quot;W&quot;);</span>
+<span class="nc" id="L42">        map.put(&quot;WFH&quot;, &quot;W&quot;); // Abbreviation</span>
+<span class="nc" id="L43">        map.put(&quot;Travelling to HQ&quot;, &quot;T&quot;);</span>
+<span class="nc" id="L44">        map.put(&quot;Holiday&quot;, &quot;H&quot;);</span>
+<span class="nc" id="L45">        map.put(&quot;Elections&quot;, &quot;E&quot;);</span>
+<span class="nc" id="L46">        map.put(&quot;Joined&quot;, &quot;J&quot;);</span>
+
+<span class="nc" id="L48">        return Collections.unmodifiableMap(map);</span>
+    }
+
+    // Helper methods for common checks
+    public static boolean isWorkFromHome(String requestType) {
+<span class="nc" id="L53">        return &quot;W&quot;.equals(getRequestTypeCode(requestType));</span>
+    }
+
+    public static boolean isLeave(String requestType) {
+<span class="nc" id="L57">        String code = getRequestTypeCode(requestType);</span>
+<span class="nc bnc" id="L58" title="All 6 branches missed.">        return code.startsWith(&quot;P&quot;) || &quot;U&quot;.equals(code) || &quot;S&quot;.equals(code);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

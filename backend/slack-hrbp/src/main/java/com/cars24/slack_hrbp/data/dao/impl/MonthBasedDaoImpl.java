@@ -11,6 +11,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import com.cars24.slack_hrbp.util.RequestTypeMapper;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -100,26 +101,6 @@ public class MonthBasedDaoImpl {
         return employeeRepository.findAll(pageable);
     }
 
-    private String getRequestTypeCode(String requestType) {
-        if (requestType == null) {
-            return "";  // Or some default code
-        }
-        switch (requestType) {
-            case "Planned Leave": return "P";
-            case "Unplanned Leave":
-            case "UnPlanned Leave": return "U";
-            case "Planned Leave (Second Half)": return "P*";
-            case "Sick Leave": return "S";
-            case "Work From Home":
-            case "WFH": return "W";
-            case "Travelling to HQ": return "T";
-            case "Holiday": return "H";
-            case "Elections": return "E";
-            case "Joined": return "J";
-            case "Planned Leave (First Half)": return "P**";
-            default: return "";
-        }
-    }
 
 
     public Map<String, Map<String, String>> generateAttendanceReport(String monthYear) throws IOException, ParseException
@@ -144,7 +125,7 @@ public class MonthBasedDaoImpl {
                 }
 
                 String date = attendance.getDate();
-                String requestType = attendance.getType() != null ? getRequestTypeCode(attendance.getType()) : "";
+                String requestType = attendance.getType() != null ? RequestTypeMapper.getRequestTypeCode(attendance.getType()) : "";
 
                 Date parsedDate = null;
                 try {
