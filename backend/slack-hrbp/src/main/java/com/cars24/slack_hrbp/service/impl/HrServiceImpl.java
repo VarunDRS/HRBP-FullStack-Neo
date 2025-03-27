@@ -59,11 +59,9 @@ public class HrServiceImpl implements HrService {
             managerName = managerOpt.getUsername();
         }
 
-        log.info("Helloo");
+
         Dotenv dotenv = Dotenv.load();
         String password = dotenv.get("DEFAULT_TEMP_PASSWORD");
-        log.info("Password {}",password);
-
 
         ProfileEntity entity = profileRepository.findByEmail(request.getEmail());
 
