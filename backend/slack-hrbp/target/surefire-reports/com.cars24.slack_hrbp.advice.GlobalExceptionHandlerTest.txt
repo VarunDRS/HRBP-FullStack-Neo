@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.cars24.slack_hrbp.advice.GlobalExceptionHandlerTest
+-------------------------------------------------------------------------------
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.033 s -- in com.cars24.slack_hrbp.advice.GlobalExceptionHandlerTest

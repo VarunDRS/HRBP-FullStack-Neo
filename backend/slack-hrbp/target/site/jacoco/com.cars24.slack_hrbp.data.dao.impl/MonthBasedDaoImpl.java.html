@@ -33,11 +33,11 @@ public class MonthBasedDaoImpl {
     private final AttendanceRepository attendanceRepository;
 
     public List&lt;String&gt; getAllEmployeesUnderManager(String managerId) {
-<span class="nc" id="L36">        List&lt;EmployeeEntity&gt; employees = employeeRepository.findByManagerId(managerId); // Assuming this returns List&lt;EmployeeEntity&gt;</span>
+<span class="fc" id="L36">        List&lt;EmployeeEntity&gt; employees = employeeRepository.findByManagerId(managerId); // Assuming this returns List&lt;EmployeeEntity&gt;</span>
 
-<span class="nc" id="L38">        return employees.stream()</span>
-<span class="nc" id="L39">                .map(EmployeeEntity::getUserId)</span>
-<span class="nc" id="L40">                .collect(Collectors.toList());</span>
+<span class="fc" id="L38">        return employees.stream()</span>
+<span class="fc" id="L39">                .map(EmployeeEntity::getUserId)</span>
+<span class="fc" id="L40">                .collect(Collectors.toList());</span>
     }
 
 
@@ -76,22 +76,22 @@ public class MonthBasedDaoImpl {
 
 
     public List&lt;AttendanceEntity&gt; getAttendanceForEmployees(String monthYear, List&lt;String&gt; userIds) {
-<span class="nc" id="L79">        return attendanceRepository.findByDateStartingWithAndUseridIn(monthYear, userIds); // Use userId</span>
+<span class="fc" id="L79">        return attendanceRepository.findByDateStartingWithAndUseridIn(monthYear, userIds); // Use userId</span>
     }
 
 
     public Page&lt;String&gt; getPaginatedEmployees(String monthYear, int page, int limit) {
-<span class="nc" id="L84">        Pageable pageable = PageRequest.of(page, limit);</span>
+<span class="fc" id="L84">        Pageable pageable = PageRequest.of(page, limit);</span>
 
         // Directly fetch paginated employees from Neo4j
-<span class="nc" id="L87">        Page&lt;EmployeeEntity&gt; employeePage = employeeRepository.findAll(pageable);</span>
+<span class="fc" id="L87">        Page&lt;EmployeeEntity&gt; employeePage = employeeRepository.findAll(pageable);</span>
 
-<span class="nc" id="L89">        List&lt;String&gt; employeeUserIds = employeePage.getContent()</span>
-<span class="nc" id="L90">                .stream()</span>
-<span class="nc" id="L91">                .map(EmployeeEntity::getUserId) // Extract user IDs</span>
-<span class="nc" id="L92">                .toList();</span>
+<span class="fc" id="L89">        List&lt;String&gt; employeeUserIds = employeePage.getContent()</span>
+<span class="fc" id="L90">                .stream()</span>
+<span class="fc" id="L91">                .map(EmployeeEntity::getUserId) // Extract user IDs</span>
+<span class="fc" id="L92">                .toList();</span>
 
-<span class="nc" id="L94">        return new PageImpl&lt;&gt;(employeeUserIds, pageable, employeePage.getTotalElements());</span>
+<span class="fc" id="L94">        return new PageImpl&lt;&gt;(employeeUserIds, pageable, employeePage.getTotalElements());</span>
     }
 
 
@@ -101,17 +101,17 @@ public class MonthBasedDaoImpl {
     }
 
     private String getRequestTypeCode(String requestType) {
-<span class="nc bnc" id="L104" title="All 2 branches missed.">        if (requestType == null) {</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">        if (requestType == null) {</span>
 <span class="nc" id="L105">            return &quot;&quot;;  // Or some default code</span>
         }
-<span class="nc bnc" id="L107" title="All 11 branches missed.">        switch (requestType) {</span>
-<span class="nc" id="L108">            case &quot;Planned Leave&quot;: return &quot;P&quot;;</span>
+<span class="pc bpc" id="L107" title="9 of 11 branches missed.">        switch (requestType) {</span>
+<span class="fc" id="L108">            case &quot;Planned Leave&quot;: return &quot;P&quot;;</span>
             case &quot;Unplanned Leave&quot;:
 <span class="nc" id="L110">            case &quot;UnPlanned Leave&quot;: return &quot;U&quot;;</span>
 <span class="nc" id="L111">            case &quot;Planned Leave (Second Half)&quot;: return &quot;P*&quot;;</span>
 <span class="nc" id="L112">            case &quot;Sick Leave&quot;: return &quot;S&quot;;</span>
             case &quot;Work From Home&quot;:
-<span class="nc" id="L114">            case &quot;WFH&quot;: return &quot;W&quot;;</span>
+<span class="fc" id="L114">            case &quot;WFH&quot;: return &quot;W&quot;;</span>
 <span class="nc" id="L115">            case &quot;Travelling to HQ&quot;: return &quot;T&quot;;</span>
 <span class="nc" id="L116">            case &quot;Holiday&quot;: return &quot;H&quot;;</span>
 <span class="nc" id="L117">            case &quot;Elections&quot;: return &quot;E&quot;;</span>
@@ -125,59 +125,59 @@ public class MonthBasedDaoImpl {
     public Map&lt;String, Map&lt;String, String&gt;&gt; generateAttendanceReport(String monthYear) throws IOException, ParseException
         {
             // Fetch data for the given month and year
-<span class="nc" id="L128">            List&lt;AttendanceEntity&gt; attendanceList = attendanceRepository.findByDateStartingWith(monthYear);</span>
+<span class="fc" id="L128">            List&lt;AttendanceEntity&gt; attendanceList = attendanceRepository.findByDateStartingWith(monthYear);</span>
 
 
             // Create a map to store user-wise attendance data
-<span class="nc" id="L132">            Map&lt;String, Map&lt;String, String&gt;&gt; userAttendanceMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L132">            Map&lt;String, Map&lt;String, String&gt;&gt; userAttendanceMap = new HashMap&lt;&gt;();</span>
 
             // Parse the date and populate the map
-<span class="nc" id="L135">            SimpleDateFormat dateFormat = new SimpleDateFormat(&quot;yyyy-MM-dd&quot;);</span>
-<span class="nc" id="L136">            SimpleDateFormat displayFormat = new SimpleDateFormat(&quot;MMM-dd&quot;);</span>
+<span class="fc" id="L135">            SimpleDateFormat dateFormat = new SimpleDateFormat(&quot;yyyy-MM-dd&quot;);</span>
+<span class="fc" id="L136">            SimpleDateFormat displayFormat = new SimpleDateFormat(&quot;MMM-dd&quot;);</span>
 
-<span class="nc bnc" id="L138" title="All 2 branches missed.">            for (AttendanceEntity attendance : attendanceList) {</span>
-<span class="nc" id="L139">                String username = attendance.getUsername();</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">            for (AttendanceEntity attendance : attendanceList) {</span>
+<span class="fc" id="L139">                String username = attendance.getUsername();</span>
 
                 // Skip records with null usernames
-<span class="nc bnc" id="L142" title="All 4 branches missed.">                if (username == null || username.isEmpty()) {</span>
+<span class="pc bpc" id="L142" title="2 of 4 branches missed.">                if (username == null || username.isEmpty()) {</span>
 <span class="nc" id="L143">                    continue;</span>
                 }
 
-<span class="nc" id="L146">                String date = attendance.getDate();</span>
-<span class="nc bnc" id="L147" title="All 2 branches missed.">                String requestType = attendance.getType() != null ? getRequestTypeCode(attendance.getType()) : &quot;&quot;;</span>
+<span class="fc" id="L146">                String date = attendance.getDate();</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">                String requestType = attendance.getType() != null ? getRequestTypeCode(attendance.getType()) : &quot;&quot;;</span>
 
-<span class="nc" id="L149">                Date parsedDate = null;</span>
+<span class="fc" id="L149">                Date parsedDate = null;</span>
                 try {
-<span class="nc" id="L151">                    parsedDate = dateFormat.parse(date);</span>
+<span class="fc" id="L151">                    parsedDate = dateFormat.parse(date);</span>
 <span class="nc" id="L152">                } catch (ParseException e) {</span>
 <span class="nc" id="L153">                    throw new RuntimeException(e);</span>
-<span class="nc" id="L154">                }</span>
-<span class="nc" id="L155">                String formattedDate = displayFormat.format(parsedDate);</span>
+<span class="fc" id="L154">                }</span>
+<span class="fc" id="L155">                String formattedDate = displayFormat.format(parsedDate);</span>
 
-<span class="nc" id="L157">                userAttendanceMap.computeIfAbsent(username, k -&gt; new HashMap&lt;&gt;()).put(formattedDate, requestType);</span>
-<span class="nc" id="L158">            }</span>
-<span class="nc bnc" id="L159" title="All 2 branches missed.">            for (Map.Entry&lt;String, Map&lt;String, String&gt;&gt; entry : userAttendanceMap.entrySet()) {</span>
-<span class="nc" id="L160">                Map&lt;String, String&gt; userData = entry.getValue();</span>
-<span class="nc" id="L161">                int totalWFH = 0;</span>
-<span class="nc" id="L162">                int totalLeaves = 0;</span>
+<span class="fc" id="L157">                userAttendanceMap.computeIfAbsent(username, k -&gt; new HashMap&lt;&gt;()).put(formattedDate, requestType);</span>
+<span class="fc" id="L158">            }</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">            for (Map.Entry&lt;String, Map&lt;String, String&gt;&gt; entry : userAttendanceMap.entrySet()) {</span>
+<span class="fc" id="L160">                Map&lt;String, String&gt; userData = entry.getValue();</span>
+<span class="fc" id="L161">                int totalWFH = 0;</span>
+<span class="fc" id="L162">                int totalLeaves = 0;</span>
 
-<span class="nc bnc" id="L164" title="All 2 branches missed.">                for (Map.Entry&lt;String, String&gt; dateEntry : userData.entrySet()) {</span>
-<span class="nc" id="L165">                    String type = dateEntry.getValue();</span>
-<span class="nc bnc" id="L166" title="All 2 branches missed.">                    if (type.equals(&quot;W&quot;)) {</span>
-<span class="nc" id="L167">                        totalWFH++;</span>
-<span class="nc bnc" id="L168" title="All 10 branches missed.">                    } else if (type.equals(&quot;P&quot;) || type.equals(&quot;U&quot;) || type.equals(&quot;S&quot;) || type.equals(&quot;P*&quot;) || type.equals(&quot;P**&quot;)) {</span>
-<span class="nc" id="L169">                        totalLeaves++;</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">                for (Map.Entry&lt;String, String&gt; dateEntry : userData.entrySet()) {</span>
+<span class="fc" id="L165">                    String type = dateEntry.getValue();</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">                    if (type.equals(&quot;W&quot;)) {</span>
+<span class="fc" id="L167">                        totalWFH++;</span>
+<span class="pc bpc" id="L168" title="9 of 10 branches missed.">                    } else if (type.equals(&quot;P&quot;) || type.equals(&quot;U&quot;) || type.equals(&quot;S&quot;) || type.equals(&quot;P*&quot;) || type.equals(&quot;P**&quot;)) {</span>
+<span class="fc" id="L169">                        totalLeaves++;</span>
                     }
-<span class="nc" id="L171">                }</span>
+<span class="fc" id="L171">                }</span>
 
                 // Add Total WFH and Total Leaves to the user's map
-<span class="nc" id="L174">                userData.put(&quot;Total WFH&quot;, String.valueOf(totalWFH));</span>
-<span class="nc" id="L175">                userData.put(&quot;Total Leaves&quot;, String.valueOf(totalLeaves));</span>
-<span class="nc" id="L176">            }</span>
+<span class="fc" id="L174">                userData.put(&quot;Total WFH&quot;, String.valueOf(totalWFH));</span>
+<span class="fc" id="L175">                userData.put(&quot;Total Leaves&quot;, String.valueOf(totalLeaves));</span>
+<span class="fc" id="L176">            }</span>
 
 
             // Return the processed data
-<span class="nc" id="L180">            return userAttendanceMap;</span>
+<span class="fc" id="L180">            return userAttendanceMap;</span>
         }
 
 

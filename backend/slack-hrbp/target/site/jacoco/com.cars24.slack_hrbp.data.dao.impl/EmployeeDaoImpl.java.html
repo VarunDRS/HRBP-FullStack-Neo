@@ -21,17 +21,17 @@ public class EmployeeDaoImpl implements EmployeeDao {
 
     @Override
     public String updatePassword(PasswordUpdateRequest passwordUpdateRequest) {
-<span class="nc" id="L24">        Optional&lt;EmployeeEntity&gt; entityOpt = employeeRepository.findByUserId(passwordUpdateRequest.getUserId());</span>
+<span class="fc" id="L24">        Optional&lt;EmployeeEntity&gt; entityOpt = employeeRepository.findByUserId(passwordUpdateRequest.getUserId());</span>
 
-<span class="nc bnc" id="L26" title="All 2 branches missed.">        if (entityOpt.isEmpty()) {</span>
-<span class="nc" id="L27">            throw new UserServiceException(&quot;User not found&quot;);</span>
+<span class="fc bfc" id="L26" title="All 2 branches covered.">        if (entityOpt.isEmpty()) {</span>
+<span class="fc" id="L27">            throw new UserServiceException(&quot;User not found&quot;);</span>
         }
 
-<span class="nc" id="L30">        String encryptedPassword = bCryptPasswordEncoder.encode(passwordUpdateRequest.getNewPassword());</span>
+<span class="fc" id="L30">        String encryptedPassword = bCryptPasswordEncoder.encode(passwordUpdateRequest.getNewPassword());</span>
 
-<span class="nc" id="L32">        employeeRepository.updatePassword(passwordUpdateRequest.getUserId(), encryptedPassword);</span>
+<span class="fc" id="L32">        employeeRepository.updatePassword(passwordUpdateRequest.getUserId(), encryptedPassword);</span>
 
-<span class="nc" id="L34">        return &quot;Password updated successfully&quot;;</span>
+<span class="fc" id="L34">        return &quot;Password updated successfully&quot;;</span>
     }
 
 

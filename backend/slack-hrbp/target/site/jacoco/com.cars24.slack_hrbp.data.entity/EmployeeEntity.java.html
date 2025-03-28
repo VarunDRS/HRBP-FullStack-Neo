@@ -10,12 +10,12 @@ import org.springframework.data.neo4j.core.schema.*;
 import java.util.ArrayList;
 import java.util.List;
 
-<span class="pc bnc" id="L13" title="All 78 branches missed.">@Data</span>
+<span class="pc bpc" id="L13" title="44 of 78 branches missed.">@Data</span>
 @Node(&quot;Employee&quot;)
 public class EmployeeEntity {
 
     @Id
-<span class="nc" id="L18">    private String id; // Use String for elementId()</span>
+<span class="fc" id="L18">    private String id; // Use String for elementId()</span>
 
     @NotNull
     @Property(&quot;userId&quot;)
@@ -29,19 +29,19 @@ public class EmployeeEntity {
     @Email
     @Length(max = 30, min = 5, message = &quot;Length should be 5-30&quot;)
     @Property(&quot;email&quot;)
-<span class="nc" id="L32">    private String email;</span>
+<span class="fc" id="L32">    private String email;</span>
 
 <span class="fc" id="L34">    private String encryptedPassword;</span>
 
-<span class="nc" id="L36">    private String managerName;</span>
-<span class="nc" id="L37">    private String managerId;</span>
+<span class="fc" id="L36">    private String managerName;</span>
+<span class="fc" id="L37">    private String managerId;</span>
 
 <span class="fc" id="L39">    @Property(&quot;roles&quot;)</span>
-<span class="nc" id="L40">    private List&lt;String&gt; roles = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L40">    private List&lt;String&gt; roles = new ArrayList&lt;&gt;();</span>
 
     // Relationship with Manager
     @Relationship(type = &quot;REPORTED_BY&quot;, direction = Relationship.Direction.OUTGOING)
-<span class="nc" id="L44">    private EmployeeEntity manager;</span>
+<span class="fc" id="L44">    private EmployeeEntity manager;</span>
 
 
 }
