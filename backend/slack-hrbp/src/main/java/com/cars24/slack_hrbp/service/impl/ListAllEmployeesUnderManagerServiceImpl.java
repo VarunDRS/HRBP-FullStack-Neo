@@ -19,6 +19,4 @@ public class ListAllEmployeesUnderManagerServiceImpl{
         return listAllEmployeesUnderManagerDao.getAllEmployeesUnderManager(userId, page, limit,searchtag);
     }
 
-
-
 }

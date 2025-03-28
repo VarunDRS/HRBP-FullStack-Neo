@@ -3,27 +3,27 @@
 import lombok.Data;
 import java.util.Objects;
 
-<span class="nc" id="L6">@Data</span>
+<span class="pc" id="L6">@Data</span>
 public class Pair {
-<span class="nc" id="L8">    String userId;</span>
-<span class="nc" id="L9">    String username;</span>
+<span class="fc" id="L8">    String userId;</span>
+<span class="fc" id="L9">    String username;</span>
 
-<span class="nc" id="L11">    public Pair(String userId, String username) {</span>
-<span class="nc" id="L12">        this.userId = userId;</span>
-<span class="nc" id="L13">        this.username = username;</span>
-<span class="nc" id="L14">    }</span>
+<span class="fc" id="L11">    public Pair(String userId, String username) {</span>
+<span class="fc" id="L12">        this.userId = userId;</span>
+<span class="fc" id="L13">        this.username = username;</span>
+<span class="fc" id="L14">    }</span>
 
     @Override
     public boolean equals(Object o) {
-<span class="nc bnc" id="L18" title="All 2 branches missed.">        if (this == o) return true;</span>
-<span class="nc bnc" id="L19" title="All 4 branches missed.">        if (o == null || getClass() != o.getClass()) return false;</span>
-<span class="nc" id="L20">        Pair pair = (Pair) o;</span>
-<span class="nc bnc" id="L21" title="All 4 branches missed.">        return Objects.equals(userId, pair.userId) &amp;&amp; Objects.equals(username, pair.username);</span>
+<span class="pc bpc" id="L18" title="1 of 2 branches missed.">        if (this == o) return true;</span>
+<span class="pc bpc" id="L19" title="2 of 4 branches missed.">        if (o == null || getClass() != o.getClass()) return false;</span>
+<span class="fc" id="L20">        Pair pair = (Pair) o;</span>
+<span class="pc bpc" id="L21" title="2 of 4 branches missed.">        return Objects.equals(userId, pair.userId) &amp;&amp; Objects.equals(username, pair.username);</span>
     }
 
     @Override
     public int hashCode() {
-<span class="nc" id="L26">        return Objects.hash(userId, username);</span>
+<span class="fc" id="L26">        return Objects.hash(userId, username);</span>
     }
 }
 
