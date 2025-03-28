@@ -20,6 +20,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import io.github.cdimascio.dotenv.Dotenv;
+
+
 
 @Slf4j
 @Service
@@ -56,7 +59,10 @@ public class HrServiceImpl implements HrService {
             managerName = managerOpt.getUsername();
         }
 
-        String password = "Temp#555";
+
+        Dotenv dotenv = Dotenv.load();
+        String password = dotenv.get("DEFAULT_TEMP_PASSWORD");
+
         ProfileEntity entity = profileRepository.findByEmail(request.getEmail());
 
         String userId = entity.getSlackid();
@@ -129,9 +135,6 @@ public class HrServiceImpl implements HrService {
 
     @Override
     public String addEntry(String userId,String date,String leaveType,String reason){
-//        if(attendanceRepository.existsByUseridAndDateStartingWith(userId,date)){
-//            throw new UserServiceException("Not such entry for the user exists");
-//        }
         return hrDao.addEntry(userId,date,leaveType,reason);
     }
 

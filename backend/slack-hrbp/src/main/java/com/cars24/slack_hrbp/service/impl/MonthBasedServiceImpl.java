@@ -8,6 +8,7 @@ import com.cars24.slack_hrbp.data.entity.EmployeeEntity;
 import com.cars24.slack_hrbp.data.repository.AttendanceRepository;
 import com.cars24.slack_hrbp.data.repository.EmployeeRepository;
 import com.cars24.slack_hrbp.excpetion.UserServiceException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -21,20 +22,14 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-
-@Service
 @Slf4j
+@Service
+@RequiredArgsConstructor
 public class MonthBasedServiceImpl {
 
-    @Autowired
-    private AttendanceRepository attendanceRepository;
-
-    @Autowired
-    private EmployeeRepository employeeRepository;
-
-    @Autowired
-    private MonthBasedDaoImpl monthBasedDao;
-
+    private final AttendanceRepository attendanceRepository;
+    private final EmployeeRepository employeeRepository;
+    private final MonthBasedDaoImpl monthBasedDao;
 
     public byte[] generateAttendanceReport(String monthYear, String managerId) throws IOException, ParseException {
         // Fetch data for the given month and year
@@ -53,7 +48,6 @@ public class MonthBasedServiceImpl {
 
         for (AttendanceEntity attendance : attendanceList) {
             String userid = attendance.getUserid(); // Use userid as the key
-            String username = attendance.getUsername(); // Include username for reference
             String date = attendance.getDate();
             String requestType = getRequestTypeCode(attendance.getType());
 
@@ -119,7 +113,7 @@ public class MonthBasedServiceImpl {
         }
     }
 
-    private String getRequestTypeCode(String requestType) {
+    public String getRequestTypeCode(String requestType) {
         if (requestType == null) {
             return "";  // Or some default code
         }
@@ -233,7 +227,7 @@ public class MonthBasedServiceImpl {
     }
 
 
-    private Map<String, Map<String, String>> processAttendanceData(List<AttendanceEntity> attendanceList) throws ParseException {
+    public Map<String, Map<String, String>> processAttendanceData(List<AttendanceEntity> attendanceList) throws ParseException {
         Map<String, Map<String, String>> userAttendanceMap = new HashMap<>();
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         SimpleDateFormat displayFormat = new SimpleDateFormat("MMM-dd");
@@ -254,70 +248,65 @@ public class MonthBasedServiceImpl {
 
     public byte[] generateAttendanceReports(String fromMonth, String toMonth, String managerId) throws IOException, ParseException {
         // Create a new workbook to combine all sheets
-        Workbook combinedWorkbook = new XSSFWorkbook();
+        try (Workbook combinedWorkbook = new XSSFWorkbook();
+             ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
 
-        // Parse the from and to monthYear strings into dates
-        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM");
-        Date fromDate = inputFormat.parse(fromMonth);
-        Date toDate = inputFormat.parse(toMonth);
+            // Parse the from and to monthYear strings into dates
+            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM");
+            Date fromDate = inputFormat.parse(fromMonth);
+            Date toDate = inputFormat.parse(toMonth);
 
-        // Create a calendar to iterate through the months
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(fromDate);
+            // Create a calendar to iterate through the months
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(fromDate);
 
-        // Iterate through each month in the range
-        while (!calendar.getTime().after(toDate)) {
-            String currentMonthYear = inputFormat.format(calendar.getTime());
+            // Iterate through each month in the range
+            while (!calendar.getTime().after(toDate)) {
+                String currentMonthYear = inputFormat.format(calendar.getTime());
 
-            // Generate the report for the current month
-            byte[] excelData = generateAttendanceReport(currentMonthYear, managerId);
+                // Generate the report for the current month
+                byte[] excelData = generateAttendanceReport(currentMonthYear, managerId);
 
-            // Load the generated workbook
-            Workbook monthlyWorkbook = new XSSFWorkbook(new ByteArrayInputStream(excelData));
+                // Load the generated workbook
+                try (Workbook monthlyWorkbook = new XSSFWorkbook(new ByteArrayInputStream(excelData))) {
+                    // Copy the sheet from the monthly workbook to the combined workbook
+                    for (int i = 0; i < monthlyWorkbook.getNumberOfSheets(); i++) {
+                        Sheet sourceSheet = monthlyWorkbook.getSheetAt(i);
+                        String sheetName = currentMonthYear; // Use the monthYear as the sheet name
+                        Sheet targetSheet = combinedWorkbook.createSheet(sheetName);
 
-            // Copy the sheet from the monthly workbook to the combined workbook
-            for (int i = 0; i < monthlyWorkbook.getNumberOfSheets(); i++) {
-                Sheet sourceSheet = monthlyWorkbook.getSheetAt(i);
-
-                // Create a unique sheet name for the combined workbook
-                String sheetName = currentMonthYear; // Use the monthYear as the sheet name
-                Sheet targetSheet = combinedWorkbook.createSheet(sheetName);
-
-                // Copy all rows and cells from the source sheet to the target sheet
-                for (int j = 0; j <= sourceSheet.getLastRowNum(); j++) {
-                    Row sourceRow = sourceSheet.getRow(j);
-                    if (sourceRow != null) {
-                        Row targetRow = targetSheet.createRow(j);
-
-                        for (int k = 0; k < sourceRow.getLastCellNum(); k++) {
-                            Cell sourceCell = sourceRow.getCell(k);
-                            if (sourceCell != null) {
-                                Cell targetCell = targetRow.createCell(k);
-                                targetCell.setCellValue(sourceCell.getStringCellValue());
+                        // Copy all rows and cells from the source sheet to the target sheet
+                        for (int j = 0; j <= sourceSheet.getLastRowNum(); j++) {
+                            Row sourceRow = sourceSheet.getRow(j);
+                            if (sourceRow != null) {
+                                Row targetRow = targetSheet.createRow(j);
+                                for (int k = 0; k < sourceRow.getLastCellNum(); k++) {
+                                    Cell sourceCell = sourceRow.getCell(k);
+                                    if (sourceCell != null) {
+                                        Cell targetCell = targetRow.createCell(k);
+                                        targetCell.setCellValue(sourceCell.getStringCellValue());
+                                    }
+                                }
                             }
                         }
                     }
                 }
+
+                // Move to the next month
+                calendar.add(Calendar.MONTH, 1);
             }
 
-            // Close the monthly workbook
-            monthlyWorkbook.close();
+            // Write the combined workbook to a ByteArrayOutputStream
+            combinedWorkbook.write(outputStream);
 
-            // Move to the next month
-            calendar.add(Calendar.MONTH, 1);
+            // Return the byte array
+            return outputStream.toByteArray();
         }
-
-        // Write the combined workbook to a ByteArrayOutputStream
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        combinedWorkbook.write(outputStream);
-        combinedWorkbook.close();
-
-        // Return the byte array
-        return outputStream.toByteArray();
     }
 
 
-    private Map<Pair, Map<String, String>> formatAttendanceData(List<AttendanceEntity> attendanceRecords, List<String> employeeUserIds) {
+
+    public Map<Pair, Map<String, String>> formatAttendanceData(List<AttendanceEntity> attendanceRecords, List<String> employeeUserIds) {
         Map<Pair, Map<String, String>> paginatedReportData = new LinkedHashMap<>();
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -362,21 +351,18 @@ public class MonthBasedServiceImpl {
         return paginatedReportData;
     }
 
-
-    public Map<String, Object> getAttendanceReportForHR(String monthYear, int page, int limit) {
-        if (page > 0) page -= 1; // Convert to zero-based index
-
-        // Get paginated employees under the manager
-        Page<String> employeePage = monthBasedDao.getPaginatedEmployeesForHr(page, limit);
-        List<String> employeeUserIds = employeePage.getContent(); // Use userId instead of username
-
+    // Common helper method that both report methods will use
+    private Map<String, Object> generateAttendanceReportCommon(String monthYear, List<String> employeeUserIds,
+                                                               Page<String> employeePage, int page) {
 
         // Fetch attendance records for these employees
         List<AttendanceEntity> attendanceRecords = monthBasedDao.getAttendanceForEmployees(monthYear, employeeUserIds);
-        log.info("getAttendanceForEmployees in service layer: {}" + attendanceRecords);
+        log.info("getAttendanceForEmployees in service layer: {}", attendanceRecords);
 
         // Transform attendance records into structured data
         Map<Pair, Map<String, String>> paginatedReportData = formatAttendanceData(attendanceRecords, employeeUserIds);
+
+        // Calculate totals for each user
         for (Map.Entry<Pair, Map<String, String>> entry : paginatedReportData.entrySet()) {
             Map<String, String> userData = entry.getValue();
             int totalWFH = 0;
@@ -386,7 +372,8 @@ public class MonthBasedServiceImpl {
                 String type = dateEntry.getValue();
                 if (type.equals("W")) {
                     totalWFH++;
-                } else if (type.equals("P") || type.equals("U") || type.equals("S") || type.equals("P*") || type.equals("P**")) {
+                } else if (type.equals("P") || type.equals("U") || type.equals("S") ||
+                        type.equals("P*") || type.equals("P**")) {
                     totalLeaves++;
                 }
             }
@@ -401,53 +388,32 @@ public class MonthBasedServiceImpl {
         response.put("reportData", paginatedReportData);
         response.put("totalPages", employeePage.getTotalPages());
         response.put("currentPage", page + 1);
-        response.put("pageSize", limit);
+        response.put("pageSize", employeePage.getSize());
         response.put("totalRecords", employeePage.getTotalElements());
 
         return response;
     }
 
+    // Original HR method (now simplified)
+    public Map<String, Object> getAttendanceReportForHR(String monthYear, int page, int limit) {
+        if (page > 0) page -= 1; // Convert to zero-based index
+
+        // Get paginated employees for HR
+        Page<String> employeePage = monthBasedDao.getPaginatedEmployeesForHr(page, limit);
+        List<String> employeeUserIds = employeePage.getContent();
+
+        return generateAttendanceReportCommon(monthYear, employeeUserIds, employeePage, page);
+    }
+
+    // Original Manager method (now simplified)
     public Map<String, Object> getAttendanceReportForManager(String monthYear, String managerId, int page, int limit) {
         if (page > 0) page -= 1; // Convert to zero-based index
 
-        // Get paginated employees under the manager
+        // Get paginated employees for Manager
         Page<String> employeePage = monthBasedDao.getPaginatedEmployeesForManager(managerId, page, limit);
-        List<String> employeeUserIds = employeePage.getContent(); // Use userId instead of username
+        List<String> employeeUserIds = employeePage.getContent();
 
-        // Fetch attendance records for these employees
-        List<AttendanceEntity> attendanceRecords = monthBasedDao.getAttendanceForEmployees(monthYear, employeeUserIds);
-        log.info("getAttendanceForEmployees in service layer: {}" + attendanceRecords);
-
-        // Transform attendance records into structured data
-        Map<Pair, Map<String, String>> paginatedReportData = formatAttendanceData(attendanceRecords, employeeUserIds);
-        for (Map.Entry<Pair, Map<String, String>> entry : paginatedReportData.entrySet()) {
-            Map<String, String> userData = entry.getValue();
-            int totalWFH = 0;
-            int totalLeaves = 0;
-
-            for (Map.Entry<String, String> dateEntry : userData.entrySet()) {
-                String type = dateEntry.getValue();
-                if (type.equals("W")) {
-                    totalWFH++;
-                } else if (type.equals("P") || type.equals("U") || type.equals("S") || type.equals("P*") || type.equals("P**")) {
-                    totalLeaves++;
-                }
-            }
-
-            // Add Total WFH and Total Leaves to the user's map
-            userData.put("Total WFH", String.valueOf(totalWFH));
-            userData.put("Total Leaves", String.valueOf(totalLeaves));
-        }
-
-        // Prepare response
-        Map<String, Object> response = new HashMap<>();
-        response.put("reportData", paginatedReportData);
-        response.put("totalPages", employeePage.getTotalPages());
-        response.put("currentPage", page + 1);
-        response.put("pageSize", limit);
-        response.put("totalRecords", employeePage.getTotalElements());
-
-        return response;
+        return generateAttendanceReportCommon(monthYear, employeeUserIds, employeePage, page);
     }
 
 }

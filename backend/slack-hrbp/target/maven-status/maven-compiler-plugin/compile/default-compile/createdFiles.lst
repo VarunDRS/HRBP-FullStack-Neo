@@ -5,6 +5,7 @@ com\cars24\slack_hrbp\data\dao\impl\EmployeeDaoImpl.class
 com\cars24\slack_hrbp\SpringApplicationContext.class
 com\cars24\slack_hrbp\data\response\GetUserResponse.class
 com\cars24\slack_hrbp\advice\GlobalExceptionHandler.class
+com\cars24\slack_hrbp\data\Pair.class
 com\cars24\slack_hrbp\data\response\UpdateEmployeeResponse.class
 com\cars24\slack_hrbp\data\response\ApiResponse.class
 com\cars24\slack_hrbp\security\SecurityConstants.class
@@ -45,10 +46,12 @@ com\cars24\slack_hrbp\controller\ManagerController.class
 com\cars24\slack_hrbp\excpetion\UserDoesntExistException.class
 com\cars24\slack_hrbp\security\AuthenticationFilter.class
 com\cars24\slack_hrbp\security\WebSecurity.class
+com\cars24\slack_hrbp\data\request\AddLeaveRequest.class
 com\cars24\slack_hrbp\data\dto\UserDto.class
 com\cars24\slack_hrbp\data\request\EmployeeUpdateRequest.class
 com\cars24\slack_hrbp\data\dao\impl\GraphDaoImpl.class
 com\cars24\slack_hrbp\data\dao\EmployeeDao.class
+com\cars24\slack_hrbp\controller\AttendanceControllerHelper.class
 com\cars24\slack_hrbp\data\request\SignUpRequest.class
 com\cars24\slack_hrbp\controller\GraphsController.class
 com\cars24\slack_hrbp\service\GraphServices.class
