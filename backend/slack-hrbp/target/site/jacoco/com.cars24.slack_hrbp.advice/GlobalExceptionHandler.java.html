@@ -21,52 +21,52 @@ import java.util.Map;
     // Handle validation exceptions (for @Valid annotations in controllers)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity&lt;ApiResponse&gt; handleValidationExceptions(MethodArgumentNotValidException exception) {
-<span class="nc" id="L24">        log.info(&quot;[handleUserDoesntExistException] Caught Exception: {}&quot;, exception.getMessage(), exception);</span>
+<span class="fc" id="L24">        log.info(&quot;[handleUserDoesntExistException] Caught Exception: {}&quot;, exception.getMessage(), exception);</span>
 
         // Create an error map to capture validation errors
-<span class="nc" id="L27">        Map&lt;String, String&gt; errorMap = new HashMap&lt;&gt;();</span>
-<span class="nc" id="L28">        exception.getBindingResult().getFieldErrors()</span>
-<span class="nc" id="L29">                .forEach(error -&gt; errorMap.put(error.getField(), error.getDefaultMessage()));</span>
+<span class="fc" id="L27">        Map&lt;String, String&gt; errorMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L28">        exception.getBindingResult().getFieldErrors()</span>
+<span class="fc" id="L29">                .forEach(error -&gt; errorMap.put(error.getField(), error.getDefaultMessage()));</span>
 
 
         // Create a response for validation errors
-<span class="nc" id="L33">        ApiResponse apiResponse = new ApiResponse();</span>
-<span class="nc" id="L34">        apiResponse.setStatuscode(400);</span>
-<span class="nc" id="L35">        apiResponse.setSuccess(false);</span>
-<span class="nc" id="L36">        apiResponse.setMessage(&quot;Validation failed&quot;);</span>
-<span class="nc" id="L37">        apiResponse.setService(&quot;AppValidation &quot; + HttpStatus.BAD_REQUEST.value());</span>
-<span class="nc" id="L38">        apiResponse.setData(errorMap);</span>
+<span class="fc" id="L33">        ApiResponse apiResponse = new ApiResponse();</span>
+<span class="fc" id="L34">        apiResponse.setStatuscode(400);</span>
+<span class="fc" id="L35">        apiResponse.setSuccess(false);</span>
+<span class="fc" id="L36">        apiResponse.setMessage(&quot;Validation failed&quot;);</span>
+<span class="fc" id="L37">        apiResponse.setService(&quot;AppValidation &quot; + HttpStatus.BAD_REQUEST.value());</span>
+<span class="fc" id="L38">        apiResponse.setData(errorMap);</span>
 
-<span class="nc" id="L40">        return ResponseEntity.badRequest().body(apiResponse);</span>
+<span class="fc" id="L40">        return ResponseEntity.badRequest().body(apiResponse);</span>
     }
 
     // Handle UserServiceExceptions
     @ExceptionHandler(UserServiceException.class)
     public ResponseEntity&lt;ApiResponse&gt; handleUserServiceExceptions(UserServiceException exception) {
-<span class="nc" id="L46">        log.info(&quot;[handleUserServiceExceptions]&quot;);</span>
+<span class="fc" id="L46">        log.info(&quot;[handleUserServiceExceptions]&quot;);</span>
 
-<span class="nc" id="L48">        ApiResponse apiResponse = new ApiResponse();</span>
-<span class="nc" id="L49">        apiResponse.setStatuscode(400);</span>
-<span class="nc" id="L50">        apiResponse.setSuccess(false);</span>
-<span class="nc" id="L51">        apiResponse.setMessage(exception.getMessage());</span>
-<span class="nc" id="L52">        apiResponse.setService(&quot;AppUsr &quot; + HttpStatus.BAD_REQUEST.value());</span>
-<span class="nc" id="L53">        apiResponse.setData(null);</span>
+<span class="fc" id="L48">        ApiResponse apiResponse = new ApiResponse();</span>
+<span class="fc" id="L49">        apiResponse.setStatuscode(400);</span>
+<span class="fc" id="L50">        apiResponse.setSuccess(false);</span>
+<span class="fc" id="L51">        apiResponse.setMessage(exception.getMessage());</span>
+<span class="fc" id="L52">        apiResponse.setService(&quot;AppUsr &quot; + HttpStatus.BAD_REQUEST.value());</span>
+<span class="fc" id="L53">        apiResponse.setData(null);</span>
 
-<span class="nc" id="L55">        return ResponseEntity.badRequest().body(apiResponse);</span>
+<span class="fc" id="L55">        return ResponseEntity.badRequest().body(apiResponse);</span>
     }
 
     @ExceptionHandler(UserDoesntExistException.class)
     public ResponseEntity&lt;ApiResponse&gt; handleUserDoesntExistException(UserDoesntExistException exception){
-<span class="nc" id="L60">        log.info(&quot;[handleUserDoesntExistException]&quot;);</span>
+<span class="fc" id="L60">        log.info(&quot;[handleUserDoesntExistException]&quot;);</span>
 
-<span class="nc" id="L62">        ApiResponse apiResponse = new ApiResponse();</span>
-<span class="nc" id="L63">        apiResponse.setStatuscode(400);</span>
-<span class="nc" id="L64">        apiResponse.setSuccess(false);</span>
-<span class="nc" id="L65">        apiResponse.setMessage(exception.getMessage());</span>
-<span class="nc" id="L66">        apiResponse.setService(&quot;HR Update Service &quot; + HttpStatus.BAD_REQUEST.value());</span>
-<span class="nc" id="L67">        apiResponse.setData(null);</span>
+<span class="fc" id="L62">        ApiResponse apiResponse = new ApiResponse();</span>
+<span class="fc" id="L63">        apiResponse.setStatuscode(400);</span>
+<span class="fc" id="L64">        apiResponse.setSuccess(false);</span>
+<span class="fc" id="L65">        apiResponse.setMessage(exception.getMessage());</span>
+<span class="fc" id="L66">        apiResponse.setService(&quot;HR Update Service &quot; + HttpStatus.BAD_REQUEST.value());</span>
+<span class="fc" id="L67">        apiResponse.setData(null);</span>
 
-<span class="nc" id="L69">        return ResponseEntity.badRequest().body(apiResponse);</span>
+<span class="fc" id="L69">        return ResponseEntity.badRequest().body(apiResponse);</span>
 
     }
 }

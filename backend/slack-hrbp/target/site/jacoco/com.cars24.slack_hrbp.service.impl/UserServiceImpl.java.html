@@ -45,23 +45,23 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto createUser(UserDto user) {
-<span class="nc" id="L48">        log.info(&quot;[createUser] UserServiceImpl {}&quot;, user);</span>
+<span class="fc" id="L48">        log.info(&quot;[createUser] UserServiceImpl {}&quot;, user);</span>
 
-<span class="nc bnc" id="L50" title="All 8 branches missed.">        if (user.getFirstName() == null || user.getLastName() == null || user.getEmail() == null || user.getPassword() == null)</span>
-<span class="nc" id="L51">            throw new UserServiceException(&quot;Empty fields are not allowed&quot;);</span>
+<span class="pc bpc" id="L50" title="3 of 8 branches missed.">        if (user.getFirstName() == null || user.getLastName() == null || user.getEmail() == null || user.getPassword() == null)</span>
+<span class="fc" id="L51">            throw new UserServiceException(&quot;Empty fields are not allowed&quot;);</span>
 
-<span class="nc bnc" id="L53" title="All 2 branches missed.">        if (employeeRepository.existsByEmail(user.getEmail()))</span>
-<span class="nc" id="L54">            throw new UserServiceException(&quot;Record already exists&quot;);</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        if (employeeRepository.existsByEmail(user.getEmail()))</span>
+<span class="fc" id="L54">            throw new UserServiceException(&quot;Record already exists&quot;);</span>
 
-<span class="nc" id="L56">        EmployeeEntity employeeEntity = new EmployeeEntity();</span>
-<span class="nc" id="L57">        BeanUtils.copyProperties(user, employeeEntity);</span>
+<span class="fc" id="L56">        EmployeeEntity employeeEntity = new EmployeeEntity();</span>
+<span class="fc" id="L57">        BeanUtils.copyProperties(user, employeeEntity);</span>
 
-<span class="nc" id="L59">        employeeEntity.setUserId(utils.generateUserId(10));</span>
+<span class="fc" id="L59">        employeeEntity.setUserId(utils.generateUserId(10));</span>
 
-<span class="nc" id="L61">        employeeEntity.setEncryptedPassword(bCryptPasswordEncoder.encode(user.getPassword()));</span>
+<span class="fc" id="L61">        employeeEntity.setEncryptedPassword(bCryptPasswordEncoder.encode(user.getPassword()));</span>
 
-<span class="nc bnc" id="L63" title="All 4 branches missed.">        if (user.getRoles() == null || user.getRoles().isEmpty()) {</span>
-<span class="nc" id="L64">            employeeEntity.setRoles(List.of(&quot;ROLE_EMPLOYEE&quot;));</span>
+<span class="pc bpc" id="L63" title="3 of 4 branches missed.">        if (user.getRoles() == null || user.getRoles().isEmpty()) {</span>
+<span class="fc" id="L64">            employeeEntity.setRoles(List.of(&quot;ROLE_EMPLOYEE&quot;));</span>
         } else {
 <span class="nc" id="L66">            List&lt;String&gt; formattedRoles = user.getRoles().stream()</span>
 <span class="nc bnc" id="L67" title="All 2 branches missed.">                    .map(role -&gt; role.startsWith(&quot;ROLE_&quot;) ? role : &quot;ROLE_&quot; + role)  // Add ROLE_ prefix if not present</span>
@@ -70,12 +70,12 @@ public class UserServiceImpl implements UserService {
         }
 
         // Save the user entity
-<span class="nc" id="L73">        EmployeeEntity savedUser = employeeRepository.save(employeeEntity);</span>
+<span class="fc" id="L73">        EmployeeEntity savedUser = employeeRepository.save(employeeEntity);</span>
 
         // Convert saved entity back to DTO to return the response
-<span class="nc" id="L76">        UserDto signUpResponse = new UserDto();</span>
-<span class="nc" id="L77">        BeanUtils.copyProperties(savedUser, signUpResponse);</span>
-<span class="nc" id="L78">        return signUpResponse;</span>
+<span class="fc" id="L76">        UserDto signUpResponse = new UserDto();</span>
+<span class="fc" id="L77">        BeanUtils.copyProperties(savedUser, signUpResponse);</span>
+<span class="fc" id="L78">        return signUpResponse;</span>
     }
 
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
@@ -102,56 +102,56 @@ public class UserServiceImpl implements UserService {
     @Transactional
     @Override
     public UserDetails loadUserByUsername(String username) throws UserServiceException {
-<span class="nc" id="L105">        log.info(&quot;[loadUserByUsername] UserServiceImpl {} &quot;, username);</span>
+<span class="fc" id="L105">        log.info(&quot;[loadUserByUsername] UserServiceImpl {} &quot;, username);</span>
 
         // Find the user entity by email (which is the username)
-<span class="nc" id="L108">        EmployeeEntity employeeEntity = employeeRepository.findByEmail(username);</span>
+<span class="fc" id="L108">        EmployeeEntity employeeEntity = employeeRepository.findByEmail(username);</span>
 
         // If no user is found, throw an exception
-<span class="nc bnc" id="L111" title="All 2 branches missed.">        if (employeeEntity == null)</span>
-<span class="nc" id="L112">            throw new UserServiceException(&quot;User hasn't signed up&quot;);</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        if (employeeEntity == null)</span>
+<span class="fc" id="L112">            throw new UserServiceException(&quot;User hasn't signed up&quot;);</span>
 
         // Convert roles to Spring Security authorities
-<span class="nc" id="L115">        List&lt;GrantedAuthority&gt; authorities = employeeEntity.getRoles().stream()</span>
-<span class="nc bnc" id="L116" title="All 2 branches missed.">                .map(role -&gt; role.startsWith(&quot;ROLE_&quot;) ? new SimpleGrantedAuthority(role) : new SimpleGrantedAuthority(&quot;ROLE_&quot; + role))</span>
-<span class="nc" id="L117">                .collect(Collectors.toList());</span>
+<span class="fc" id="L115">        List&lt;GrantedAuthority&gt; authorities = employeeEntity.getRoles().stream()</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">                .map(role -&gt; role.startsWith(&quot;ROLE_&quot;) ? new SimpleGrantedAuthority(role) : new SimpleGrantedAuthority(&quot;ROLE_&quot; + role))</span>
+<span class="fc" id="L117">                .collect(Collectors.toList());</span>
 
         // Return a new User object with the username, password, and authorities (roles)
-<span class="nc" id="L120">        return new User(username, employeeEntity.getEncryptedPassword(), authorities);</span>
+<span class="fc" id="L120">        return new User(username, employeeEntity.getEncryptedPassword(), authorities);</span>
     }
 
     public UserDto getUser(String email){
 
-<span class="nc" id="L125">        UserDto response = new UserDto();</span>
-<span class="nc" id="L126">        EmployeeEntity employeeEntity = employeeRepository.findByEmail(email);</span>
+<span class="fc" id="L125">        UserDto response = new UserDto();</span>
+<span class="fc" id="L126">        EmployeeEntity employeeEntity = employeeRepository.findByEmail(email);</span>
 
-<span class="nc bnc" id="L128" title="All 2 branches missed.">        if(employeeEntity == null)</span>
-<span class="nc" id="L129">            throw new UserServiceException(&quot;No entry by the given user id&quot;);</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">        if(employeeEntity == null)</span>
+<span class="fc" id="L129">            throw new UserServiceException(&quot;No entry by the given user id&quot;);</span>
 
-<span class="nc" id="L131">        BeanUtils.copyProperties(employeeEntity, response);</span>
-<span class="nc" id="L132">        return response;</span>
+<span class="fc" id="L131">        BeanUtils.copyProperties(employeeEntity, response);</span>
+<span class="fc" id="L132">        return response;</span>
     }
 
 
     public List&lt;UserDto&gt; getAllUsers(int page, int limit) {
 
-<span class="nc" id="L138">        Pageable pageable = (Pageable) PageRequest.of(page, limit);</span>
+<span class="fc" id="L138">        Pageable pageable = (Pageable) PageRequest.of(page, limit);</span>
 
-<span class="nc bnc" id="L140" title="All 2 branches missed.">        if(page &gt; 0)</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">        if(page &gt; 0)</span>
 <span class="nc" id="L141">            page -= 1;</span>
 
-<span class="nc" id="L143">        List&lt;UserDto&gt; users = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L143">        List&lt;UserDto&gt; users = new ArrayList&lt;&gt;();</span>
 
-<span class="nc" id="L145">        Page&lt;EmployeeEntity&gt; userPage = employeeRepository.findAll(pageable);</span>
-<span class="nc" id="L146">        List&lt;EmployeeEntity&gt; response = userPage.getContent();</span>
+<span class="fc" id="L145">        Page&lt;EmployeeEntity&gt; userPage = employeeRepository.findAll(pageable);</span>
+<span class="fc" id="L146">        List&lt;EmployeeEntity&gt; response = userPage.getContent();</span>
 
-<span class="nc bnc" id="L148" title="All 2 branches missed.">        for(EmployeeEntity res : response){</span>
-<span class="nc" id="L149">            UserDto user = new UserDto();</span>
-<span class="nc" id="L150">            BeanUtils.copyProperties(res, user);</span>
-<span class="nc" id="L151">            users.add(user);</span>
-<span class="nc" id="L152">        }</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">        for(EmployeeEntity res : response){</span>
+<span class="fc" id="L149">            UserDto user = new UserDto();</span>
+<span class="fc" id="L150">            BeanUtils.copyProperties(res, user);</span>
+<span class="fc" id="L151">            users.add(user);</span>
+<span class="fc" id="L152">        }</span>
 
-<span class="nc" id="L154">        return users;</span>
+<span class="fc" id="L154">        return users;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

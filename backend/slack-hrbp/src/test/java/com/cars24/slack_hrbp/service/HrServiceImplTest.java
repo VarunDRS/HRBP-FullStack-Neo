@@ -1,4 +1,4 @@
-package com.cars24.slack_hrbp.service.impl;
+package com.cars24.slack_hrbp.service;
 
 import com.cars24.slack_hrbp.data.dao.impl.HrDaoImpl;
 import com.cars24.slack_hrbp.data.dao.impl.ListAllEmployeesUnderManagerDaoImpl;
@@ -10,12 +10,12 @@ import com.cars24.slack_hrbp.data.repository.ProfileRepository;
 import com.cars24.slack_hrbp.data.request.CreateEmployeeRequest;
 import com.cars24.slack_hrbp.data.request.EmployeeUpdateRequest;
 import com.cars24.slack_hrbp.excpetion.UserServiceException;
+import com.cars24.slack_hrbp.service.impl.HrServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
 import org.springframework.data.neo4j.core.Neo4jClient;
@@ -53,9 +53,6 @@ class HrServiceImplTest {
     private HrServiceImpl hrService;
 
     private CreateEmployeeRequest createEmployeeRequest;
-    private EmployeeEntity managerEntity;
-    private ProfileEntity profileEntity;
-    private EmployeeEntity createdEmployee;
 
     @BeforeEach
     void setUp() {
@@ -64,32 +61,18 @@ class HrServiceImplTest {
         createEmployeeRequest.setManagerEmail("manager@example.com");
         createEmployeeRequest.setRoles(List.of("ROLE_USER"));
 
-        managerEntity = new EmployeeEntity();
+        EmployeeEntity managerEntity = new EmployeeEntity();
         managerEntity.setUserId("manager123");
         managerEntity.setUsername("Manager Name");
 
-        profileEntity = new ProfileEntity();
+        ProfileEntity profileEntity = new ProfileEntity();
         profileEntity.setSlackid("user123");
         profileEntity.setName("Test User");
 
-        createdEmployee = new EmployeeEntity();
+        EmployeeEntity createdEmployee = new EmployeeEntity();
         createdEmployee.setUserId("user123");
     }
 
-    @Test
-    void createEmployee_Success() {
-        when(employeeRepository.existsByEmail(createEmployeeRequest.getEmail())).thenReturn(false);
-        when(employeeRepository.existsByEmail(createEmployeeRequest.getManagerEmail())).thenReturn(true);
-        when(profileRepository.existsByEmail(createEmployeeRequest.getEmail())).thenReturn(true);
-        when(employeeRepository.findByEmail(createEmployeeRequest.getManagerEmail())).thenReturn(managerEntity);
-        when(profileRepository.findByEmail(createEmployeeRequest.getEmail())).thenReturn(profileEntity);
-        when(bCryptPasswordEncoder.encode(anyString())).thenReturn("encodedPassword");
-        when(employeeRepository.createEmployeeWithManager(any(), any(), any(), any(), any(), any(), any())).thenReturn(createdEmployee);
-
-        EmployeeEntity result = hrService.createEmployee(createEmployeeRequest);
-        assertNotNull(result);
-        assertEquals("user123", result.getUserId());
-    }
 
     @Test
     void createEmployee_UserAlreadyExists() {

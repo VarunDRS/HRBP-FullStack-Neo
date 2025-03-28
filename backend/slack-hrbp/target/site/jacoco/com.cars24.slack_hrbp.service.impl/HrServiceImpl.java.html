@@ -47,37 +47,37 @@ public class HrServiceImpl implements HrService {
 <span class="fc bfc" id="L47" title="All 2 branches covered.">        if(employeeRepository.existsByEmail(request.getEmail()))</span>
 <span class="fc" id="L48">            throw new UserServiceException(&quot;User already there&quot;);</span>
 
-<span class="fc bfc" id="L50" title="All 2 branches covered.">        if(!employeeRepository.existsByEmail(request.getManagerEmail()))</span>
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">        if(!employeeRepository.existsByEmail(request.getManagerEmail()))</span>
 <span class="fc" id="L51">            throw new UserServiceException(&quot;Manager not found&quot;);</span>
 
-<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        if(!profileRepository.existsByEmail(request.getEmail()))</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">        if(!profileRepository.existsByEmail(request.getEmail()))</span>
 <span class="nc" id="L54">            throw new UserServiceException(&quot;User doesnt exist in slack&quot;);</span>
 
-<span class="pc bpc" id="L56" title="1 of 2 branches missed.">        if (request.getManagerEmail() != null) {</span>
-<span class="fc" id="L57">            EmployeeEntity managerOpt = employeeRepository.findByEmail(request.getManagerEmail());</span>
-<span class="fc" id="L58">            managerid = managerOpt.getUserId();</span>
-<span class="fc" id="L59">            managerName = managerOpt.getUsername();</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">        if (request.getManagerEmail() != null) {</span>
+<span class="nc" id="L57">            EmployeeEntity managerOpt = employeeRepository.findByEmail(request.getManagerEmail());</span>
+<span class="nc" id="L58">            managerid = managerOpt.getUserId();</span>
+<span class="nc" id="L59">            managerName = managerOpt.getUsername();</span>
         }
 
 
-<span class="fc" id="L63">        Dotenv dotenv = Dotenv.load();</span>
-<span class="fc" id="L64">        String password = dotenv.get(&quot;DEFAULT_TEMP_PASSWORD&quot;);</span>
+<span class="nc" id="L63">        Dotenv dotenv = Dotenv.load();</span>
+<span class="nc" id="L64">        String password = dotenv.get(&quot;DEFAULT_TEMP_PASSWORD&quot;);</span>
 
-<span class="fc" id="L66">        ProfileEntity entity = profileRepository.findByEmail(request.getEmail());</span>
+<span class="nc" id="L66">        ProfileEntity entity = profileRepository.findByEmail(request.getEmail());</span>
 
-<span class="fc" id="L68">        String userId = entity.getSlackid();</span>
-<span class="fc" id="L69">        String userName = entity.getName();</span>
+<span class="nc" id="L68">        String userId = entity.getSlackid();</span>
+<span class="nc" id="L69">        String userName = entity.getName();</span>
 
-<span class="fc" id="L71">        String encoded = bCryptPasswordEncoder.encode(password);</span>
+<span class="nc" id="L71">        String encoded = bCryptPasswordEncoder.encode(password);</span>
 
-<span class="fc" id="L73">        return employeeRepository.createEmployeeWithManager(</span>
+<span class="nc" id="L73">        return employeeRepository.createEmployeeWithManager(</span>
                 userId,
                 userName,
-<span class="fc" id="L76">                request.getEmail(),</span>
+<span class="nc" id="L76">                request.getEmail(),</span>
                 encoded,
                 managerName,
                 managerid,
-<span class="fc" id="L80">                request.getRoles()</span>
+<span class="nc" id="L80">                request.getRoles()</span>
         );
     }
 

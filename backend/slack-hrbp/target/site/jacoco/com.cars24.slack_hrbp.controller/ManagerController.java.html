@@ -33,14 +33,14 @@ public class ManagerController {
     public Map&lt;String, Map&lt;String, String&gt;&gt; getUserDetails(
             @PathVariable String userid,
             @PathVariable String month) {
-<span class="nc" id="L36">        return helper.handleGetUserDetails(userid, month);</span>
+<span class="fc" id="L36">        return helper.handleGetUserDetails(userid, month);</span>
     }
 
     // Modified to use helper
     @PreAuthorize(&quot;hasRole('MANAGER')&quot;)
     @GetMapping(&quot;/{userId}&quot;)
     public Map&lt;String, Map&lt;String, String&gt;&gt; getUserDetails(@PathVariable String userId) {
-<span class="nc" id="L43">        return helper.handleGetUserDetails(userId);</span>
+<span class="fc" id="L43">        return helper.handleGetUserDetails(userId);</span>
     }
 
     @PreAuthorize(&quot;hasRole('MANAGER')&quot;)
@@ -51,23 +51,23 @@ public class ManagerController {
             @RequestParam(value = &quot;page&quot;, defaultValue = &quot;1&quot;) int page,
             @RequestParam(value = &quot;limit&quot;, defaultValue = &quot;2&quot;) int limit) {
 
-<span class="nc bnc" id="L54" title="All 2 branches missed.">        if (page &gt; 0) page -= 1;</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (page &gt; 0) page -= 1;</span>
 
-<span class="nc" id="L56">        Page&lt;List&lt;String&gt;&gt; users = listAllEmployeesUnderManager.getAllEmployeesUnderManager(</span>
+<span class="fc" id="L56">        Page&lt;List&lt;String&gt;&gt; users = listAllEmployeesUnderManager.getAllEmployeesUnderManager(</span>
                 userId, page, limit, searchtag);
-<span class="nc" id="L58">        List&lt;GetUserResponse&gt; responses = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L58">        List&lt;GetUserResponse&gt; responses = new ArrayList&lt;&gt;();</span>
 
-<span class="nc bnc" id="L60" title="All 2 branches missed.">        for (List&lt;String&gt; userDto : users.getContent()) {</span>
-<span class="nc bnc" id="L61" title="All 2 branches missed.">            if (userDto.size() &gt;= 3) {</span>
-<span class="nc" id="L62">                GetUserResponse res = new GetUserResponse();</span>
-<span class="nc" id="L63">                res.setUserId(userDto.get(0));</span>
-<span class="nc" id="L64">                res.setEmail(userDto.get(1));</span>
-<span class="nc" id="L65">                res.setUsername(userDto.get(2));</span>
-<span class="nc" id="L66">                responses.add(res);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        for (List&lt;String&gt; userDto : users.getContent()) {</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">            if (userDto.size() &gt;= 3) {</span>
+<span class="fc" id="L62">                GetUserResponse res = new GetUserResponse();</span>
+<span class="fc" id="L63">                res.setUserId(userDto.get(0));</span>
+<span class="fc" id="L64">                res.setEmail(userDto.get(1));</span>
+<span class="fc" id="L65">                res.setUsername(userDto.get(2));</span>
+<span class="fc" id="L66">                responses.add(res);</span>
             }
-<span class="nc" id="L68">        }</span>
+<span class="fc" id="L68">        }</span>
 
-<span class="nc" id="L70">        return ResponseEntity.ok().body(responses);</span>
+<span class="fc" id="L70">        return ResponseEntity.ok().body(responses);</span>
     }
 
     @PreAuthorize(&quot;hasRole('MANAGER')&quot;)
@@ -77,14 +77,14 @@ public class ManagerController {
             @PathVariable String searchtag,
             @RequestParam(value = &quot;limit&quot;, defaultValue = &quot;2&quot;) int limit) {
 
-<span class="nc" id="L80">        long totalEmployees = listAllEmployeesUnderManagerDao.getTotalEmployeesCount(userId, searchtag);</span>
-<span class="nc" id="L81">        int totalPages = (int) Math.ceil((double) totalEmployees / limit);</span>
+<span class="fc" id="L80">        long totalEmployees = listAllEmployeesUnderManagerDao.getTotalEmployeesCount(userId, searchtag);</span>
+<span class="fc" id="L81">        int totalPages = (int) Math.ceil((double) totalEmployees / limit);</span>
 
-<span class="nc" id="L83">        Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
-<span class="nc" id="L84">        response.put(&quot;totalEmployees&quot;, totalEmployees);</span>
-<span class="nc" id="L85">        response.put(&quot;totalPages&quot;, totalPages);</span>
+<span class="fc" id="L83">        Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L84">        response.put(&quot;totalEmployees&quot;, totalEmployees);</span>
+<span class="fc" id="L85">        response.put(&quot;totalPages&quot;, totalPages);</span>
 
-<span class="nc" id="L87">        return ResponseEntity.ok(response);</span>
+<span class="fc" id="L87">        return ResponseEntity.ok(response);</span>
     }
 
     // Modified to use helper
@@ -94,7 +94,7 @@ public class ManagerController {
             @PathVariable String userid,
             @PathVariable String frommonth,
             @PathVariable String tomonth) {
-<span class="nc" id="L97">        return helper.handleStreamEvents(userid, frommonth, tomonth);</span>
+<span class="fc" id="L97">        return helper.handleStreamEvents(userid, frommonth, tomonth);</span>
     }
 
     // Modified to use helper
@@ -113,7 +113,7 @@ public class ManagerController {
             @RequestParam String userId,
             @RequestParam(value = &quot;page&quot;, defaultValue = &quot;1&quot;) int page,
             @RequestParam(value = &quot;limit&quot;, defaultValue = &quot;5&quot;) int limit) {
-<span class="nc" id="L116">        return ResponseEntity.ok(monthBasedService.getAttendanceReportForManager(</span>
+<span class="fc" id="L116">        return ResponseEntity.ok(monthBasedService.getAttendanceReportForManager(</span>
                 monthYear, userId, page, limit));
     }
 
@@ -123,14 +123,14 @@ public class ManagerController {
             @RequestParam String monthYear,
             @RequestParam String managerId) {
         try {
-<span class="nc" id="L126">            byte[] excelFile = monthBasedService.generateAttendanceReport(monthYear, managerId);</span>
-<span class="nc" id="L127">            return ResponseEntity.ok()</span>
-<span class="nc" id="L128">                    .header(HttpHeaders.CONTENT_DISPOSITION,</span>
+<span class="fc" id="L126">            byte[] excelFile = monthBasedService.generateAttendanceReport(monthYear, managerId);</span>
+<span class="fc" id="L127">            return ResponseEntity.ok()</span>
+<span class="fc" id="L128">                    .header(HttpHeaders.CONTENT_DISPOSITION,</span>
                             &quot;attachment; filename=Manager_Attendance_Report_&quot; + monthYear + &quot;.xlsx&quot;)
-<span class="nc" id="L130">                    .contentType(MediaType.APPLICATION_OCTET_STREAM)</span>
-<span class="nc" id="L131">                    .body(excelFile);</span>
-<span class="nc" id="L132">        } catch (Exception e) {</span>
-<span class="nc" id="L133">            throw new RuntimeException(&quot;Error generating report: &quot; + e.getMessage());</span>
+<span class="fc" id="L130">                    .contentType(MediaType.APPLICATION_OCTET_STREAM)</span>
+<span class="fc" id="L131">                    .body(excelFile);</span>
+<span class="fc" id="L132">        } catch (Exception e) {</span>
+<span class="fc" id="L133">            throw new RuntimeException(&quot;Error generating report: &quot; + e.getMessage());</span>
         }
     }
 
@@ -142,7 +142,7 @@ public class ManagerController {
             @RequestParam String frommonth,
             @RequestParam String tomonth,
             @RequestParam String managerId) {
-<span class="nc" id="L145">        return helper.handleStreamEventsForMonth(frommonth, tomonth, managerId);</span>
+<span class="fc" id="L145">        return helper.handleStreamEventsForMonth(frommonth, tomonth, managerId);</span>
     }
 
     // Modified to use helper
