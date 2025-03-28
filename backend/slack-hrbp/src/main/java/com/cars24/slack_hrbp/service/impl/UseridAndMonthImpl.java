@@ -215,6 +215,5 @@ public class UseridAndMonthImpl implements UseridAndMonth {
 
 
 
-
 }
 
