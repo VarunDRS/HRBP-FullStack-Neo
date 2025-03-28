@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HrServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">mobile-app-ws</a> &gt; <a href="index.source.html" class="el_package">com.cars24.slack_hrbp.service.impl</a> &gt; <span class="el_source">HrServiceImpl.java</span></div><h1>HrServiceImpl.java</h1><pre class="source lang-java linenums">package com.cars24.slack_hrbp.service.impl;
+
+import com.cars24.slack_hrbp.data.dao.impl.HrDaoImpl;
+import com.cars24.slack_hrbp.data.dao.impl.ListAllEmployeesUnderManagerDaoImpl;
+import com.cars24.slack_hrbp.data.entity.EmployeeEntity;
+import com.cars24.slack_hrbp.data.entity.ProfileEntity;
+import com.cars24.slack_hrbp.data.repository.AttendanceRepository;
+import com.cars24.slack_hrbp.data.repository.EmployeeRepository;
+import com.cars24.slack_hrbp.data.repository.ProfileRepository;
+import com.cars24.slack_hrbp.data.request.EmployeeUpdateRequest;
+import com.cars24.slack_hrbp.data.request.CreateEmployeeRequest;
+import com.cars24.slack_hrbp.excpetion.UserServiceException;
+import com.cars24.slack_hrbp.service.HrService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.neo4j.core.Neo4jClient;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import io.github.cdimascio.dotenv.Dotenv;
+
+
+
+<span class="fc" id="L27">@Slf4j</span>
+@Service
+<span class="fc" id="L29">@RequiredArgsConstructor</span>
+
+public class HrServiceImpl implements HrService {
+
+    private final BCryptPasswordEncoder bCryptPasswordEncoder;
+    private final HrDaoImpl hrDao;
+    private final Neo4jClient neo4jClient;
+    private final EmployeeRepository employeeRepository;
+    private final ListAllEmployeesUnderManagerDaoImpl listAllEmployeesUnderManagerDao;
+    private final AttendanceRepository attendanceRepository;
+    private final ProfileRepository profileRepository;
+
+
+    @Transactional
+    public EmployeeEntity createEmployee(CreateEmployeeRequest request) {
+<span class="fc" id="L44">        String managerid = null;</span>
+<span class="fc" id="L45">        String managerName = null;</span>
+
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        if(employeeRepository.existsByEmail(request.getEmail()))</span>
+<span class="fc" id="L48">            throw new UserServiceException(&quot;User already there&quot;);</span>
+
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        if(!employeeRepository.existsByEmail(request.getManagerEmail()))</span>
+<span class="fc" id="L51">            throw new UserServiceException(&quot;Manager not found&quot;);</span>
+
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        if(!profileRepository.existsByEmail(request.getEmail()))</span>
+<span class="nc" id="L54">            throw new UserServiceException(&quot;User doesnt exist in slack&quot;);</span>
+
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">        if (request.getManagerEmail() != null) {</span>
+<span class="fc" id="L57">            EmployeeEntity managerOpt = employeeRepository.findByEmail(request.getManagerEmail());</span>
+<span class="fc" id="L58">            managerid = managerOpt.getUserId();</span>
+<span class="fc" id="L59">            managerName = managerOpt.getUsername();</span>
+        }
+
+
+<span class="fc" id="L63">        Dotenv dotenv = Dotenv.load();</span>
+<span class="fc" id="L64">        String password = dotenv.get(&quot;DEFAULT_TEMP_PASSWORD&quot;);</span>
+
+<span class="fc" id="L66">        ProfileEntity entity = profileRepository.findByEmail(request.getEmail());</span>
+
+<span class="fc" id="L68">        String userId = entity.getSlackid();</span>
+<span class="fc" id="L69">        String userName = entity.getName();</span>
+
+<span class="fc" id="L71">        String encoded = bCryptPasswordEncoder.encode(password);</span>
+
+<span class="fc" id="L73">        return employeeRepository.createEmployeeWithManager(</span>
+                userId,
+                userName,
+<span class="fc" id="L76">                request.getEmail(),</span>
+                encoded,
+                managerName,
+                managerid,
+<span class="fc" id="L80">                request.getRoles()</span>
+        );
+    }
+
+    @Transactional
+    public void updateManager(String userId, String newManagerId) {
+<span class="fc" id="L86">        List&lt;EmployeeEntity&gt; subordinates = employeeRepository.findByManagerId(userId);</span>
+
+<span class="fc" id="L88">        boolean isNewManagerASubordinate = subordinates.stream()</span>
+<span class="fc" id="L89">                .anyMatch(employee -&gt; employee.getUserId().equals(newManagerId));</span>
+
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">        if (isNewManagerASubordinate) {</span>
+<span class="fc" id="L92">            throw new UserServiceException(&quot;Cannot update manager to a subordinate. We detected a cycle&quot;);</span>
+        }
+
+<span class="nc" id="L95">        String query = &quot;&quot;&quot;</span>
+            MATCH (e:Employee {userId: $userId})-[r:REPORTED_BY]-&gt;(oldManager)
+            DELETE r
+            WITH e
+            SET e.managerId = $newManagerId
+            WITH e
+            MATCH (newManager:Employee {userId: $newManagerId})
+            MERGE (e)-[:REPORTED_BY]-&gt;(newManager)
+            SET e.managerName = newManager.username
+            &quot;&quot;&quot;;
+
+<span class="nc" id="L106">        neo4jClient.query(query)</span>
+<span class="nc" id="L107">                .bind(userId).to(&quot;userId&quot;)</span>
+<span class="nc" id="L108">                .bind(newManagerId).to(&quot;newManagerId&quot;)</span>
+<span class="nc" id="L109">                .run();</span>
+<span class="nc" id="L110">    }</span>
+
+    @Override
+    public String updateUser(EmployeeUpdateRequest employeeUpdateRequest) {
+<span class="fc" id="L114">        return hrDao.updateUser(employeeUpdateRequest);</span>
+    }
+
+
+    @Override
+    public Page&lt;List&lt;String&gt;&gt; getAllUsers(String userId, int page, int limit, String searchtag) {
+<span class="fc" id="L120">        return hrDao.getAllUsers(userId,page,limit,searchtag);</span>
+    }
+
+    @Override
+    public long getTotalEmployeesCount(String searchtag){
+<span class="fc" id="L125">        return hrDao.getTotalEmployeesCount(searchtag);</span>
+    }
+
+    @Override
+    public String deleteEntry(String userId,String date){
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        if(!attendanceRepository.existsByUseridAndDateStartingWith(userId,date)){</span>
+<span class="fc" id="L131">            throw new UserServiceException(&quot;Not such entry for the user exists&quot;);</span>
+        }
+<span class="fc" id="L133">        return hrDao.deleteEntry(userId,date);</span>
+    }
+
+    @Override
+    public String addEntry(String userId,String date,String leaveType,String reason){
+<span class="fc" id="L138">        return hrDao.addEntry(userId,date,leaveType,reason);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

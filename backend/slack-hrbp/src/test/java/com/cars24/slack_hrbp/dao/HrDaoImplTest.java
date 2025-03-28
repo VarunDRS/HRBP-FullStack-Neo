@@ -14,10 +14,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
 import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -110,4 +112,24 @@ class HrDaoImplTest {
         assertEquals("Adding of attendance successfull", result);
         verify(attendanceRepository, times(1)).save(any(AttendanceEntity.class));
     }
+
+    @Test
+    void testEquals() {
+        HrDaoImpl hrDao1 = new HrDaoImpl(employeeRepository, bCryptPasswordEncoder, neo4jClient, attendanceRepository);
+        HrDaoImpl hrDao2 = new HrDaoImpl(employeeRepository, bCryptPasswordEncoder, neo4jClient, attendanceRepository);
+
+        assertEquals(hrDao1, hrDao2); // This internally calls equals()
+    }
+
+
+    @Test
+    void testToString() {
+        HrDaoImpl hrDaoInstance = new HrDaoImpl(employeeRepository, bCryptPasswordEncoder, neo4jClient, attendanceRepository);
+
+        String result = hrDaoInstance.toString();
+        assertNotNull(result);
+        assertTrue(result.contains("HrDaoImpl"));
+    }
+
+
 }
