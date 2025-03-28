@@ -417,6 +417,7 @@ const EnhancedCalendarView = () => {
 
   // Status icons and labels
   const getStatusIcon = (status) => {
+
     const baseIconClass = "w-6 h-6 transition-all duration-300 ease-in-out";
     const textClass = "text-xs font-medium mt-1 transition-all duration-300";
 
@@ -461,7 +462,7 @@ const EnhancedCalendarView = () => {
         label: "PL",
         textColor: "text-amber-800",
       },
-      "?": {
+      U: {
         icon: (
           <svg
             className={`${baseIconClass} text-orange-600 hover:text-orange-700`}
@@ -793,7 +794,7 @@ const EnhancedCalendarView = () => {
             {status ? (
               <>
                 {getStatusIcon(status)}
-                <div className="text-[10px] font-medium mt-1">{status}</div>
+                {/* <div className="text-[10px] font-medium mt-1">{status}</div> */}
               </>
             ) : weekend ? (
               <div className="mt-3 text-[10px] text-gray-400">Weekend</div>
