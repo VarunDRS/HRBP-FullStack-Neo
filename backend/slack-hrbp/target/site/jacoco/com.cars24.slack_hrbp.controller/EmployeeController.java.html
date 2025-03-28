@@ -4,6 +4,8 @@ import com.cars24.slack_hrbp.service.impl.EmployeeServiceImpl;
 import com.cars24.slack_hrbp.service.impl.UseridAndMonthImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -18,13 +20,16 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
-<span class="fc" id="L25">@RequiredArgsConstructor</span>
+<span class="fc" id="L30">@RequiredArgsConstructor</span>
 @RequestMapping(&quot;/employee&quot;)
-<span class="fc" id="L27">@Slf4j</span>
+@Slf4j
 @RestController
 
 public class EmployeeController {
@@ -33,10 +38,15 @@ public class EmployeeController {
     private final EmployeeServiceImpl employeeService;
     private final UseridAndMonthImpl useridandmonth;
 
+<span class="fc" id="L41">    private static final Logger log = LoggerFactory.getLogger(HrController.class);</span>
+<span class="fc" id="L42">    private final List&lt;Long&gt; individualResponseTimes = new CopyOnWriteArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L44">    private final ExecutorService executor = Executors.newFixedThreadPool(5);</span>
+
     @PreAuthorize(&quot;hasRole('EMPLOYEE')&quot;)
     @GetMapping(&quot;/{userid}/{month}&quot;)
     public Map&lt;String, Map&lt;String, String&gt;&gt; getUserDetails(@PathVariable String userid, @PathVariable String month){
-<span class="fc" id="L39">        return useridandmonth.getCustomerDetails(userid,month);</span>
+<span class="fc" id="L49">        return useridandmonth.getCustomerDetails(userid,month);</span>
     }
 
 
@@ -44,57 +54,81 @@ public class EmployeeController {
     @GetMapping(&quot;/{userId}&quot;)
     public Map&lt;String, Map&lt;String, String&gt;&gt; getUserDetails(@PathVariable String userId){
 
-<span class="fc" id="L47">        log.info(&quot;GetUserDetails Manager called&quot;);</span>
-<span class="fc" id="L48">        return useridandmonth.getCustomerDetails(userId);</span>
+<span class="fc" id="L57">        log.info(&quot;GetUserDetails Manager called&quot;);</span>
+<span class="fc" id="L58">        return useridandmonth.getCustomerDetails(userId);</span>
 
     }
 
     @GetMapping(value = &quot;/events/{userid}/{frommonth}/{tomonth}&quot;, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter streamEvents(@PathVariable String userid,@PathVariable String frommonth,@PathVariable String tomonth) {
-<span class="nc" id="L54">        SseEmitter emitter = new SseEmitter(0L); // No timeout</span>
-<span class="nc" id="L55">        ExecutorService executor = Executors.newSingleThreadExecutor();</span>
+    public SseEmitter streamEvents(@PathVariable String userid, @PathVariable String frommonth, @PathVariable String tomonth) {
+<span class="nc" id="L64">        SseEmitter emitter = new SseEmitter(0L);</span>
 
-<span class="nc" id="L57">        executor.execute(() -&gt; {</span>
+<span class="nc" id="L66">        executor.execute(() -&gt; {</span>
+<span class="nc" id="L67">            long startTime = System.currentTimeMillis(); // Record start time</span>
+
             try {
-<span class="nc" id="L59">                long startTime = System.currentTimeMillis();</span>
-                // Send &quot;Generating Excel&quot; message first
-<span class="nc" id="L61">                emitter.send(SseEmitter.event().data(&quot;Generating Excel...&quot;));</span>
+<span class="nc" id="L70">                emitter.send(SseEmitter.event().data(&quot;Generating Excel...&quot;));</span>
 
                 // Simulate report generation delay (replace with actual logic)
-//                Thread.sleep(5000); // Simulate processing delay
+<span class="nc" id="L73">                byte[] excelData = useridandmonth.generateAttendanceExcel(userid, frommonth, tomonth);</span>
 
-<span class="nc" id="L66">                byte[] excelData = useridandmonth.generateAttendanceExcel(userid, frommonth ,tomonth);</span>
+<span class="nc" id="L75">                String directoryPath = &quot;reports&quot;;</span>
+<span class="nc" id="L76">                File reportsDir = new File(directoryPath);</span>
 
-<span class="nc" id="L68">                String directoryPath = &quot;reports&quot;;</span>
-<span class="nc" id="L69">                File reportsDir = new File(directoryPath);</span>
-
-                // Ensure the directory exists
-<span class="nc bnc" id="L72" title="All 2 branches missed.">                if (!reportsDir.exists()) {</span>
-<span class="nc" id="L73">                    reportsDir.mkdirs();  // Create the directory if it doesn't exist</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">                if (!reportsDir.exists()) {</span>
+<span class="nc" id="L79">                    reportsDir.mkdirs();</span>
                 }
 
-<span class="nc" id="L76">                long endTime = System.currentTimeMillis(); // Record end time</span>
-<span class="nc" id="L77">                long duration = endTime - startTime; // Calculate latency</span>
-
-
-<span class="nc" id="L80">                log.info(&quot;Report generation time: {} ms&quot;, duration);</span>
-
-<span class="nc" id="L82">                String filePath = &quot;reports/Attendance_&quot; + userid + &quot;_&quot; + &quot;from_&quot; + frommonth + &quot;_to_&quot; + tomonth + &quot;.xlsx&quot;;</span>
+<span class="nc" id="L82">                String filePath = &quot;reports/Attendance_&quot; + userid + &quot;_from_&quot; + frommonth + &quot;_to_&quot; + tomonth + &quot;.xlsx&quot;;</span>
 <span class="nc" id="L83">                Files.write(Paths.get(filePath), excelData);</span>
-<span class="nc" id="L84">                log.info(&quot;Report generated at: {}&quot;,filePath);</span>
-<span class="nc" id="L85">                emitter.send(SseEmitter.event().data(&quot;Report Ready&quot;));</span>
-<span class="nc" id="L86">                emitter.complete(); // Close connection after sending</span>
-<span class="nc" id="L87">            } catch (IOException e) {</span>
-                try {
-<span class="nc" id="L89">                    emitter.send(SseEmitter.event().data(&quot;Error generating report&quot;));</span>
-<span class="nc" id="L90">                    emitter.completeWithError(e);</span>
-<span class="nc" id="L91">                } catch (IOException ex) {</span>
-<span class="nc" id="L92">                    ex.printStackTrace();</span>
-<span class="nc" id="L93">                }</span>
-<span class="nc" id="L94">            }</span>
-<span class="nc" id="L95">        });</span>
 
-<span class="nc" id="L97">        return emitter;</span>
+<span class="nc" id="L85">                long duration = System.currentTimeMillis() - startTime;</span>
+<span class="nc" id="L86">                individualResponseTimes.add(duration);</span>
+<span class="nc" id="L87">                log.info(&quot;Individual Report generated in {} ms&quot;, duration);</span>
+
+
+<span class="nc" id="L90">                emitter.send(SseEmitter.event().data(&quot;Report Ready&quot;));</span>
+<span class="nc" id="L91">                emitter.complete();</span>
+<span class="nc" id="L92">            } catch (IOException e) {</span>
+                try {
+<span class="nc" id="L94">                    emitter.send(SseEmitter.event().data(&quot;Error generating report&quot;));</span>
+<span class="nc" id="L95">                    emitter.completeWithError(e);</span>
+<span class="nc" id="L96">                } catch (IOException ex) {</span>
+<span class="nc" id="L97">                    ex.printStackTrace();</span>
+<span class="nc" id="L98">                }</span>
+<span class="nc" id="L99">            }</span>
+<span class="nc" id="L100">        });</span>
+
+<span class="nc" id="L102">        return emitter;</span>
+    }
+
+    // 🔹 Endpoint to Get P90 Latency for Individual Reports
+    @GetMapping(&quot;/metrics/p90-latency/individual&quot;)
+    public ResponseEntity&lt;String&gt; getP90LatencyForIndividual() {
+<span class="nc bnc" id="L108" title="All 2 branches missed.">        if (individualResponseTimes.isEmpty()) {</span>
+<span class="nc" id="L109">            return ResponseEntity.ok(&quot;No data available for individual reports.&quot;);</span>
+        }
+
+<span class="nc" id="L112">        long p90Latency = calculateP90(individualResponseTimes);</span>
+<span class="nc" id="L113">        return ResponseEntity.ok(&quot;P90 Latency for Individual Reports: &quot; + p90Latency + &quot; ms&quot;);</span>
+    }
+
+    // 🔹 P90 Calculation Function
+    private long calculateP90(List&lt;Long&gt; responseTimes) {
+<span class="nc bnc" id="L118" title="All 2 branches missed.">        if (responseTimes.isEmpty()) {</span>
+<span class="nc" id="L119">            return 0;</span>
+        }
+
+<span class="nc" id="L122">        List&lt;Long&gt; sortedTimes = responseTimes.stream()</span>
+<span class="nc" id="L123">                .sorted()</span>
+<span class="nc" id="L124">                .skip(Math.max(0, responseTimes.size() - 100)) // Keep last 100</span>
+<span class="nc" id="L125">                .collect(Collectors.toList());</span>
+
+<span class="nc" id="L127">        log.info(&quot;Stored response times: {}&quot;, sortedTimes);</span>
+
+<span class="nc" id="L129">        int index = (int) Math.ceil(0.90 * sortedTimes.size()) - 1;</span>
+<span class="nc" id="L130">        index = Math.max(index, 0);  // Ensure index is not negative</span>
+<span class="nc" id="L131">        return sortedTimes.get(index);</span>
     }
 
     // Notify frontend for download report for specific time period (from and to)
@@ -104,19 +138,19 @@ public class EmployeeController {
             @PathVariable String frommonth,
             @PathVariable String tomonth) {
 
-<span class="nc" id="L107">        String filename = &quot;Attendance_&quot; + userid + &quot;_from_&quot; + frommonth + &quot;_to_&quot; + tomonth + &quot;.xlsx&quot;;</span>
-<span class="nc" id="L108">        String filePath = &quot;reports/&quot; + filename;</span>
-<span class="nc" id="L109">        File file = new File(filePath);</span>
+<span class="nc" id="L141">        String filename = &quot;Attendance_&quot; + userid + &quot;_from_&quot; + frommonth + &quot;_to_&quot; + tomonth + &quot;.xlsx&quot;;</span>
+<span class="nc" id="L142">        String filePath = &quot;reports/&quot; + filename;</span>
+<span class="nc" id="L143">        File file = new File(filePath);</span>
 
-<span class="nc bnc" id="L111" title="All 2 branches missed.">        if (!file.exists()) {</span>
-<span class="nc" id="L112">            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">        if (!file.exists()) {</span>
+<span class="nc" id="L146">            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);</span>
         }
 
-<span class="nc" id="L115">        Resource resource = new FileSystemResource(file);</span>
-<span class="nc" id="L116">        return ResponseEntity.ok()</span>
-<span class="nc" id="L117">                .header(HttpHeaders.CONTENT_DISPOSITION, &quot;attachment; filename=\&quot;&quot; + filename + &quot;\&quot;&quot;) // Ensure double quotes</span>
-<span class="nc" id="L118">                .contentType(MediaType.APPLICATION_OCTET_STREAM)</span>
-<span class="nc" id="L119">                .body(resource);</span>
+<span class="nc" id="L149">        Resource resource = new FileSystemResource(file);</span>
+<span class="nc" id="L150">        return ResponseEntity.ok()</span>
+<span class="nc" id="L151">                .header(HttpHeaders.CONTENT_DISPOSITION, &quot;attachment; filename=\&quot;&quot; + filename + &quot;\&quot;&quot;) // Ensure double quotes</span>
+<span class="nc" id="L152">                .contentType(MediaType.APPLICATION_OCTET_STREAM)</span>
+<span class="nc" id="L153">                .body(resource);</span>
     }
 
 
